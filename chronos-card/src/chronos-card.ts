@@ -324,6 +324,10 @@ export class ChronosCard extends LitElement {
     setColorSettings(this._settings);
   }
 
+  async _reloadAllDebug() {
+    await this._loadAll();
+  }
+
   private async _reloadAfterError() {
     try {
       this._devices = await fetchDevices(this.hass);
