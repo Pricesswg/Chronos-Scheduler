@@ -1,6 +1,6 @@
 import { LitElement, html, nothing, PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { chronosStyles } from "./styles";
+import { chronosStyles, chronosTokens } from "./styles";
 import { icon } from "./icons";
 import type {
   HomeAssistant,
@@ -56,7 +56,7 @@ const TITLES: Record<Screen, [string, string]> = {
 
 @customElement("chronos-card")
 export class ChronosCard extends LitElement {
-  static styles = chronosStyles;
+  static styles = [chronosTokens, chronosStyles];
 
   @property({ attribute: false }) hass!: HomeAssistant;
   @property({ attribute: false }) config!: ChronosCardConfig;
@@ -114,9 +114,14 @@ export class ChronosCard extends LitElement {
       const dark = this.hass.themes?.darkMode ?? false;
       if (dark !== this._dark) {
         this._dark = dark;
-        if (dark) this.setAttribute("dark", "");
-        else this.removeAttribute("dark");
       }
+    }
+    if (changed.has("_dark")) {
+      if (this._dark) this.setAttribute("dark", "");
+      else this.removeAttribute("dark");
+    }
+    if (changed.has("_settings") && this._settings?.density) {
+      this.setAttribute("density", this._settings.density);
     }
   }
 
@@ -366,11 +371,7 @@ export class ChronosCard extends LitElement {
           <span class="time-dot"></span>
           <span>${fmtHour(nowHour)}</span>
         </div>
-        <button class="btn btn--icon btn--ghost" @click=${() => {
-          this._dark = !this._dark;
-          if (this._dark) this.setAttribute("dark", "");
-          else this.removeAttribute("dark");
-        }}>
+        <button class="btn btn--icon btn--ghost" @click=${() => { this._dark = !this._dark; }}>
           ${icon(this._dark ? "sun" : "moon", 16)}
         </button>
       </div>

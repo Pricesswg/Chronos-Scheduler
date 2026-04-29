@@ -10,7 +10,7 @@ import "../timeline";
 export class ChronosDeviceScreen extends LitElement {
   static styles = chronosStyles;
 
-  @property({ attribute: false }) card!: ChronosCard;
+  @property({ attribute: false, hasChanged: () => true }) card!: ChronosCard;
   @property({ type: Number }) nowHour = 0;
 
   render() {

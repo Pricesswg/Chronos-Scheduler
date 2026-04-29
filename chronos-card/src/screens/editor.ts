@@ -12,7 +12,7 @@ import "../timeline";
 export class ChronosEditor extends LitElement {
   static styles = chronosStyles;
 
-  @property({ attribute: false }) card!: ChronosCard;
+  @property({ attribute: false, hasChanged: () => true }) card!: ChronosCard;
   @property({ type: Number }) nowHour = 0;
 
   @state() private _selectedBlockIdx = 0;

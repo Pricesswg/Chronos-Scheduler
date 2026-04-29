@@ -1,7 +1,12 @@
 import { css } from "lit";
 
-export const chronosStyles = css`
+// Token vars + host-level layout. Applicato SOLO al chronos-card root.
+// I custom property cascadano attraverso shadow DOM, quindi i figli
+// li ereditano senza bisogno di ridefinire :host nei loro stili.
+export const chronosTokens = css`
   :host {
+    display: block;
+    height: 100%;
     --font-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
 
@@ -85,6 +90,12 @@ export const chronosStyles = css`
     --density-gap: 10px;
     --row-h: 44px;
   }
+`;
+
+// Component styles condivisi. Applicato a tutti i componenti.
+// Non ridefinisce i token: li eredita dal chronos-card root.
+export const chronosStyles = css`
+  :host { display: block; }
 
   * { box-sizing: border-box; }
   button, input, select, textarea { font: inherit; color: inherit; }
@@ -98,6 +109,7 @@ export const chronosStyles = css`
     display: grid;
     grid-template-columns: 244px 1fr;
     min-height: 600px;
+    height: 100%;
     background: var(--bg);
     border-radius: var(--r-lg);
     overflow: hidden;

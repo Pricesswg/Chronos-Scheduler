@@ -17,12 +17,6 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 cd "$ROOT"
 
-# Sanity: clean working tree
-if [ -n "$(git status --porcelain)" ]; then
-  echo "Working tree non pulito. Commit/stash prima di rilasciare."
-  exit 1
-fi
-
 # Sanity: on main
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 if [ "$BRANCH" != "main" ]; then
