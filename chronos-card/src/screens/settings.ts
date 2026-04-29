@@ -323,27 +323,40 @@ export class ChronosSettingsScreen extends LitElement {
         <span class="field__hint" style="margin-bottom:10px;display:block">
           ${t("settings.weather.overrides.hint")}
         </span>
+        ${!sensors.length ? html`
+          <div style="padding:10px 12px;background:#fef3c7;color:#92400e;border-radius:var(--r-md);font-size:12.5px">
+            ${t("settings.weather.overrides.no_sensors")}
+          </div>
+        ` : nothing}
         <div class="col" style="gap:6px">
           ${overrideable.map((attr) => {
             const current = map[attr.key] || "";
             const sensor = sensors.find((sen: any) => sen.entity_id === current);
             const stateStr = sensor ? `${sensor.state}${sensor.unit_of_measurement ? " " + sensor.unit_of_measurement : ""}` : "";
+            const warn = current && sensor ? this._compatWarning(attr, sensor) : "";
             return html`
-              <div class="row" style="gap:10px;padding:8px 10px;background:var(--bg-sunken);border-radius:var(--r-md);align-items:center;flex-wrap:wrap">
-                <div style="min-width:160px">
-                  <div class="fw-600 text-sm">${attr.label}</div>
-                  <div class="text-xs text-mute mono">${attr.key}${attr.unit ? ` · ${attr.unit}` : ""}</div>
+              <div class="col" style="gap:4px;padding:8px 10px;background:var(--bg-sunken);border-radius:var(--r-md)">
+                <div class="row" style="gap:10px;align-items:center;flex-wrap:wrap">
+                  <div style="min-width:160px">
+                    <div class="fw-600 text-sm">${attr.label}</div>
+                    <div class="text-xs text-mute mono">${attr.key}${attr.unit ? ` · ${attr.unit}` : ""}</div>
+                  </div>
+                  <select class="select mono" style="flex:1;min-width:240px"
+                    @change=${(e: Event) => this._updateSensorOverride(attr.key, (e.target as HTMLSelectElement).value)}>
+                    <option value="" ?selected=${!current}>${t("settings.weather.overrides.use_main")}</option>
+                    ${this._renderSensorOptions(groupedSensors, attr, current)}
+                  </select>
+                  ${current ? html`
+                    <span class="mono text-xs" style="color:${warn ? "#b45309" : "var(--text-muted)"};min-width:90px;text-align:right;font-weight:${warn ? 600 : 400}">${stateStr}</span>
+                    <button class="btn btn--icon btn--ghost btn--sm" @click=${() => this._updateSensorOverride(attr.key, "")} title="${t("common.remove")}">
+                      ${icon("close", 12)}
+                    </button>
+                  ` : nothing}
                 </div>
-                <select class="select mono" style="flex:1;min-width:240px"
-                  @change=${(e: Event) => this._updateSensorOverride(attr.key, (e.target as HTMLSelectElement).value)}>
-                  <option value="" ?selected=${!current}>${t("settings.weather.overrides.use_main")}</option>
-                  ${this._renderSensorOptions(groupedSensors, attr, current)}
-                </select>
-                ${current ? html`
-                  <span class="mono text-xs" style="color:var(--text-muted);min-width:90px;text-align:right">${stateStr}</span>
-                  <button class="btn btn--icon btn--ghost btn--sm" @click=${() => this._updateSensorOverride(attr.key, "")} title="${t("common.remove")}">
-                    ${icon("close", 12)}
-                  </button>
+                ${warn ? html`
+                  <div class="text-xs" style="color:#b45309;padding:6px 8px;background:#fef3c7;border-radius:6px;margin-top:2px">
+                    ${icon("info", 11)} ${warn}
+                  </div>
                 ` : nothing}
               </div>
             `;
@@ -351,6 +364,48 @@ export class ChronosSettingsScreen extends LitElement {
         </div>
       </div>
     `;
+  }
+
+  private _compatWarning(attr: any, sensor: any): string {
+    // Confronta unit_of_measurement (se nota) e device_class
+    const expectedUnit = (attr.unit || "").trim();
+    const sensorUnit = (sensor.unit_of_measurement || "").trim();
+    const expectedDC = this._matchingDeviceClass(attr.key);
+    const sensorDC = sensor.device_class || "";
+
+    // condition è enum (string), tipicamente da sensor.* o weather entity
+    if (attr.key === "condition") {
+      // Validazione minimale: deve avere uno stato non numerico
+      const v = String(sensor.state || "");
+      if (v && !isNaN(parseFloat(v))) {
+        return t("settings.weather.overrides.warn.numeric_for_condition", { state: v });
+      }
+      return "";
+    }
+
+    // Per attributi numerici: state deve essere parsabile come number
+    const v = sensor.state;
+    if (v !== undefined && v !== null && v !== "" && isNaN(parseFloat(v))) {
+      return t("settings.weather.overrides.warn.not_numeric", { state: String(v) });
+    }
+
+    // Unit mismatch
+    if (expectedUnit && sensorUnit && expectedUnit !== sensorUnit) {
+      return t("settings.weather.overrides.warn.unit_mismatch", {
+        expected: expectedUnit,
+        got: sensorUnit,
+      });
+    }
+
+    // device_class mismatch (warning soft)
+    if (expectedDC && sensorDC && expectedDC !== sensorDC) {
+      return t("settings.weather.overrides.warn.class_mismatch", {
+        expected: expectedDC,
+        got: sensorDC,
+      });
+    }
+
+    return "";
   }
 
   private _groupSensorsByDeviceClass(sensors: any[]): Record<string, any[]> {

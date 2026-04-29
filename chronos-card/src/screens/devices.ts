@@ -17,6 +17,23 @@ export class ChronosDevicesScreen extends LitElement {
   @state() private _pickerOpen = false;
   @state() private _search = "";
   @state() private _pickedAlias: Record<string, string> = {};
+  @state() private _busyId = "";
+  @state() private _lastError = "";
+
+  private async _removeDevice(id: string, alias: string) {
+    if (this._busyId) return;
+    if (!confirm(`${t("common.confirm")} · ${t("devices.unlink")}: ${alias}?`)) return;
+    this._busyId = id;
+    this._lastError = "";
+    try {
+      await this.card.doRemoveDevice(id);
+    } catch (e: any) {
+      this._lastError = e?.message || String(e);
+      console.error("Chronos: removeDevice failed", e);
+    } finally {
+      this._busyId = "";
+    }
+  }
 
   render() {
     const { _devices: devices, _availableEntities: available } = this.card;
@@ -61,7 +78,10 @@ export class ChronosDevicesScreen extends LitElement {
                     ${(def.capabilities || []).length > 2 ? html`<span class="tag mono">+${def.capabilities.length - 2}</span>` : nothing}
                   </div>
                   <span class="mono text-xs text-mute" style="flex:0 0 auto;min-width:60px;text-align:right">${stateStr}</span>
-                  <button class="btn btn--icon btn--ghost btn--sm" style="flex:0 0 auto" @click=${() => this.card.doRemoveDevice(d.id)} title="${t("devices.unlink")}">
+                  <button class="btn btn--icon btn--ghost btn--sm" style="flex:0 0 auto;color:var(--danger)"
+                    @click=${(ev: MouseEvent) => { ev.stopPropagation(); ev.preventDefault(); this._removeDevice(d.id, d.alias); }}
+                    @mousedown=${(ev: MouseEvent) => ev.preventDefault()}
+                    title="${t("devices.unlink")}">
                     ${icon("trash", 14)}
                   </button>
                 </div>

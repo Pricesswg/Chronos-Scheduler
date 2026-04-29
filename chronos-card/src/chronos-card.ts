@@ -276,12 +276,12 @@ export class ChronosCard extends LitElement {
     try {
       await wsRemoveDevice(this.hass, id);
     } catch (e) {
-      console.error("Chronos: removeDevice failed", e);
+      console.error("Chronos: removeDevice WS failed", e);
+      throw e;
     }
-    this._devices = await fetchDevices(this.hass);
-    this._schedules = await fetchSchedules(this.hass);
-    this._savedSchedules = JSON.parse(JSON.stringify(this._schedules));
-    this._availableEntities = await fetchAvailableEntities(this.hass);
+    try { this._devices = await fetchDevices(this.hass); } catch (e) { console.error("Chronos: fetchDevices after remove failed", e); }
+    try { this._schedules = await fetchSchedules(this.hass); this._savedSchedules = JSON.parse(JSON.stringify(this._schedules)); } catch (e) { console.error("Chronos: fetchSchedules after remove failed", e); }
+    try { this._availableEntities = await fetchAvailableEntities(this.hass); } catch (e) { console.error("Chronos: fetchAvailableEntities after remove failed", e); }
   }
 
   async doRemoveSchedule(id: string) {
