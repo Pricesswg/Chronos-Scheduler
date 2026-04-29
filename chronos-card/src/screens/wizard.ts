@@ -3,7 +3,8 @@ import { customElement, property, state } from "lit/decorators.js";
 import { chronosStyles } from "../styles";
 import { icon, deviceIcon } from "../icons";
 import { defaultAction, getActionsForType, getActionDef, actionColor } from "../actions";
-import { DAYS, DEVICE_TYPES, computeRepeat } from "../utils";
+import { getDays, DEVICE_TYPES, computeRepeat } from "../utils";
+import { t } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
 import type { Block, DeviceType, Schedule } from "../types";
 import "../timeline";
@@ -18,7 +19,7 @@ export class ChronosWizard extends LitElement {
   @property({ type: Number }) nowHour = 0;
 
   @state() private _step = 0;
-  @state() private _name = "Nuova schedulazione";
+  @state() private _name = "";
   @state() private _pickedDevices: string[] = [];
   @state() private _days = [1, 1, 1, 1, 1, 1, 1];
   @state() private _weatherEnabled = true;
@@ -27,24 +28,26 @@ export class ChronosWizard extends LitElement {
   @state() private _selectedBlockIdx = -1;
   @state() private _variant: Variant = "linear";
 
-  private _steps = [
-    { key: "name", label: "Nome" },
-    { key: "device", label: "Dispositivi" },
-    { key: "time", label: "Fasce orarie" },
-    { key: "days", label: "Ripetizione" },
-    { key: "weather", label: "Meteo" },
-    { key: "review", label: "Riepilogo" },
-  ];
+  private get _steps() {
+    return [
+      { key: "name", label: t("wizard.step.name") },
+      { key: "device", label: t("wizard.step.devices") },
+      { key: "time", label: t("wizard.step.time") },
+      { key: "days", label: t("wizard.step.days") },
+      { key: "weather", label: t("wizard.step.weather") },
+      { key: "review", label: t("wizard.step.review") },
+    ];
+  }
 
   render() {
     return html`
       <div class="col" style="gap:22px;max-width:900px;margin:0 auto">
         <div>
           <button class="btn btn--ghost btn--sm" @click=${() => this.card.navigate("overview")}>
-            ${icon("chevron-left", 14)} Annulla
+            ${icon("chevron-left", 14)} ${t("common.cancel")}
           </button>
-          <h1 class="page-title" style="margin-top:6px">Crea schedulazione</h1>
-          <p class="page-sub">Procedura guidata · puoi modificare tutto in seguito</p>
+          <h1 class="page-title" style="margin-top:6px">${t("wizard.title")}</h1>
+          <p class="page-sub">${t("wizard.subtitle")}</p>
         </div>
 
         <div class="wizard-stepper">
@@ -63,14 +66,14 @@ export class ChronosWizard extends LitElement {
         <div class="row" style="justify-content:space-between">
           <button class="btn" ?disabled=${this._step === 0} @click=${() => { this._step = Math.max(0, this._step - 1); }}
             style="opacity:${this._step === 0 ? 0.4 : 1}">
-            ${icon("chevron-left", 14)} Indietro
+            ${icon("chevron-left", 14)} ${t("common.back")}
           </button>
           ${this._step < this._steps.length - 1
             ? html`<button class="btn btn--primary" @click=${() => { this._step++; }}>
-                Avanti ${icon("chevron-right", 14)}
+                ${t("common.next")} ${icon("chevron-right", 14)}
               </button>`
             : html`<button class="btn btn--primary" @click=${() => this._finish()}>
-                ${icon("check", 14)} Crea schedulazione
+                ${icon("check", 14)} ${t("wizard.create")}
               </button>`}
         </div>
       </div>
@@ -82,23 +85,18 @@ export class ChronosWizard extends LitElement {
       case 0:
         return html`
           <div class="col" style="gap:14px">
-            <h3 style="margin:0">Dai un nome alla schedulazione</h3>
-            <p class="text-mute text-sm" style="margin:0">Sarà visibile nella panoramica e nelle notifiche.</p>
+            <h3 style="margin:0">${t("wizard.name.heading")}</h3>
+            <p class="text-mute text-sm" style="margin:0">${t("wizard.name.hint")}</p>
             <input class="input" .value=${this._name} @input=${(e: InputEvent) => { this._name = (e.target as HTMLInputElement).value; }}
+              placeholder="${t("nav.new_schedule")}"
               style="font-size:18px;padding:12px 14px"/>
-            <div class="row" style="gap:6px;flex-wrap:wrap">
-              <span class="text-xs text-mute">Suggerimenti:</span>
-              ${["Riscaldamento Casa", "Irrigazione Giardino", "Tapparelle Sud", "Luci Serata"].map((n) => html`
-                <button class="chip" @click=${() => { this._name = n; }} style="cursor:pointer">${n}</button>
-              `)}
-            </div>
           </div>
         `;
       case 1:
         return html`
           <div class="col" style="gap:14px">
-            <h3 style="margin:0">Quali dispositivi sono coinvolti?</h3>
-            <p class="text-mute text-sm" style="margin:0">Verranno tutti controllati dalla stessa programmazione.</p>
+            <h3 style="margin:0">${t("wizard.devices.heading")}</h3>
+            <p class="text-mute text-sm" style="margin:0">${t("wizard.devices.hint")}</p>
             <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
               ${this.card._devices.map((d) => html`
                 <button class="tile-pick" data-selected="${this._pickedDevices.includes(d.id)}"
@@ -125,21 +123,21 @@ export class ChronosWizard extends LitElement {
 
         return html`
           <div class="col" style="gap:14px">
-            <h3 style="margin:0">Imposta le fasce orarie</h3>
-            <p class="text-mute text-sm" style="margin:0">Clicca su una zona vuota della barra per aggiungere una fascia. Trascina i bordi per modificarne durata e posizione.</p>
+            <h3 style="margin:0">${t("wizard.time.heading")}</h3>
+            <p class="text-mute text-sm" style="margin:0">${t("editor.add_block_hint")}</p>
 
             <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">
-              <span class="text-xs text-mute">Visualizzazione:</span>
+              <span class="text-xs text-mute">${t("editor.timeline_variant")}:</span>
               <div class="segmented">
                 ${(["linear", "radial", "list"] as Variant[]).map((v) => html`
                   <button data-active="${this._variant === v}" @click=${() => { this._variant = v; }}>
-                    ${ { linear: "Lineare", radial: "Radiale", list: "Lista" }[v] }
+                    ${t("timeline." + v)}
                   </button>
                 `)}
               </div>
               <div style="flex:1"></div>
               <button class="btn btn--sm" @click=${() => this._resetBlocks(deviceType)}>
-                ${icon("repeat", 12)} Reset preset
+                ${icon("repeat", 12)} ${t("wizard.time.reset_preset")}
               </button>
             </div>
 
@@ -157,15 +155,15 @@ export class ChronosWizard extends LitElement {
               <div class="card card--ghost" style="padding:14px">
                 <div class="sp-between" style="margin-bottom:10px">
                   <div>
-                    <div class="text-xs text-mute mono">Fascia selezionata</div>
+                    <div class="text-xs text-mute mono">${t("wizard.time.selected")}</div>
                     <div class="fw-600 mono">${this._fmtBlockRange(block)}</div>
                   </div>
                   <button class="btn btn--sm" style="color:var(--danger)" @click=${() => this._removeSelected()}>
-                    ${icon("trash", 12)} Rimuovi fascia
+                    ${icon("trash", 12)} ${t("editor.block.delete")}
                   </button>
                 </div>
                 <div class="field">
-                  <label class="field__label">Azione</label>
+                  <label class="field__label">${t("editor.block.action")}</label>
                   <div class="row" style="gap:6px;flex-wrap:wrap">
                     ${actions.map((a) => html`
                       <button class="chip" data-active="${block.action?.id === a.id}"
@@ -176,7 +174,7 @@ export class ChronosWizard extends LitElement {
                 </div>
                 ${def?.value ? html`
                   <div class="field" style="margin-top:10px">
-                    <label class="field__label">${def.value.label || "Valore"} ${def.value.unit ? html`<span class="text-mute">(${def.value.unit})</span>` : nothing}</label>
+                    <label class="field__label">${def.value.label || t("common.value")} ${def.value.unit ? html`<span class="text-mute">(${def.value.unit})</span>` : nothing}</label>
                     ${def.value.type === "number" ? html`
                       <div class="row" style="gap:10px;align-items:center">
                         <input type="range" min="${def.value.min}" max="${def.value.max}" step="${def.value.step}"
@@ -197,20 +195,20 @@ export class ChronosWizard extends LitElement {
                 ` : nothing}
               </div>
             ` : html`
-              <p class="text-xs text-mute" style="margin:0">Nessuna fascia selezionata. Clicca su una fascia esistente per modificarla, oppure su una zona libera per aggiungerne una nuova.</p>
+              <p class="text-xs text-mute" style="margin:0">${t("editor.block.no_selection")}</p>
             `}
 
-            <p class="text-xs text-mute" style="margin:0">${this._blocks.length} fasce · totale coperto ${this._totalCoverage()}h / 24h</p>
+            <p class="text-xs text-mute" style="margin:0">${t("editor.coverage", { n: this._blocks.length, h: this._totalCoverage() })}</p>
           </div>
         `;
       }
       case 3:
         return html`
           <div class="col" style="gap:14px">
-            <h3 style="margin:0">Quali giorni della settimana?</h3>
-            <p class="text-mute text-sm" style="margin:0">La schedulazione si ripeterà automaticamente ogni settimana.</p>
+            <h3 style="margin:0">${t("wizard.days.heading")}</h3>
+            <p class="text-mute text-sm" style="margin:0">${t("wizard.days.hint")}</p>
             <div class="row" style="gap:4px">
-              ${DAYS.map((d, i) => {
+              ${getDays().map((d: string, i: number) => {
                 const on = this._days[i];
                 return html`
                   <button class="mono" @click=${() => {
@@ -222,27 +220,27 @@ export class ChronosWizard extends LitElement {
               })}
             </div>
             <div class="row" style="gap:6px">
-              <button class="btn btn--sm" @click=${() => { this._days = [1,1,1,1,1,1,1]; }}>Tutti i giorni</button>
-              <button class="btn btn--sm" @click=${() => { this._days = [1,1,1,1,1,0,0]; }}>Lavorativi</button>
-              <button class="btn btn--sm" @click=${() => { this._days = [0,0,0,0,0,1,1]; }}>Weekend</button>
+              <button class="btn btn--sm" @click=${() => { this._days = [1,1,1,1,1,1,1]; }}>${t("editor.days.all")}</button>
+              <button class="btn btn--sm" @click=${() => { this._days = [1,1,1,1,1,0,0]; }}>${t("editor.days.weekdays")}</button>
+              <button class="btn btn--sm" @click=${() => { this._days = [0,0,0,0,0,1,1]; }}>${t("editor.days.weekend")}</button>
             </div>
           </div>
         `;
       case 4:
         return html`
           <div class="col" style="gap:14px">
-            <h3 style="margin:0">Logica meteo</h3>
-            <p class="text-mute text-sm" style="margin:0">Vuoi che il meteo locale modifichi automaticamente questa programmazione?</p>
+            <h3 style="margin:0">${t("wizard.weather.heading")}</h3>
+            <p class="text-mute text-sm" style="margin:0">${t("wizard.weather.hint")}</p>
             <div class="grid-2">
               <button class="tile-pick" data-selected="${this._weatherEnabled}" @click=${() => { this._weatherEnabled = true; }}>
                 <div class="tile-pick__icon">${icon("cloud", 16)}</div>
-                <div class="tile-pick__name">Sì, abilita</div>
-                <div class="tile-pick__desc">Suggeriremo regole utili in base al tipo di dispositivo</div>
+                <div class="tile-pick__name">${t("wizard.weather.yes")}</div>
+                <div class="tile-pick__desc">${t("wizard.weather.yes.desc")}</div>
               </button>
               <button class="tile-pick" data-selected="${!this._weatherEnabled}" @click=${() => { this._weatherEnabled = false; }}>
                 <div class="tile-pick__icon" style="background:var(--bg-sunken);color:var(--text-soft)">${icon("close", 16)}</div>
-                <div class="tile-pick__name">No, solo orari</div>
-                <div class="tile-pick__desc">Esecuzione fissa indipendente dal meteo</div>
+                <div class="tile-pick__name">${t("wizard.weather.no")}</div>
+                <div class="tile-pick__desc">${t("wizard.weather.no.desc")}</div>
               </button>
             </div>
           </div>
@@ -250,17 +248,17 @@ export class ChronosWizard extends LitElement {
       case 5:
         return html`
           <div class="col" style="gap:12px">
-            <h3 style="margin:0">Riepilogo</h3>
+            <h3 style="margin:0">${t("wizard.review.heading")}</h3>
             <div class="card card--ghost" style="padding:14px">
               <div class="col" style="gap:10px">
-                <div class="sp-between"><span class="text-mute text-sm">Nome</span><strong>${this._name}</strong></div>
-                <div class="sp-between"><span class="text-mute text-sm">Dispositivi</span><strong>${this._pickedDevices.length} selezionati</strong></div>
-                <div class="sp-between"><span class="text-mute text-sm">Giorni</span><strong>${this._days.filter(Boolean).length}/7</strong></div>
-                <div class="sp-between"><span class="text-mute text-sm">Logica meteo</span><strong>${this._weatherEnabled ? "Abilitata" : "Disabilitata"}</strong></div>
-                <div class="sp-between"><span class="text-mute text-sm">Fasce orarie</span><strong>${this._blocks.length}</strong></div>
+                <div class="sp-between"><span class="text-mute text-sm">${t("editor.field.name")}</span><strong>${this._name || t("nav.new_schedule")}</strong></div>
+                <div class="sp-between"><span class="text-mute text-sm">${t("nav.devices")}</span><strong>${t("wizard.review.devices", { n: this._pickedDevices.length })}</strong></div>
+                <div class="sp-between"><span class="text-mute text-sm">${t("editor.days.repeat")}</span><strong>${this._days.filter(Boolean).length}/7</strong></div>
+                <div class="sp-between"><span class="text-mute text-sm">${t("wizard.weather.heading")}</span><strong>${this._weatherEnabled ? t("wizard.review.weather_on") : t("wizard.review.weather_off")}</strong></div>
+                <div class="sp-between"><span class="text-mute text-sm">${t("wizard.step.time")}</span><strong>${this._blocks.length}</strong></div>
               </div>
             </div>
-            <p class="text-xs text-mute" style="margin:0">Potrai modificare ogni dettaglio dall'editor dopo la creazione.</p>
+            <p class="text-xs text-mute" style="margin:0">${t("wizard.review.note")}</p>
           </div>
         `;
       default:

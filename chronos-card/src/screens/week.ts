@@ -3,7 +3,8 @@ import { customElement, property } from "lit/decorators.js";
 import { chronosStyles } from "../styles";
 import { icon } from "../icons";
 import { KIND_COLORS } from "../actions";
-import { DAYS } from "../utils";
+import { getDays } from "../utils";
+import { t } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
 import "../timeline";
 
@@ -16,27 +17,16 @@ export class ChronosWeek extends LitElement {
 
   render() {
     const { _schedules: schedules } = this.card;
+    const activeCount = schedules.filter((s) => s.enabled).length;
     const todayIdx = new Date().getDay();
     const adjustedToday = todayIdx === 0 ? 6 : todayIdx - 1;
+    const days = getDays();
 
     return html`
       <div class="col" style="gap:22px">
         <div>
-          <h1 class="page-title">Vista settimanale</h1>
-          <p class="page-sub">Tutte le schedulazioni distribuite sui giorni della settimana</p>
-        </div>
-
-        <div class="row" style="justify-content:space-between">
-          <div class="row">
-            <button class="btn btn--icon btn--ghost">${icon("chevron-left", 14)}</button>
-            <strong class="mono">Settimana corrente</strong>
-            <button class="btn btn--icon btn--ghost">${icon("chevron-right", 14)}</button>
-          </div>
-          <div class="segmented">
-            <button data-active="false">Giorno</button>
-            <button data-active="true">Settimana</button>
-            <button data-active="false">Mese</button>
-          </div>
+          <h1 class="page-title">${t("screen.week.title")}</h1>
+          <p class="page-sub">${t("week.subtitle", { n: activeCount })}</p>
         </div>
 
         <div class="card">
@@ -49,10 +39,10 @@ export class ChronosWeek extends LitElement {
                 `)}
               </div>
             </div>
-            ${DAYS.map((d, dayIdx) => html`
+            ${days.map((d: string, dayIdx: number) => html`
               <div class="weekgrid__row">
                 <div class="weekgrid__day" style="color:${dayIdx === adjustedToday ? "var(--accent)" : ""}">
-                  ${d}${dayIdx === adjustedToday ? html`<span style="display:block;font-size:9px;margin-top:2px">OGGI</span>` : nothing}
+                  ${d}${dayIdx === adjustedToday ? html`<span style="display:block;font-size:9px;margin-top:2px">${t("week.today").toUpperCase()}</span>` : nothing}
                 </div>
                 <div style="position:relative">
                   <div class="col" style="gap:4px">
@@ -66,7 +56,7 @@ export class ChronosWeek extends LitElement {
                       </div>
                     `)}
                     ${!schedules.filter((s) => s.enabled && s.days[dayIdx]).length
-                      ? html`<div class="text-xs text-mute" style="padding:8px 0;font-style:italic">Nessuna schedulazione attiva</div>`
+                      ? html`<div class="text-xs text-mute" style="padding:8px 0;font-style:italic">—</div>`
                       : nothing}
                   </div>
                 </div>
@@ -76,12 +66,21 @@ export class ChronosWeek extends LitElement {
         </div>
 
         <div class="row" style="gap:14px;flex-wrap:wrap">
-          ${Object.entries(KIND_COLORS).map(([k, c]) => html`
-            <div class="row" style="gap:6px">
-              <span style="width:12px;height:8px;border-radius:2px;background:${c}"></span>
-              <span class="text-xs">${{ on: "Attiva", off: "Spenta", set: "Imposta valore", preset: "Preset", cmd: "Comando" }[k]}</span>
-            </div>
-          `)}
+          ${Object.entries(KIND_COLORS).map(([k, c]) => {
+            const labels: Record<string, string> = {
+              on: t("schedule.active"),
+              off: t("schedule.disabled"),
+              set: t("common.value"),
+              preset: "Preset",
+              cmd: t("editor.block.action"),
+            };
+            return html`
+              <div class="row" style="gap:6px">
+                <span style="width:12px;height:8px;border-radius:2px;background:${c}"></span>
+                <span class="text-xs">${labels[k]}</span>
+              </div>
+            `;
+          })}
         </div>
       </div>
     `;

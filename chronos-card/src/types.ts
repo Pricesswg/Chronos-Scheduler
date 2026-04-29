@@ -60,6 +60,7 @@ export interface Settings {
   color_stops_boiler?: { max: number; color: string }[];
   color_presets?: Record<string, string>;
   weather_sensor_map?: Record<string, string>;
+  language?: "auto" | "it" | "en" | "fr" | "de";
 }
 
 export interface ActionValueSpec {

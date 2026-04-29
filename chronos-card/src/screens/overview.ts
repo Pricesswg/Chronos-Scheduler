@@ -4,7 +4,8 @@ import { chronosStyles } from "../styles";
 import { icon, deviceIcon } from "../icons";
 import { getDeviceColor } from "../device-colors";
 import { actionColor } from "../actions";
-import { fmtHour } from "../utils";
+import { fmtHour, computeRepeat } from "../utils";
+import { t } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
 import "../timeline";
 
@@ -27,36 +28,36 @@ export class ChronosOverview extends LitElement {
     return html`
       <div class="col" style="gap:22px">
         <div>
-          <h1 class="page-title">Le tue schedulazioni</h1>
-          <p class="page-sub">Programmazione oraria con override meteo · ${active} di ${total} attive · ${weatherRules} regole meteo live</p>
+          <h1 class="page-title">${t("screen.overview.title")}</h1>
+          <p class="page-sub">${t("overview.subtitle", { n: active, tot: total })}</p>
         </div>
 
         <div class="grid-3">
           <div class="kpi">
-            <div class="kpi__label">Schedulazioni attive</div>
+            <div class="kpi__label">${t("overview.kpi.active")}</div>
             <div class="kpi__value">${active}<span class="text-mute" style="font-size:16px;margin-left:6px">/${total}</span></div>
-            <div class="kpi__delta">su ${devices.length} dispositivi connessi</div>
+            <div class="kpi__delta">${devices.length} ${t("overview.kpi.devices").toLowerCase()}</div>
           </div>
           <div class="kpi">
-            <div class="kpi__label">Regole meteo</div>
+            <div class="kpi__label">${t("overview.kpi.weather_rules")}</div>
             <div class="kpi__value">${weatherRules}</div>
-            <div class="kpi__delta">override condizionali</div>
+            <div class="kpi__delta">${t("device.state.live")}</div>
           </div>
           <div class="kpi">
-            <div class="kpi__label">Ora locale</div>
+            <div class="kpi__label">${t("overview.kpi.now")}</div>
             <div class="kpi__value">${fmtHour(this.nowHour)}</div>
-            <div class="kpi__delta">aggiornamento live</div>
+            <div class="kpi__delta">${t("device.state.live")}</div>
           </div>
         </div>
 
         <div class="sp-between">
           <div class="row">
-            <h2 style="margin:0;font-size:16px;font-weight:600;letter-spacing:-0.01em">Tutte le schedulazioni</h2>
+            <h2 style="margin:0;font-size:16px;font-weight:600;letter-spacing:-0.01em">${t("nav.overview")}</h2>
             <span class="tag mono">${total}</span>
           </div>
           <div class="row">
-            <button class="btn" @click=${() => this.card.navigate("week")}>${icon("calendar", 14)} Vista settimana</button>
-            <button class="btn btn--primary" @click=${() => this.card.navigate("wizard")}>${icon("plus", 14)} Nuova schedulazione</button>
+            <button class="btn" @click=${() => this.card.navigate("week")}>${icon("calendar", 14)} ${t("nav.week")}</button>
+            <button class="btn btn--primary" @click=${() => this.card.navigate("wizard")}>${icon("plus", 14)} ${t("nav.new_schedule")}</button>
           </div>
         </div>
 
@@ -70,7 +71,7 @@ export class ChronosOverview extends LitElement {
                 <div class="sched-card__header">
                   <div style="flex:1;min-width:0">
                     <h3 class="sched-card__title">${s.name}</h3>
-                    <div class="sched-card__sub">${this._computeRepeat(s.days)} · ${s.blocks.length} fasce</div>
+                    <div class="sched-card__sub">${computeRepeat(s.days)} · ${s.blocks.length}</div>
                   </div>
                   <label class="switch" @click=${(e: Event) => e.stopPropagation()}>
                     <input type="checkbox" .checked=${s.enabled} @change=${(e: Event) => {
@@ -100,8 +101,8 @@ export class ChronosOverview extends LitElement {
                     ${devs.length > 5 ? html`<div class="device-icon-pill mono" style="font-size:10px">+${devs.length - 5}</div>` : nothing}
                   </div>
                   <div style="flex:1"></div>
-                  ${activeRules > 0 ? html`<span class="chip chip--weather">${icon("cloud", 11)} ${activeRules} regole</span>` : nothing}
-                  <span class="chip ${s.enabled ? "chip--on" : ""}"><span class="chip__dot"></span>${s.enabled ? "Attiva" : "Disattivata"}</span>
+                  ${activeRules > 0 ? html`<span class="chip chip--weather">${icon("cloud", 11)} ${t("overview.rules_count", { n: activeRules })}</span>` : nothing}
+                  <span class="chip ${s.enabled ? "chip--on" : ""}"><span class="chip__dot"></span>${s.enabled ? t("schedule.active") : t("schedule.disabled")}</span>
                 </div>
               </div>
             `;
@@ -109,12 +110,5 @@ export class ChronosOverview extends LitElement {
         </div>
       </div>
     `;
-  }
-
-  private _computeRepeat(days: number[]): string {
-    if (!days || !days.length) return "";
-    const DAYS = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
-    if (days.every(Boolean)) return "Ogni giorno";
-    return days.map((d, i) => (d ? DAYS[i] : null)).filter(Boolean).join(" · ");
   }
 }

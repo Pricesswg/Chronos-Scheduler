@@ -5,6 +5,7 @@ import { icon, deviceIcon, weatherIcon } from "../icons";
 import { getDeviceColor } from "../device-colors";
 import { actionLabel } from "../actions";
 import { fmtHour } from "../utils";
+import { t } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
 import "../timeline";
 
@@ -34,11 +35,11 @@ export class ChronosLive extends LitElement {
       <div class="col" style="gap:22px">
         <div class="sp-between">
           <div>
-            <h1 class="page-title">Stato live</h1>
-            <p class="page-sub">Cosa sta facendo ora il sistema</p>
+            <h1 class="page-title">${t("screen.live.title")}</h1>
+            <p class="page-sub">${weatherEntity ? t("live.weather.subtitle", { entity: weatherEntity }) : t("live.no_weather")}</p>
           </div>
           <div class="row">
-            <span class="chip chip--on"><span class="chip__dot"></span>In esecuzione</span>
+            <span class="chip chip--on"><span class="chip__dot"></span>${t("schedule.active")}</span>
           </div>
         </div>
 
@@ -57,7 +58,7 @@ export class ChronosLive extends LitElement {
           </div>
 
           <div class="card">
-            <div class="card__header"><div style="flex:1"><h3 class="card__title">Previsione 24h</h3><p class="card__sub">Forecast orario</p></div></div>
+            <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("live.forecast.title")}</h3><p class="card__sub">${t("live.forecast.title")}</p></div></div>
             <div class="forecast-row">
               ${forecast.filter((_, i) => i % 2 === 0).slice(0, 12).map((w) => {
                 const h = new Date(w.datetime || "").getHours?.() ?? 0;
@@ -76,7 +77,7 @@ export class ChronosLive extends LitElement {
 
         <!-- Live schedules -->
         <div class="card">
-          <div class="card__header"><div style="flex:1"><h3 class="card__title">Schedulazioni live</h3><p class="card__sub">${liveSchedules.filter((l) => l.active).length} fasce attive ora</p></div></div>
+          <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("live.schedules.title")}</h3><p class="card__sub">${liveSchedules.filter((l) => l.active).length}</p></div></div>
           <div class="col" style="gap:12px">
             ${liveSchedules.map(({ schedule, active }) => html`
               <div class="card card--ghost" style="padding:14px">
@@ -86,10 +87,10 @@ export class ChronosLive extends LitElement {
                     <strong>${schedule.name}</strong>
                     ${active
                       ? html`<span class="chip chip--accent">${actionLabel(schedule.device_type, active.action)}</span>`
-                      : html`<span class="chip">In attesa</span>`}
+                      : html`<span class="chip">${t("schedule.next_block")}</span>`}
                   </div>
                   <button class="btn btn--sm btn--ghost" @click=${() => this.card.selectSchedule(schedule.id, "editor")}>
-                    Apri ${icon("chevron-right", 12)}
+                    ${t("device.open_schedule")} ${icon("chevron-right", 12)}
                   </button>
                 </div>
                 <chronos-timeline variant="linear" .deviceType=${schedule.device_type} .blocks=${schedule.blocks} .interactive=${false} height="compact" .showWeather=${false} .now=${this.nowHour}></chronos-timeline>
@@ -100,7 +101,7 @@ export class ChronosLive extends LitElement {
 
         <!-- Devices live -->
         <div class="card">
-          <div class="card__header"><div style="flex:1"><h3 class="card__title">Dispositivi · stato live</h3><p class="card__sub">Valori in tempo reale</p></div></div>
+          <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("live.devices.title")}</h3><p class="card__sub">${t("live.devices.subtitle")}</p></div></div>
           <div class="col" style="gap:0">
             ${devices.map((d) => {
               const state = this.card.hass?.states?.[d.entity_id];
@@ -158,15 +159,8 @@ export class ChronosLive extends LitElement {
   }
 
   private _conditionLabel(condition: string): string {
-    const map: Record<string, string> = {
-      sunny: "Soleggiato",
-      rainy: "Pioggia",
-      cloudy: "Nuvoloso",
-      partlycloudy: "Parzialmente nuvoloso",
-      snowy: "Neve",
-      fog: "Nebbia",
-      windy: "Ventoso",
-    };
-    return map[condition] || condition;
+    const key = `live.condition.${condition}`;
+    const out = t(key);
+    return out === key ? condition : out;
   }
 }

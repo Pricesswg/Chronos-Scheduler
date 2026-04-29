@@ -4,15 +4,18 @@ import { chronosStyles } from "../styles";
 import { icon } from "../icons";
 import { getActionsForType } from "../actions";
 import { DEVICE_TYPES } from "../utils";
+import { t } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
 import "../timeline";
 
-const RULE_ACTIONS = [
-  { key: "skip", label: "Salta esecuzione", desc: "Annulla questa fascia" },
-  { key: "shift", label: "Modifica valore", desc: "Aggiungi/sottrai dal valore" },
-  { key: "force", label: "Forza azione", desc: "Sostituisci con un'altra azione" },
-  { key: "duration", label: "Modifica durata", desc: "Estendi o riduci la fascia" },
-];
+function getRuleActions() {
+  return [
+    { key: "skip", label: t("wr.action.skip"), desc: t("wr.action.skip.desc") },
+    { key: "shift", label: t("wr.action.shift"), desc: t("wr.action.shift.desc") },
+    { key: "force", label: t("wr.action.force"), desc: t("wr.action.force.desc") },
+    { key: "duration", label: t("wr.action.duration"), desc: t("wr.action.duration.desc") },
+  ];
+}
 
 @customElement("chronos-weather-rule")
 export class ChronosWeatherRule extends LitElement {
@@ -40,36 +43,36 @@ export class ChronosWeatherRule extends LitElement {
     const ifText = `${this._variable} ${this._op} ${this._value}${varDef?.unit || ""}`;
     const forcedDef = typeActions.find((a) => a.id === this._actionValue);
     const thenText =
-      this._action === "skip" ? "Salta esecuzione"
-        : this._action === "shift" ? `${this._actionValue}${varDef?.unit || ""} su tutte le fasce`
-          : this._action === "force" ? `Forza: ${forcedDef?.label || "—"}`
-            : `Durata ${this._actionValue || "+30"} min`;
+      this._action === "skip" ? t("wr.action.skip")
+        : this._action === "shift" ? `${this._actionValue}${varDef?.unit || ""}`
+          : this._action === "force" ? `${t("wr.action.force")}: ${forcedDef?.label || "—"}`
+            : `${this._actionValue || "+30"} ${t("common.min")}`;
 
     return html`
       <div class="col" style="gap:22px;max-width:1100px">
         <div>
           <button class="btn btn--ghost btn--sm" @click=${() => this.card.navigate("editor")}>
-            ${icon("chevron-left", 14)} Torna all'editor
+            ${icon("chevron-left", 14)} ${t("nav.editor")}
           </button>
-          <h1 class="page-title" style="margin-top:6px">Nuova regola meteo</h1>
-          <p class="page-sub">Override condizionale per <strong>${schedule.name}</strong> · sorgente: <span class="mono">${weatherEntity}</span></p>
+          <h1 class="page-title" style="margin-top:6px">${t("wr.heading")}</h1>
+          <p class="page-sub">${t("wr.subtitle")} · <strong>${schedule.name}</strong></p>
         </div>
 
         <div class="card" style="padding:22px">
           <div class="rule-block" style="background:var(--surface);border:2px dashed var(--border)">
-            <span class="rule-block__label rule-block__label--if">SE</span>
-            <span class="rule-token mono text-xs">${weatherEntity}.</span>
+            <span class="rule-block__label rule-block__label--if">IF</span>
+            <span class="rule-token mono text-xs">${weatherEntity || "—"}.</span>
             <span class="rule-token rule-token--weather">${icon(varDef?.icon || "cloud", 11)} ${varDef?.label || this._variable}</span>
             <span class="rule-token mono">${this._op}</span>
             <span class="rule-token rule-token--weather mono">${this._value}${varDef?.unit || ""}</span>
-            <span class="rule-block__label rule-block__label--then">ALLORA</span>
+            <span class="rule-block__label rule-block__label--then">THEN</span>
             <span class="rule-token rule-token--accent">${thenText}</span>
           </div>
         </div>
 
         <div class="grid-2">
           <div class="card">
-            <div class="card__header"><div style="flex:1"><h3 class="card__title">Condizione · attributo meteo</h3><p class="card__sub">Esposto da ${weatherEntity}</p></div></div>
+            <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("wr.if.title")}</h3><p class="card__sub">${t("wr.if.subtitle")}</p></div></div>
             <div class="col" style="gap:12px">
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;max-height:380px;overflow-y:auto;padding-right:4px">
                 ${weatherAttrs.map((v) => html`
@@ -86,7 +89,7 @@ export class ChronosWeatherRule extends LitElement {
               </div>
               <div class="grid-2">
                 <div class="field">
-                  <label class="field__label">Operatore</label>
+                  <label class="field__label">${t("wr.op")}</label>
                   <select class="select mono" @change=${(e: Event) => { this._op = (e.target as HTMLSelectElement).value; }}>
                     ${varDef?.type === "enum"
                       ? html`
@@ -102,7 +105,7 @@ export class ChronosWeatherRule extends LitElement {
                   </select>
                 </div>
                 <div class="field">
-                  <label class="field__label">Soglia</label>
+                  <label class="field__label">${t("wr.threshold")}</label>
                   ${varDef?.type === "enum"
                     ? html`<select class="select" @change=${(e: Event) => { this._value = (e.target as HTMLSelectElement).value; }}>
                         ${(varDef.options || []).map((o) => html`<option value="${o}" ?selected=${this._value === o}>${o}</option>`)}
@@ -114,10 +117,10 @@ export class ChronosWeatherRule extends LitElement {
           </div>
 
           <div class="card">
-            <div class="card__header"><div style="flex:1"><h3 class="card__title">Azione · cosa fare</h3><p class="card__sub">L'effetto sulla fascia oraria attiva</p></div></div>
+            <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("wr.then.title")}</h3><p class="card__sub">${t("wr.then.subtitle")}</p></div></div>
             <div class="col" style="gap:12px">
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-                ${RULE_ACTIONS.map((a) => html`
+                ${getRuleActions().map((a) => html`
                   <button class="tile-pick" data-selected="${this._action === a.key}" @click=${() => { this._action = a.key; }}>
                     <div class="tile-pick__name">${a.label}</div>
                     <div class="tile-pick__desc">${a.desc}</div>
@@ -126,7 +129,7 @@ export class ChronosWeatherRule extends LitElement {
               </div>
               ${this._action !== "skip" ? html`
                 <div class="field">
-                  <label class="field__label">${this._action === "force" ? "Azione da forzare" : "Valore"}</label>
+                  <label class="field__label">${this._action === "force" ? t("wr.action.force") : t("common.value")}</label>
                   ${this._action === "force"
                     ? html`<select class="select" @change=${(e: Event) => { this._actionValue = (e.target as HTMLSelectElement).value; }}>
                         ${typeActions.map((a) => html`<option value="${a.id}" ?selected=${this._actionValue === a.id}>${a.label}</option>`)}
@@ -140,19 +143,19 @@ export class ChronosWeatherRule extends LitElement {
         </div>
 
         <div class="card">
-          <div class="card__header"><div style="flex:1"><h3 class="card__title">Anteprima impatto · prossime 24h</h3></div></div>
+          <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("wr.preview")}</h3><p class="card__sub">${t("wr.preview.subtitle")}</p></div></div>
           <chronos-timeline variant="linear" .deviceType=${schedule.device_type} .blocks=${schedule.blocks} .interactive=${false} .now=${this.nowHour} .forecast=${this.card._forecast}></chronos-timeline>
         </div>
 
         <div class="row" style="justify-content:flex-end;gap:8px">
-          <button class="btn" @click=${() => this.card.navigate("editor")}>Annulla</button>
+          <button class="btn" @click=${() => this.card.navigate("editor")}>${t("common.cancel")}</button>
           <button class="btn btn--primary" @click=${() => {
             const schedule2 = this.card._schedules.find((s) => s.id === this.card._selectedId);
             if (!schedule2) return;
             const newRules = [...(schedule2.weather_rules || []), { if: ifText, then: thenText, active: true }];
             this.card.updateScheduleLocal(schedule2.id, { weather_rules: newRules });
             this.card.navigate("editor");
-          }}>${icon("check", 14)} Salva regola</button>
+          }}>${icon("check", 14)} ${t("common.save")}</button>
         </div>
       </div>
     `;

@@ -4,6 +4,7 @@ import { chronosStyles } from "../styles";
 import { icon, deviceIcon } from "../icons";
 import { DEVICE_TYPES } from "../utils";
 import { getDeviceColor } from "../device-colors";
+import { t } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
 
 @customElement("chronos-devices-screen")
@@ -24,11 +25,11 @@ export class ChronosDevicesScreen extends LitElement {
       <div class="col" style="gap:22px">
         <div class="sp-between">
           <div>
-            <h1 class="page-title">Gestisci dispositivi</h1>
-            <p class="page-sub">Entità di Home Assistant importate · ${devices.length} dispositivi controllati</p>
+            <h1 class="page-title">${t("screen.devices.title")}</h1>
+            <p class="page-sub">${t("devices.subtitle", { n: devices.length })}</p>
           </div>
           <button class="btn btn--primary" @click=${() => { this._pickerOpen = true; }}>
-            ${icon("plus", 14)} Aggiungi entità
+            ${icon("plus", 14)} ${t("devices.add_entity")}
           </button>
         </div>
 
@@ -48,7 +49,7 @@ export class ChronosDevicesScreen extends LitElement {
                     <input class="input" .value=${d.alias}
                       @change=${(e: Event) => this.card.doUpdateDevice(d.id, { alias: (e.target as HTMLInputElement).value })}
                       style="border:1px solid transparent;background:transparent;padding:4px 6px;font-weight:500;font-size:14px;margin-left:-6px;width:100%;max-width:240px"
-                      placeholder="Alias…"/>
+                      placeholder="${t("devices.alias")}…"/>
                     <div class="device-row__meta" style="margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
                       <span style="color:var(--text-muted)">${d.entity_id}</span>
                       ${d.area ? html` · ${d.area}` : nothing}
@@ -60,7 +61,7 @@ export class ChronosDevicesScreen extends LitElement {
                     ${(def.capabilities || []).length > 2 ? html`<span class="tag mono">+${def.capabilities.length - 2}</span>` : nothing}
                   </div>
                   <span class="mono text-xs text-mute" style="flex:0 0 auto;min-width:60px;text-align:right">${stateStr}</span>
-                  <button class="btn btn--icon btn--ghost btn--sm" style="flex:0 0 auto" @click=${() => this.card.doRemoveDevice(d.id)} title="Sgancia">
+                  <button class="btn btn--icon btn--ghost btn--sm" style="flex:0 0 auto" @click=${() => this.card.doRemoveDevice(d.id)} title="${t("devices.unlink")}">
                     ${icon("trash", 14)}
                   </button>
                 </div>
@@ -68,15 +69,13 @@ export class ChronosDevicesScreen extends LitElement {
             })}
             ${!devices.length ? html`<div style="text-align:center;padding:40px 20px;color:var(--text-muted)">
               <div style="width:52px;height:52px;margin:0 auto 12px;border-radius:14px;background:var(--bg-sunken);display:grid;place-items:center;color:var(--text-soft)">${icon("device", 22)}</div>
-              <div style="font-weight:600;color:var(--text);font-size:14px">Nessun dispositivo importato</div>
-              <div style="font-size:12.5px;margin-top:4px">Aggiungi le tue prime entità HA per iniziare.</div>
+              <div style="font-weight:600;color:var(--text);font-size:14px">${t("devices.empty.title")}</div>
+              <div style="font-size:12.5px;margin-top:4px">${t("devices.empty.hint")}</div>
             </div>` : nothing}
           </div>
         </div>
 
-        <p class="text-xs text-mute" style="margin:0">
-          <strong>Tipo e capabilities</strong> vengono dedotti automaticamente dal dominio dell'entità HA (es. <span class="mono">climate.*</span> → termostato).
-        </p>
+        <p class="text-xs text-mute" style="margin:0">${t("devices.types_hint")}</p>
 
         ${this._pickerOpen ? this._renderPicker(available) : nothing}
       </div>
@@ -93,12 +92,12 @@ export class ChronosDevicesScreen extends LitElement {
         <div class="card" style="width:min(640px,100%);max-height:80vh;display:flex;flex-direction:column" @click=${(e: Event) => e.stopPropagation()}>
           <div class="sp-between" style="margin-bottom:14px">
             <div>
-              <h3 style="margin:0">Aggiungi entità HA</h3>
-              <p class="text-mute text-sm" style="margin:2px 0 0">${available.length} entità disponibili nel tuo Home Assistant</p>
+              <h3 style="margin:0">${t("devices.picker.title")}</h3>
+              <p class="text-mute text-sm" style="margin:2px 0 0">${t("devices.picker.count", { n: available.length })}</p>
             </div>
             <button class="btn btn--icon btn--ghost" @click=${() => { this._pickerOpen = false; }}>${icon("close", 16)}</button>
           </div>
-          <input class="input" placeholder="Cerca per nome o entity_id…" .value=${this._search}
+          <input class="input" placeholder="${t("devices.picker.search")}" .value=${this._search}
             @input=${(e: InputEvent) => { this._search = (e.target as HTMLInputElement).value; }}
             style="margin-bottom:12px"/>
           <div style="overflow:auto;flex:1;display:flex;flex-direction:column;gap:4px">
@@ -112,7 +111,7 @@ export class ChronosDevicesScreen extends LitElement {
                     <div class="device-row__name">${e.friendly_name}</div>
                     <div class="device-row__meta"><span class="mono">${e.entity_id}</span> · ${e.area || ""}</div>
                   </div>
-                  <input class="input" placeholder="Alias (opzionale)"
+                  <input class="input" placeholder="${t("devices.alias.placeholder")}"
                     .value=${this._pickedAlias[e.entity_id] || ""}
                     @input=${(ev: InputEvent) => { this._pickedAlias = { ...this._pickedAlias, [e.entity_id]: (ev.target as HTMLInputElement).value }; }}
                     style="width:160px;font-size:12px"/>
@@ -120,13 +119,13 @@ export class ChronosDevicesScreen extends LitElement {
                   <button class="btn btn--sm btn--primary" @click=${async () => {
                     await this.card.doAddDevice(e.entity_id, this._pickedAlias[e.entity_id] || undefined);
                     this._pickedAlias = { ...this._pickedAlias, [e.entity_id]: "" };
-                  }}>${icon("plus", 12)} Importa</button>
+                  }}>${icon("plus", 12)} ${t("devices.import")}</button>
                 </div>
               `;
             })}
             ${!available.length ? html`<div style="text-align:center;padding:40px 20px;color:var(--text-muted)">
-              <div style="font-weight:600;color:var(--text);font-size:14px">Tutto importato</div>
-              <div style="font-size:12.5px;margin-top:4px">Tutte le entità disponibili sono già state aggiunte.</div>
+              <div style="font-weight:600;color:var(--text);font-size:14px">${t("devices.picker.all_imported")}</div>
+              <div style="font-size:12.5px;margin-top:4px">${t("devices.picker.all_imported.hint")}</div>
             </div>` : nothing}
           </div>
         </div>

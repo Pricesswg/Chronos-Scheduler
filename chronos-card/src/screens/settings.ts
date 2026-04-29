@@ -2,6 +2,7 @@ import { LitElement, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { chronosStyles } from "../styles";
 import { icon } from "../icons";
+import { t } from "../i18n";
 import {
   DEFAULT_TEMP_STOPS_CLIMATE,
   DEFAULT_TEMP_STOPS_BOILER,
@@ -22,28 +23,39 @@ export class ChronosSettingsScreen extends LitElement {
 
   render() {
     const s = this.card._settings;
-    if (!s) return html`<div class="text-mute">Caricamento…</div>`;
+    if (!s) return html`<div class="text-mute">${t("common.loading")}</div>`;
 
     return html`
       <div class="col" style="gap:22px;max-width:980px">
         <div>
-          <h1 class="page-title">Impostazioni</h1>
-          <p class="page-sub">Parametri globali dell'integrazione Chronos · validi per tutte le schedulazioni</p>
+          <h1 class="page-title">${t("screen.settings.title")}</h1>
+          <p class="page-sub">${t("settings.subtitle")}</p>
         </div>
 
         <div class="card">
-          <div class="card__header"><div style="flex:1"><h3 class="card__title">Sorgente meteo</h3><p class="card__sub">Entità HA usata per valutare le regole meteo · puoi anche puntare attributi specifici a sensori puntuali (stazione meteo locale, Ecowitt, …)</p></div></div>
+          <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("settings.language.title")}</h3><p class="card__sub">${t("settings.language.subtitle")}</p></div></div>
+          <div class="segmented">
+            ${(["auto", "it", "en", "fr", "de"] as const).map((v) => html`
+              <button data-active="${(s.language || "auto") === v}" @click=${() => this._updateSetting("language", v)}>
+                ${v === "auto" ? t("settings.language.auto") : v.toUpperCase()}
+              </button>
+            `)}
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("settings.weather.title")}</h3><p class="card__sub">${t("settings.weather.subtitle")}</p></div></div>
           <div class="col" style="gap:14px">
             <div class="field">
-              <label class="field__label">Entità meteo principale</label>
+              <label class="field__label">${t("settings.weather.entity")}</label>
               <select class="select mono"
                 @change=${(e: Event) => this._updateSetting("weather_entity", (e.target as HTMLSelectElement).value)}>
-                <option value="" ?selected=${!s.weather_entity}>Nessuna</option>
+                <option value="" ?selected=${!s.weather_entity}>${t("common.none")}</option>
                 ${this.card._weatherEntities.map((w) => html`
                   <option value="${w.entity_id}" ?selected=${s.weather_entity === w.entity_id}>${w.entity_id} — ${w.friendly_name}</option>
                 `)}
               </select>
-              <span class="field__hint">Usata per le forecast.* e come fallback se nessun override è impostato qui sotto</span>
+              <span class="field__hint">${t("settings.weather.entity.hint")}</span>
             </div>
 
             ${this._renderSensorOverrides()}
@@ -51,36 +63,36 @@ export class ChronosSettingsScreen extends LitElement {
         </div>
 
         <div class="card">
-          <div class="card__header"><div style="flex:1"><h3 class="card__title">Comportamento esecuzione</h3><p class="card__sub">Frequenza di aggiornamento e granularità</p></div></div>
+          <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("settings.behavior.title")}</h3><p class="card__sub">${t("settings.behavior.subtitle")}</p></div></div>
           <div class="grid-2">
             <div class="field">
-              <label class="field__label">Polling meteo</label>
+              <label class="field__label">${t("settings.polling")}</label>
               <div class="segmented">
                 ${[1, 5, 15].map((v) => html`
-                  <button data-active="${s.polling_minutes === v}" @click=${() => this._updateSetting("polling_minutes", v)}>${v} min</button>
+                  <button data-active="${s.polling_minutes === v}" @click=${() => this._updateSetting("polling_minutes", v)}>${v} ${t("common.min")}</button>
                 `)}
               </div>
-              <span class="field__hint">Ogni quanto rivalutare le regole</span>
+              <span class="field__hint">${t("settings.polling.hint")}</span>
             </div>
             <div class="field">
-              <label class="field__label">Snap timeline</label>
+              <label class="field__label">${t("settings.snap")}</label>
               <div class="segmented">
                 ${[15, 30, 60].map((v) => html`
-                  <button data-active="${s.snap_minutes === v}" @click=${() => this._updateSetting("snap_minutes", v)}>${v === 60 ? "1 h" : `${v} min`}</button>
+                  <button data-active="${s.snap_minutes === v}" @click=${() => this._updateSetting("snap_minutes", v)}>${v === 60 ? `1 ${t("common.hour_short")}` : `${v} ${t("common.min")}`}</button>
                 `)}
               </div>
-              <span class="field__hint">Granularità nel disegnare le fasce</span>
+              <span class="field__hint">${t("settings.snap.hint")}</span>
             </div>
           </div>
         </div>
 
         <div class="card">
-          <div class="card__header"><div style="flex:1"><h3 class="card__title">Notifiche</h3><p class="card__sub">Eventi che vogliono una notifica HA</p></div></div>
+          <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("settings.notify.title")}</h3><p class="card__sub">${t("settings.notify.subtitle")}</p></div></div>
           <div class="col" style="gap:0">
             ${([
-              ["notify_rule_triggered", "Regola meteo attivata", "Quando una regola override entra in azione"],
-              ["notify_sched_skipped", "Schedulazione saltata", "Quando una fascia viene skippata per condizioni meteo"],
-              ["notify_command_error", "Errore comando", "Se un dispositivo non risponde"],
+              ["notify_rule_triggered", t("settings.notify.rule_triggered"), t("settings.notify.rule_triggered.desc")],
+              ["notify_sched_skipped", t("settings.notify.sched_skipped"), t("settings.notify.sched_skipped.desc")],
+              ["notify_command_error", t("settings.notify.command_error"), t("settings.notify.command_error.desc")],
             ] as const).map(([key, label, desc]) => html`
               <div class="device-row" style="border-bottom:1px solid var(--border-soft);border-radius:0">
                 <div class="device-row__main">
@@ -99,24 +111,24 @@ export class ChronosSettingsScreen extends LitElement {
         </div>
 
         <div class="card">
-          <div class="card__header"><div style="flex:1"><h3 class="card__title">Aspetto</h3><p class="card__sub">Tema e densità predefinita</p></div></div>
+          <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("settings.appearance.title")}</h3><p class="card__sub">${t("settings.appearance.subtitle")}</p></div></div>
           <div class="grid-2">
             <div class="field">
-              <label class="field__label">Tema</label>
+              <label class="field__label">${t("settings.theme")}</label>
               <div class="segmented">
                 ${(["light", "dark", "auto"] as const).map((v) => html`
                   <button data-active="${s.theme === v}" @click=${() => this._updateSetting("theme", v)}>
-                    ${{ light: "Chiaro", dark: "Scuro", auto: "Auto" }[v]}
+                    ${t("settings.theme." + v)}
                   </button>
                 `)}
               </div>
             </div>
             <div class="field">
-              <label class="field__label">Densità</label>
+              <label class="field__label">${t("settings.density")}</label>
               <div class="segmented">
                 ${(["comfortable", "compact"] as const).map((v) => html`
                   <button data-active="${s.density === v}" @click=${() => this._updateSetting("density", v)}>
-                    ${{ comfortable: "Comoda", compact: "Compatta" }[v]}
+                    ${t("settings.density." + v)}
                   </button>
                 `)}
               </div>
@@ -125,11 +137,11 @@ export class ChronosSettingsScreen extends LitElement {
         </div>
 
         <div class="card">
-          <div class="card__header"><div style="flex:1"><h3 class="card__title">Timeline predefinita</h3><p class="card__sub">Quale variante mostrare di default nell'editor</p></div></div>
+          <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("settings.timeline_default.title")}</h3><p class="card__sub">${t("settings.timeline_default.subtitle")}</p></div></div>
           <div class="segmented">
             ${(["linear", "radial", "list"] as const).map((v) => html`
               <button data-active="${s.default_timeline_variant === v}" @click=${() => this._updateSetting("default_timeline_variant", v)}>
-                ${{ linear: "Lineare", radial: "Radiale", list: "Lista" }[v]}
+                ${t("timeline." + v)}
               </button>
             `)}
           </div>
@@ -149,13 +161,13 @@ export class ChronosSettingsScreen extends LitElement {
 
     return html`
       <div class="card">
-        <div class="card__header"><div style="flex:1"><h3 class="card__title">Colori dispositivi</h3><p class="card__sub">L'accent del dispositivo riflette il suo stato corrente</p></div></div>
+        <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("settings.colors.title")}</h3><p class="card__sub">${t("settings.colors.subtitle")}</p></div></div>
 
         <div class="col" style="gap:18px">
           <div class="device-row" style="border-bottom:1px solid var(--border-soft);border-radius:0;padding:8px 0">
             <div class="device-row__main">
-              <div class="device-row__name">Luci · usa colore reale da Home Assistant</div>
-              <div class="device-row__meta" style="font-family:var(--font-sans)">Se attivo, l'icona della luce riflette il colore RGB corrente. Altrimenti usa giallo soft.</div>
+              <div class="device-row__name">${t("settings.colors.lights.title")}</div>
+              <div class="device-row__meta" style="font-family:var(--font-sans)">${t("settings.colors.lights.desc")}</div>
             </div>
             <label class="switch">
               <input type="checkbox" .checked=${useState}
@@ -166,16 +178,16 @@ export class ChronosSettingsScreen extends LitElement {
           </div>
 
           ${this._renderTempStops(
-            "Termostati · gradiente temperatura",
-            "Soglia ≤ → colore. La fascia oltre l'ultima soglia usa l'ultimo colore.",
+            t("settings.colors.thermostat.title"),
+            t("settings.colors.thermostat.desc"),
             climateStops,
             "color_stops_climate",
             DEFAULT_TEMP_STOPS_CLIMATE,
           )}
 
           ${this._renderTempStops(
-            "Boiler · gradiente temperatura",
-            "Stessa logica del termostato, range tipico 30-75°C.",
+            t("settings.colors.boiler.title"),
+            t("settings.colors.boiler.desc"),
             boilerStops,
             "color_stops_boiler",
             DEFAULT_TEMP_STOPS_BOILER,
@@ -184,11 +196,11 @@ export class ChronosSettingsScreen extends LitElement {
           <div>
             <div class="row" style="justify-content:space-between;align-items:flex-end;margin-bottom:8px">
               <div>
-                <div class="fw-600" style="font-size:13.5px">Preset modalità (climate)</div>
-                <div class="text-xs text-mute">Override del colore quando il termostato è in un preset specifico</div>
+                <div class="fw-600" style="font-size:13.5px">${t("settings.colors.preset.title")}</div>
+                <div class="text-xs text-mute">${t("settings.colors.preset.desc")}</div>
               </div>
               <button class="btn btn--sm" @click=${() => this._updateSetting("color_presets", { ...DEFAULT_PRESET_COLORS })}>
-                ${icon("repeat", 12)} Reset default
+                ${icon("repeat", 12)} ${t("common.default")}
               </button>
             </div>
             <div class="grid-2" style="gap:8px">
@@ -224,10 +236,10 @@ export class ChronosSettingsScreen extends LitElement {
           </div>
           <div class="row" style="gap:6px">
             <button class="btn btn--sm" @click=${() => this._addStop(stops, settingsKey)}>
-              ${icon("plus", 12)} Stop
+              ${icon("plus", 12)} ${t("settings.colors.add_stop")}
             </button>
             <button class="btn btn--sm" @click=${() => this._updateSetting(settingsKey, defaults.map((s) => ({ ...s })))}>
-              ${icon("repeat", 12)} Default
+              ${icon("repeat", 12)} ${t("common.default")}
             </button>
           </div>
         </div>
@@ -249,7 +261,7 @@ export class ChronosSettingsScreen extends LitElement {
                   @change=${(e: Event) => this._updateStopColor(stops, settingsKey, idx, (e.target as HTMLInputElement).value)}
                   style="width:36px;height:28px;padding:0;border:1px solid var(--border-soft);border-radius:6px;background:transparent;cursor:pointer"/>
                 ${stops.length > 1 ? html`
-                  <button class="btn btn--icon btn--ghost btn--sm" @click=${() => this._removeStop(stops, settingsKey, idx)} title="Rimuovi">
+                  <button class="btn btn--icon btn--ghost btn--sm" @click=${() => this._removeStop(stops, settingsKey, idx)} title="${t("common.remove")}">
                     ${icon("trash", 12)}
                   </button>
                 ` : nothing}
@@ -297,7 +309,6 @@ export class ChronosSettingsScreen extends LitElement {
     const map: Record<string, string> = (s as any).weather_sensor_map || {};
     const sensors = this.card._sensorEntities || [];
 
-    // Solo gli attributi numerici/condition (le forecast.* richiedono il provider weather)
     const overrideable = (this.card._weatherAttributes || []).filter(
       (a) => !a.key.startsWith("forecast.")
     );
@@ -308,10 +319,9 @@ export class ChronosSettingsScreen extends LitElement {
 
     return html`
       <div class="field" style="margin-top:8px">
-        <label class="field__label">Override su sensori puntuali</label>
+        <label class="field__label">${t("settings.weather.overrides.title")}</label>
         <span class="field__hint" style="margin-bottom:10px;display:block">
-          Per ogni attributo puoi specificare un'entità <span class="mono">sensor.*</span> da cui leggere il valore.
-          Se vuoto, viene letto dall'entità weather principale.
+          ${t("settings.weather.overrides.hint")}
         </span>
         <div class="col" style="gap:6px">
           ${overrideable.map((attr) => {
@@ -326,12 +336,12 @@ export class ChronosSettingsScreen extends LitElement {
                 </div>
                 <select class="select mono" style="flex:1;min-width:240px"
                   @change=${(e: Event) => this._updateSensorOverride(attr.key, (e.target as HTMLSelectElement).value)}>
-                  <option value="" ?selected=${!current}>— usa entità weather —</option>
+                  <option value="" ?selected=${!current}>${t("settings.weather.overrides.use_main")}</option>
                   ${this._renderSensorOptions(groupedSensors, attr, current)}
                 </select>
                 ${current ? html`
                   <span class="mono text-xs" style="color:var(--text-muted);min-width:90px;text-align:right">${stateStr}</span>
-                  <button class="btn btn--icon btn--ghost btn--sm" @click=${() => this._updateSensorOverride(attr.key, "")} title="Rimuovi override">
+                  <button class="btn btn--icon btn--ghost btn--sm" @click=${() => this._updateSensorOverride(attr.key, "")} title="${t("common.remove")}">
                     ${icon("close", 12)}
                   </button>
                 ` : nothing}
@@ -353,12 +363,11 @@ export class ChronosSettingsScreen extends LitElement {
   }
 
   private _renderSensorOptions(groups: Record<string, any[]>, attr: any, current: string) {
-    // Prima i sensori con device_class affine all'attributo (hint), poi tutti
     const hint = this._matchingDeviceClass(attr.key);
     const order = hint && groups[hint] ? [hint, ...Object.keys(groups).filter((k) => k !== hint).sort()] : Object.keys(groups).sort();
 
     return order.map((dc) => html`
-      <optgroup label="${dc === "other" ? "Altri sensori" : dc}${dc === hint ? " · suggeriti" : ""}">
+      <optgroup label="${dc === "other" ? t("settings.weather.overrides.others") : dc}${dc === hint ? " · " + t("settings.weather.overrides.suggested") : ""}">
         ${groups[dc].map((sen: any) => html`
           <option value="${sen.entity_id}" ?selected=${current === sen.entity_id}>
             ${sen.entity_id}${sen.unit_of_measurement ? ` (${sen.unit_of_measurement})` : ""} — ${sen.friendly_name}

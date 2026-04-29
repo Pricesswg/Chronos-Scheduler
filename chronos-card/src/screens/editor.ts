@@ -3,7 +3,8 @@ import { customElement, property, state } from "lit/decorators.js";
 import { chronosStyles } from "../styles";
 import { icon, deviceIcon } from "../icons";
 import { getActionsForType, getActionDef, actionLabel, actionColor, KIND_COLORS, defaultAction } from "../actions";
-import { fmtHour, DAYS, DEVICE_TYPES, computeRepeat } from "../utils";
+import { fmtHour, getDays, DEVICE_TYPES, computeRepeat } from "../utils";
+import { t } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
 import type { Block, Schedule } from "../types";
 import "../timeline";
@@ -19,7 +20,7 @@ export class ChronosEditor extends LitElement {
 
   render() {
     const schedule = this.card._schedules.find((s) => s.id === this.card._selectedId) || this.card._schedules[0];
-    if (!schedule) return html`<div class="text-mute" style="padding:40px;text-align:center">Nessuna schedulazione selezionata</div>`;
+    if (!schedule) return html`<div class="text-mute" style="padding:40px;text-align:center">${t("overview.no_schedules")}</div>`;
 
     const block = schedule.blocks[this._selectedBlockIdx];
     const devices = (schedule.device_ids || []).map((id) => this.card._devices.find((d) => d.id === id)).filter(Boolean);
@@ -34,18 +35,18 @@ export class ChronosEditor extends LitElement {
         <div class="sp-between">
           <div>
             <button class="btn btn--ghost btn--sm" @click=${() => this.card.navigate("overview")} style="margin-bottom:6px">
-              ${icon("chevron-left", 14)} Torna alla panoramica
+              ${icon("chevron-left", 14)} ${t("nav.overview")}
             </button>
             <input class="input" .value=${schedule.name}
               @input=${(e: InputEvent) => this.card.updateScheduleLocal(schedule.id, { name: (e.target as HTMLInputElement).value })}
               style="font-size:22px;font-weight:700;letter-spacing:-0.02em;border:1px solid transparent;background:transparent;padding:4px 8px;margin-left:-8px;width:460px"/>
             <div class="row" style="margin-top:6px;gap:10px;flex-wrap:wrap">
-              <span class="chip ${schedule.enabled ? "chip--on" : ""}"><span class="chip__dot"></span>${schedule.enabled ? "In esecuzione" : "Disattivata"}</span>
+              <span class="chip ${schedule.enabled ? "chip--on" : ""}"><span class="chip__dot"></span>${schedule.enabled ? t("schedule.active") : t("schedule.disabled")}</span>
               <span class="chip">${icon("repeat", 11)} ${computeRepeat(schedule.days)}</span>
               <span class="chip chip--accent">${deviceIcon(deviceType, 11)} ${typeDef.label}</span>
-              <span class="chip">${icon("device", 11)} ${devices.length} dispositivi</span>
+              <span class="chip">${icon("device", 11)} ${devices.length}</span>
               ${(schedule.weather_rules || []).filter((r) => r.active).length > 0
-                ? html`<span class="chip chip--weather">${icon("cloud", 11)} ${(schedule.weather_rules || []).filter((r) => r.active).length} regole meteo</span>`
+                ? html`<span class="chip chip--weather">${icon("cloud", 11)} ${t("overview.rules_count", { n: (schedule.weather_rules || []).filter((r) => r.active).length })}</span>`
                 : nothing}
             </div>
           </div>
@@ -59,7 +60,7 @@ export class ChronosEditor extends LitElement {
             <button class="btn btn--primary" ?disabled=${!isDirty}
               style="opacity:${isDirty ? 1 : 0.5};cursor:${isDirty ? "pointer" : "not-allowed"}"
               @click=${() => this.card.saveCurrentSchedule()}>
-              ${icon("check", 14)} ${isDirty ? "Salva modifiche" : "Salvato"}
+              ${icon("check", 14)} ${isDirty ? t("editor.dirty.unsaved") : t("editor.dirty.saved")}
             </button>
           </div>
         </div>
@@ -70,13 +71,13 @@ export class ChronosEditor extends LitElement {
             <div class="card">
               <div class="card__header">
                 <div style="flex:1;min-width:0">
-                  <h3 class="card__title">Programmazione 24h</h3>
-                  <p class="card__sub">Trascina i bordi per ridimensionare · click sulla traccia vuota per aggiungere</p>
+                  <h3 class="card__title">${t("wizard.step.time")}</h3>
+                  <p class="card__sub">${t("editor.add_block_hint")}</p>
                 </div>
                 <div class="segmented">
                   ${(["linear", "radial", "list"] as const).map((v) => html`
                     <button data-active="${this.card._timelineVariant === v}" @click=${() => this.card.setTimelineVariant(v)}>
-                      ${{ linear: "Lineare", radial: "Radiale", list: "Lista" }[v]}
+                      ${t("timeline." + v)}
                     </button>
                   `)}
                 </div>
@@ -105,7 +106,7 @@ export class ChronosEditor extends LitElement {
                   const newBlocks = [...schedule.blocks, { start: 12, end: 13, action: defaultAction(deviceType) }];
                   this.card.updateBlocksLocal(schedule.id, newBlocks);
                 }}>
-                  ${icon("plus", 12)} Aggiungi fascia
+                  ${icon("plus", 12)} ${t("common.add")}
                 </button>
               </div>
             </div>
@@ -113,11 +114,11 @@ export class ChronosEditor extends LitElement {
             <!-- Days -->
             <div class="card">
               <div class="card__header">
-                <div style="flex:1"><h3 class="card__title">Ripetizione settimanale</h3><p class="card__sub">Quali giorni applicare questa programmazione</p></div>
+                <div style="flex:1"><h3 class="card__title">${t("editor.days.repeat")}</h3><p class="card__sub">${t("wizard.days.hint")}</p></div>
               </div>
               <div class="row" style="gap:16px;flex-wrap:wrap">
                 <div class="row" style="gap:4px">
-                  ${DAYS.map((d, i) => {
+                  ${getDays().map((d: string, i: number) => {
                     const on = schedule.days[i];
                     return html`
                       <button class="mono" @click=${() => {
@@ -131,9 +132,9 @@ export class ChronosEditor extends LitElement {
                   })}
                 </div>
                 <div class="row" style="gap:6px">
-                  <button class="btn btn--sm btn--ghost" @click=${() => this.card.updateScheduleLocal(schedule.id, { days: [1,1,1,1,1,1,1] })}>Tutti</button>
-                  <button class="btn btn--sm btn--ghost" @click=${() => this.card.updateScheduleLocal(schedule.id, { days: [1,1,1,1,1,0,0] })}>Lavorativi</button>
-                  <button class="btn btn--sm btn--ghost" @click=${() => this.card.updateScheduleLocal(schedule.id, { days: [0,0,0,0,0,1,1] })}>Weekend</button>
+                  <button class="btn btn--sm btn--ghost" @click=${() => this.card.updateScheduleLocal(schedule.id, { days: [1,1,1,1,1,1,1] })}>${t("editor.days.all")}</button>
+                  <button class="btn btn--sm btn--ghost" @click=${() => this.card.updateScheduleLocal(schedule.id, { days: [1,1,1,1,1,0,0] })}>${t("editor.days.weekdays")}</button>
+                  <button class="btn btn--sm btn--ghost" @click=${() => this.card.updateScheduleLocal(schedule.id, { days: [0,0,0,0,0,1,1] })}>${t("editor.days.weekend")}</button>
                 </div>
               </div>
             </div>
@@ -141,21 +142,20 @@ export class ChronosEditor extends LitElement {
             <!-- Weather rules -->
             <div class="card">
               <div class="card__header">
-                <div style="flex:1"><h3 class="card__title">Regole meteo</h3><p class="card__sub">Override condizionali che modificano l'esecuzione</p></div>
-                <button class="btn btn--sm" @click=${() => this.card.navigate("weatherRule")}>${icon("plus", 12)} Nuova regola</button>
+                <div style="flex:1"><h3 class="card__title">${t("editor.weather_rules.title")}</h3><p class="card__sub">${t("nav.weather_rules")}</p></div>
+                <button class="btn btn--sm" @click=${() => this.card.navigate("weatherRule")}>${icon("plus", 12)} ${t("editor.weather_rules.add")}</button>
               </div>
               ${!(schedule.weather_rules || []).length
                 ? html`<div style="text-align:center;padding:40px 20px;color:var(--text-muted)">
                     <div style="width:52px;height:52px;margin:0 auto 12px;border-radius:14px;background:var(--bg-sunken);display:grid;place-items:center;color:var(--text-soft)">${icon("cloud", 22)}</div>
-                    <div style="font-weight:600;color:var(--text);font-size:14px">Nessuna regola meteo</div>
-                    <div style="font-size:12.5px;margin-top:4px">Aggiungine una per modulare il comportamento in base alle condizioni esterne.</div>
+                    <div style="font-weight:600;color:var(--text);font-size:14px">${t("editor.weather_rules.empty")}</div>
                   </div>`
                 : html`<div class="col" style="gap:8px">
                     ${(schedule.weather_rules || []).map((r, i) => html`
                       <div class="rule-block">
-                        <span class="rule-block__label rule-block__label--if">SE</span>
+                        <span class="rule-block__label rule-block__label--if">IF</span>
                         <span class="rule-token rule-token--weather">${r.if}</span>
-                        <span class="rule-block__label rule-block__label--then">ALLORA</span>
+                        <span class="rule-block__label rule-block__label--then">THEN</span>
                         <span class="rule-token rule-token--accent">${r.then}</span>
                         <div style="flex:1"></div>
                         <label class="switch">
@@ -177,16 +177,16 @@ export class ChronosEditor extends LitElement {
           <div class="col" style="gap:16px">
             <div class="card">
               <div class="card__header">
-                <div style="flex:1"><h3 class="card__title">Fascia selezionata</h3><p class="card__sub">${block ? `${fmtHour(block.start)} → ${fmtHour(block.end)}` : ""}</p></div>
+                <div style="flex:1"><h3 class="card__title">${t("wizard.time.selected")}</h3><p class="card__sub">${block ? `${fmtHour(block.start)} → ${fmtHour(block.end)}` : ""}</p></div>
               </div>
               ${block ? html`
                 <div class="col" style="gap:12px">
                   <div class="grid-2">
-                    <div class="field"><label class="field__label">Da</label><input class="input mono" .value=${fmtHour(block.start)} readonly/></div>
-                    <div class="field"><label class="field__label">A</label><input class="input mono" .value=${fmtHour(block.end)} readonly/></div>
+                    <div class="field"><label class="field__label">${t("editor.block.from")}</label><input class="input mono" .value=${fmtHour(block.start)} readonly/></div>
+                    <div class="field"><label class="field__label">${t("editor.block.to")}</label><input class="input mono" .value=${fmtHour(block.end)} readonly/></div>
                   </div>
                   <div class="field">
-                    <label class="field__label">Azione su ${typeDef.label?.toLowerCase()}</label>
+                    <label class="field__label">${t("editor.block.action")}</label>
                     <div class="row" style="gap:6px;flex-wrap:wrap">
                       ${availableActions.map((a) => {
                         const active = block.action?.id === a.id;
@@ -199,7 +199,7 @@ export class ChronosEditor extends LitElement {
                   </div>
                   ${currentActionDef?.value ? html`
                     <div class="field">
-                      <label class="field__label">${currentActionDef.value.label || "Valore"} ${currentActionDef.value.unit ? html`<span class="text-mute">(${currentActionDef.value.unit})</span>` : nothing}</label>
+                      <label class="field__label">${currentActionDef.value.label || t("common.value")} ${currentActionDef.value.unit ? html`<span class="text-mute">(${currentActionDef.value.unit})</span>` : nothing}</label>
                       ${currentActionDef.value.type === "number" ? html`
                         <div class="row" style="gap:10px;align-items:center">
                           <input type="range" min="${currentActionDef.value.min}" max="${currentActionDef.value.max}" step="${currentActionDef.value.step}"
@@ -220,7 +220,7 @@ export class ChronosEditor extends LitElement {
                     </div>
                   ` : nothing}
                   <button class="btn btn--ghost" style="color:var(--danger)" @click=${() => this._removeBlock(schedule.id)}>
-                    ${icon("trash", 14)} Elimina fascia
+                    ${icon("trash", 14)} ${t("editor.block.delete")}
                   </button>
                 </div>
               ` : nothing}
@@ -228,7 +228,7 @@ export class ChronosEditor extends LitElement {
 
             <div class="card">
               <div class="card__header">
-                <div style="flex:1"><h3 class="card__title">Dispositivi influenzati</h3><p class="card__sub">${devices.length} selezionati</p></div>
+                <div style="flex:1"><h3 class="card__title">${t("editor.devices_section")}</h3><p class="card__sub">${t("editor.devices_count", { n: devices.length })}</p></div>
               </div>
               <div class="col" style="gap:2px">
                 ${devices.map((d: any) => html`

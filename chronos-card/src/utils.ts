@@ -13,7 +13,33 @@ export function snapToGrid(h: number, snapMinutes = 15): number {
   return Math.round(h * factor) / factor;
 }
 
-export const DAYS = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
+import { t } from "./i18n";
+
+export function getDays(): string[] {
+  return [
+    t("days.short.0"),
+    t("days.short.1"),
+    t("days.short.2"),
+    t("days.short.3"),
+    t("days.short.4"),
+    t("days.short.5"),
+    t("days.short.6"),
+  ];
+}
+
+// Mantiene compatibilità per i vecchi import; ora ritorna le label tradotte.
+export const DAYS = new Proxy([] as string[], {
+  get(_t, key) {
+    if (key === "length") return 7;
+    if (key === Symbol.iterator) return getDays()[Symbol.iterator].bind(getDays());
+    if (key === "map" || key === "forEach" || key === "filter" || key === "every" || key === "some") {
+      return (...args: any[]) => (getDays() as any)[key](...args);
+    }
+    const idx = typeof key === "string" ? parseInt(key, 10) : NaN;
+    if (!isNaN(idx)) return getDays()[idx];
+    return undefined;
+  },
+});
 
 export const DEVICE_TYPES: Record<string, { label: string; domain: string; capabilities: string[] }> = {
   thermostat: { label: "Termostato", domain: "climate", capabilities: ["set_temperature", "hvac_mode", "preset_mode"] },
@@ -28,6 +54,8 @@ export const DEVICE_TYPES: Record<string, { label: string; domain: string; capab
 };
 
 export function computeRepeat(days: number[]): string {
-  if (days.every(Boolean)) return "Ogni giorno";
-  return days.map((d, i) => (d ? DAYS[i] : null)).filter(Boolean).join(" · ");
+  if (!days || !days.length) return "";
+  if (days.every(Boolean)) return t("schedule.every_day");
+  const D = getDays();
+  return days.map((d, i) => (d ? D[i] : null)).filter(Boolean).join(" · ");
 }

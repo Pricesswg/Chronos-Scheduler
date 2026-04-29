@@ -1,5 +1,5 @@
 DOMAIN = "chronos"
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 STORAGE_VERSION = 1
 STORAGE_KEY_DEVICES = f"{DOMAIN}.devices"
 STORAGE_KEY_SCHEDULES = f"{DOMAIN}.schedules"
@@ -158,6 +158,7 @@ DEFAULT_SETTINGS = {
     "theme": "auto",
     "density": "comfortable",
     "default_timeline_variant": "linear",
+    "language": "auto",
 }
 
 EVENT_BLOCK_EXECUTED = f"{DOMAIN}_block_executed"

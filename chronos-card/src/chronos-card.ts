@@ -13,6 +13,7 @@ import type {
   WeatherAttribute,
 } from "./types";
 import { setActionsMap } from "./actions";
+import { setLang, t } from "./i18n";
 import {
   fetchDevices,
   fetchSchedules,
@@ -43,16 +44,16 @@ import "./screens/wizard";
 import "./screens/devices";
 import "./screens/settings";
 
-const TITLES: Record<Screen, [string, string]> = {
-  overview: ["Panoramica", "chronos / overview"],
-  editor: ["Editor schedulazione", "chronos / schedule / edit"],
-  weatherRule: ["Regola meteo", "chronos / schedule / weather"],
-  device: ["Dispositivo", "chronos / device"],
-  week: ["Vista settimanale", "chronos / week"],
-  live: ["Stato live", "chronos / live"],
-  wizard: ["Wizard", "chronos / wizard"],
-  devices: ["Gestisci dispositivi", "chronos / devices"],
-  settings: ["Impostazioni", "chronos / settings"],
+const TITLE_KEYS: Record<Screen, [string, string]> = {
+  overview: ["screen.overview.title", "chronos / overview"],
+  editor: ["screen.editor.title", "chronos / schedule / edit"],
+  weatherRule: ["screen.weather_rule.title", "chronos / schedule / weather"],
+  device: ["screen.device.title", "chronos / device"],
+  week: ["screen.week.title", "chronos / week"],
+  live: ["screen.live.title", "chronos / live"],
+  wizard: ["screen.wizard.title", "chronos / wizard"],
+  devices: ["screen.devices.title", "chronos / devices"],
+  settings: ["screen.settings.title", "chronos / settings"],
 };
 
 @customElement("chronos-card")
@@ -122,9 +123,17 @@ export class ChronosCard extends LitElement {
       if (this._dark) this.setAttribute("dark", "");
       else this.removeAttribute("dark");
     }
-    if (changed.has("_settings") && this._settings?.density) {
-      this.setAttribute("density", this._settings.density);
+    if (changed.has("_settings") && this._settings) {
+      if (this._settings.density) this.setAttribute("density", this._settings.density);
+      this._applyLanguage();
     }
+  }
+
+  private _applyLanguage() {
+    const lang = (this._settings as any)?.language;
+    const target = !lang || lang === "auto" ? this.hass?.language : lang;
+    setLang(target);
+    this.requestUpdate();
   }
 
   private async _loadAll() {
@@ -311,10 +320,11 @@ export class ChronosCard extends LitElement {
 
   render() {
     if (this._loading) {
-      return html`<div style="padding:40px;text-align:center;color:var(--text-muted)">Caricamento Chronos…</div>`;
+      return html`<div style="padding:40px;text-align:center;color:var(--text-muted)">${t("common.loading")}</div>`;
     }
 
-    const [title, crumbs] = TITLES[this._screen] || TITLES.overview;
+    const [titleKey, crumbs] = TITLE_KEYS[this._screen] || TITLE_KEYS.overview;
+    const title = t(titleKey);
     const now = new Date();
     const nowHour = now.getHours() + now.getMinutes() / 60;
 
@@ -340,16 +350,16 @@ export class ChronosCard extends LitElement {
 
   private _renderSidebar(mode: "full" | "mini" | "drawer") {
     const nav = [
-      { key: "overview" as Screen, label: "Panoramica", iconName: "dashboard" },
-      { key: "editor" as Screen, label: "Editor", iconName: "clock" },
-      { key: "week" as Screen, label: "Settimana", iconName: "calendar" },
-      { key: "weatherRule" as Screen, label: "Regole meteo", iconName: "cloud" },
-      { key: "device" as Screen, label: "Dispositivi", iconName: "device" },
-      { key: "live" as Screen, label: "Stato live", iconName: "live" },
+      { key: "overview" as Screen, label: t("nav.overview"), iconName: "dashboard" },
+      { key: "editor" as Screen, label: t("nav.editor"), iconName: "clock" },
+      { key: "week" as Screen, label: t("nav.week"), iconName: "calendar" },
+      { key: "weatherRule" as Screen, label: t("nav.weather_rules"), iconName: "cloud" },
+      { key: "device" as Screen, label: t("nav.devices"), iconName: "device" },
+      { key: "live" as Screen, label: t("nav.live"), iconName: "live" },
     ];
     const actions = [
-      { key: "wizard" as Screen, label: "Nuova schedulazione", iconName: "wand" },
-      { key: "devices" as Screen, label: "Gestisci dispositivi", iconName: "device" },
+      { key: "wizard" as Screen, label: t("nav.new_schedule"), iconName: "wand" },
+      { key: "devices" as Screen, label: t("nav.manage_devices"), iconName: "device" },
     ];
 
     const isMini = mode === "mini";
@@ -359,7 +369,7 @@ export class ChronosCard extends LitElement {
       <aside class="sidebar" data-mode="${mode}">
         ${showHamburger
           ? html`
-              <button class="sidebar__hamburger" title="${isMini ? "Apri menu" : "Chiudi menu"}"
+              <button class="sidebar__hamburger" title="${isMini ? t("nav.menu_open") : t("nav.menu_close")}"
                 @click=${() => { this._drawerOpen = !this._drawerOpen; }}>
                 ${icon(isMini ? "menu" : "close", 18)}
               </button>
@@ -370,11 +380,11 @@ export class ChronosCard extends LitElement {
           ${!isMini
             ? html`<div>
                 <div class="sidebar__brand-name">Chronos</div>
-                <div class="sidebar__brand-sub">v1.0 · HACS</div>
+                <div class="sidebar__brand-sub">v1.2 · HACS</div>
               </div>`
             : nothing}
         </div>
-        ${!isMini ? html`<div class="nav-section">Principale</div>` : nothing}
+        ${!isMini ? html`<div class="nav-section">${t("nav.section.main")}</div>` : nothing}
         ${nav.map(
           (n) => html`
             <button class="nav-item" data-active="${this._screen === n.key}"
@@ -383,7 +393,7 @@ export class ChronosCard extends LitElement {
             </button>
           `
         )}
-        ${!isMini ? html`<div class="nav-section">Azioni</div>` : nothing}
+        ${!isMini ? html`<div class="nav-section">${t("nav.section.actions")}</div>` : nothing}
         ${actions.map(
           (n) => html`
             <button class="nav-item" data-active="${this._screen === n.key}"
@@ -394,8 +404,8 @@ export class ChronosCard extends LitElement {
         )}
         <div class="sidebar__footer">
           <button class="nav-item" data-active="${this._screen === "settings"}"
-            title="${isMini ? "Impostazioni" : ""}" @click=${() => this.navigate("settings")}>
-            ${icon("settings", 16)} ${isMini ? nothing : html`<span>Impostazioni</span>`}
+            title="${isMini ? t("nav.settings") : ""}" @click=${() => this.navigate("settings")}>
+            ${icon("settings", 16)} ${isMini ? nothing : html`<span>${t("nav.settings")}</span>`}
           </button>
         </div>
       </aside>
@@ -450,20 +460,20 @@ export class ChronosCard extends LitElement {
     return html`
       <div class="modal-overlay">
         <div class="card" style="width:min(440px,100%)">
-          <h3 style="margin:0 0 6px">Modifiche non salvate</h3>
-          <p class="text-mute text-sm" style="margin:0 0 16px">Hai modifiche in sospeso su questa schedulazione. Vuoi davvero uscire e perderle?</p>
+          <h3 style="margin:0 0 6px">${t("modal.unsaved.title")}</h3>
+          <p class="text-mute text-sm" style="margin:0 0 16px">${t("modal.unsaved.body")}</p>
           <div class="row" style="justify-content:flex-end;gap:8px">
-            <button class="btn btn--ghost" @click=${() => { this._pendingNav = null; }}>Resta qui</button>
+            <button class="btn btn--ghost" @click=${() => { this._pendingNav = null; }}>${t("modal.unsaved.stay")}</button>
             <button class="btn" @click=${() => {
               this._schedules = JSON.parse(JSON.stringify(this._savedSchedules));
               this._screen = this._pendingNav!;
               this._pendingNav = null;
-            }}>Scarta modifiche</button>
+            }}>${t("modal.unsaved.discard")}</button>
             <button class="btn btn--primary" @click=${async () => {
               await this.saveCurrentSchedule();
               this._screen = this._pendingNav!;
               this._pendingNav = null;
-            }}>${icon("check", 14)} Salva ed esci</button>
+            }}>${icon("check", 14)} ${t("modal.unsaved.save")}</button>
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPropertyDescriptor(t,i):s;if("object"==typeof Reflect&&"function"==typeof Reflect.decorate)r=Reflect.decorate(e,t,i,s);else for(var n=e.length-1;n>=0;n--)(a=e[n])&&(r=(o<3?a(r):o>3?a(t,i,r):a(t,i))||r);return o>3&&r&&Object.defineProperty(t,i,r),r}"function"==typeof SuppressedError&&SuppressedError;const t=globalThis,i=t.ShadowRoot&&(void 0===t.ShadyCSS||t.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,s=Symbol(),a=new WeakMap;let o=class{constructor(e,t,i){if(this._$cssResult$=!0,i!==s)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=e,this.t=t}get styleSheet(){let e=this.o;const t=this.t;if(i&&void 0===e){const i=void 0!==t&&1===t.length;i&&(e=a.get(t)),void 0===e&&((this.o=e=new CSSStyleSheet).replaceSync(this.cssText),i&&a.set(t,e))}return e}toString(){return this.cssText}};const r=(e,...t)=>{const i=1===e.length?e[0]:t.reduce((t,i,s)=>t+(e=>{if(!0===e._$cssResult$)return e.cssText;if("number"==typeof e)return e;throw Error("Value passed to 'css' function must be a 'css' function result: "+e+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(i)+e[s+1],e[0]);return new o(i,e,s)},n=i?e=>e:e=>e instanceof CSSStyleSheet?(e=>{let t="";for(const i of e.cssRules)t+=i.cssText;return(e=>new o("string"==typeof e?e:e+"",void 0,s))(t)})(e):e,{is:l,defineProperty:d,getOwnPropertyDescriptor:c,getOwnPropertyNames:p,getOwnPropertySymbols:h,getPrototypeOf:u}=Object,v=globalThis,g=v.trustedTypes,_=g?g.emptyScript:"",b=v.reactiveElementPolyfillSupport,m=(e,t)=>e,f={toAttribute(e,t){switch(t){case Boolean:e=e?_:null;break;case Object:case Array:e=null==e?e:JSON.stringify(e)}return e},fromAttribute(e,t){let i=e;switch(t){case Boolean:i=null!==e;break;case Number:i=null===e?null:Number(e);break;case Object:case Array:try{i=JSON.parse(e)}catch(e){i=null}}return i}},x=(e,t)=>!l(e,t),$={attribute:!0,type:String,converter:f,reflect:!1,useDefault:!1,hasChanged:x};Symbol.metadata??=Symbol("metadata"),v.litPropertyMetadata??=new WeakMap;let y=class extends HTMLElement{static addInitializer(e){this._$Ei(),(this.l??=[]).push(e)}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(e,t=$){if(t.state&&(t.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(e)&&((t=Object.create(t)).wrapped=!0),this.elementProperties.set(e,t),!t.noAccessor){const i=Symbol(),s=this.getPropertyDescriptor(e,i,t);void 0!==s&&d(this.prototype,e,s)}}static getPropertyDescriptor(e,t,i){const{get:s,set:a}=c(this.prototype,e)??{get(){return this[t]},set(e){this[t]=e}};return{get:s,set(t){const o=s?.call(this);a?.call(this,t),this.requestUpdate(e,o,i)},configurable:!0,enumerable:!0}}static getPropertyOptions(e){return this.elementProperties.get(e)??$}static _$Ei(){if(this.hasOwnProperty(m("elementProperties")))return;const e=u(this);e.finalize(),void 0!==e.l&&(this.l=[...e.l]),this.elementProperties=new Map(e.elementProperties)}static finalize(){if(this.hasOwnProperty(m("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(m("properties"))){const e=this.properties,t=[...p(e),...h(e)];for(const i of t)this.createProperty(i,e[i])}const e=this[Symbol.metadata];if(null!==e){const t=litPropertyMetadata.get(e);if(void 0!==t)for(const[e,i]of t)this.elementProperties.set(e,i)}this._$Eh=new Map;for(const[e,t]of this.elementProperties){const i=this._$Eu(e,t);void 0!==i&&this._$Eh.set(i,e)}this.elementStyles=this.finalizeStyles(this.styles)}static finalizeStyles(e){const t=[];if(Array.isArray(e)){const i=new Set(e.flat(1/0).reverse());for(const e of i)t.unshift(n(e))}else void 0!==e&&t.push(n(e));return t}static _$Eu(e,t){const i=t.attribute;return!1===i?void 0:"string"==typeof i?i:"string"==typeof e?e.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev()}_$Ev(){this._$ES=new Promise(e=>this.enableUpdating=e),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach(e=>e(this))}addController(e){(this._$EO??=new Set).add(e),void 0!==this.renderRoot&&this.isConnected&&e.hostConnected?.()}removeController(e){this._$EO?.delete(e)}_$E_(){const e=new Map,t=this.constructor.elementProperties;for(const i of t.keys())this.hasOwnProperty(i)&&(e.set(i,this[i]),delete this[i]);e.size>0&&(this._$Ep=e)}createRenderRoot(){const e=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return((e,s)=>{if(i)e.adoptedStyleSheets=s.map(e=>e instanceof CSSStyleSheet?e:e.styleSheet);else for(const i of s){const s=document.createElement("style"),a=t.litNonce;void 0!==a&&s.setAttribute("nonce",a),s.textContent=i.cssText,e.appendChild(s)}})(e,this.constructor.elementStyles),e}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach(e=>e.hostConnected?.())}enableUpdating(e){}disconnectedCallback(){this._$EO?.forEach(e=>e.hostDisconnected?.())}attributeChangedCallback(e,t,i){this._$AK(e,i)}_$ET(e,t){const i=this.constructor.elementProperties.get(e),s=this.constructor._$Eu(e,i);if(void 0!==s&&!0===i.reflect){const a=(void 0!==i.converter?.toAttribute?i.converter:f).toAttribute(t,i.type);this._$Em=e,null==a?this.removeAttribute(s):this.setAttribute(s,a),this._$Em=null}}_$AK(e,t){const i=this.constructor,s=i._$Eh.get(e);if(void 0!==s&&this._$Em!==s){const e=i.getPropertyOptions(s),a="function"==typeof e.converter?{fromAttribute:e.converter}:void 0!==e.converter?.fromAttribute?e.converter:f;this._$Em=s;const o=a.fromAttribute(t,e.type);this[s]=o??this._$Ej?.get(s)??o,this._$Em=null}}requestUpdate(e,t,i,s=!1,a){if(void 0!==e){const o=this.constructor;if(!1===s&&(a=this[e]),i??=o.getPropertyOptions(e),!((i.hasChanged??x)(a,t)||i.useDefault&&i.reflect&&a===this._$Ej?.get(e)&&!this.hasAttribute(o._$Eu(e,i))))return;this.C(e,t,i)}!1===this.isUpdatePending&&(this._$ES=this._$EP())}C(e,t,{useDefault:i,reflect:s,wrapped:a},o){i&&!(this._$Ej??=new Map).has(e)&&(this._$Ej.set(e,o??t??this[e]),!0!==a||void 0!==o)||(this._$AL.has(e)||(this.hasUpdated||i||(t=void 0),this._$AL.set(e,t)),!0===s&&this._$Em!==e&&(this._$Eq??=new Set).add(e))}async _$EP(){this.isUpdatePending=!0;try{await this._$ES}catch(e){Promise.reject(e)}const e=this.scheduleUpdate();return null!=e&&await e,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[e,t]of this._$Ep)this[e]=t;this._$Ep=void 0}const e=this.constructor.elementProperties;if(e.size>0)for(const[t,i]of e){const{wrapped:e}=i,s=this[t];!0!==e||this._$AL.has(t)||void 0===s||this.C(t,void 0,i,s)}}let e=!1;const t=this._$AL;try{e=this.shouldUpdate(t),e?(this.willUpdate(t),this._$EO?.forEach(e=>e.hostUpdate?.()),this.update(t)):this._$EM()}catch(t){throw e=!1,this._$EM(),t}e&&this._$AE(t)}willUpdate(e){}_$AE(e){this._$EO?.forEach(e=>e.hostUpdated?.()),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(e)),this.updated(e)}_$EM(){this._$AL=new Map,this.isUpdatePending=!1}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(e){return!0}update(e){this._$Eq&&=this._$Eq.forEach(e=>this._$ET(e,this[e])),this._$EM()}updated(e){}firstUpdated(e){}};y.elementStyles=[],y.shadowRootOptions={mode:"open"},y[m("elementProperties")]=new Map,y[m("finalized")]=new Map,b?.({ReactiveElement:y}),(v.reactiveElementVersions??=[]).push("2.1.2");const w=globalThis,k=e=>e,S=w.trustedTypes,A=S?S.createPolicy("lit-html",{createHTML:e=>e}):void 0,z="$lit$",M=`lit$${Math.random().toFixed(9).slice(2)}$`,C="?"+M,E=`<${C}>`,B=document,I=()=>B.createComment(""),P=e=>null===e||"object"!=typeof e&&"function"!=typeof e,N=Array.isArray,O="[ \t\n\f\r]",D=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,H=/-->/g,T=/>/g,R=RegExp(`>|${O}(?:([^\\s"'>=/]+)(${O}*=${O}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),j=/'/g,L=/"/g,U=/^(?:script|style|textarea|title)$/i,V=e=>(t,...i)=>({_$litType$:e,strings:t,values:i}),W=V(1),J=V(2),q=Symbol.for("lit-noChange"),F=Symbol.for("lit-nothing"),G=new WeakMap,X=B.createTreeWalker(B,129);function Q(e,t){if(!N(e)||!e.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==A?A.createHTML(t):t}const K=(e,t)=>{const i=e.length-1,s=[];let a,o=2===t?"<svg>":3===t?"<math>":"",r=D;for(let t=0;t<i;t++){const i=e[t];let n,l,d=-1,c=0;for(;c<i.length&&(r.lastIndex=c,l=r.exec(i),null!==l);)c=r.lastIndex,r===D?"!--"===l[1]?r=H:void 0!==l[1]?r=T:void 0!==l[2]?(U.test(l[2])&&(a=RegExp("</"+l[2],"g")),r=R):void 0!==l[3]&&(r=R):r===R?">"===l[0]?(r=a??D,d=-1):void 0===l[1]?d=-2:(d=r.lastIndex-l[2].length,n=l[1],r=void 0===l[3]?R:'"'===l[3]?L:j):r===L||r===j?r=R:r===H||r===T?r=D:(r=R,a=void 0);const p=r===R&&e[t+1].startsWith("/>")?" ":"";o+=r===D?i+E:d>=0?(s.push(n),i.slice(0,d)+z+i.slice(d)+M+p):i+M+(-2===d?t:p)}return[Q(e,o+(e[i]||"<?>")+(2===t?"</svg>":3===t?"</math>":"")),s]};class Z{constructor({strings:e,_$litType$:t},i){let s;this.parts=[];let a=0,o=0;const r=e.length-1,n=this.parts,[l,d]=K(e,t);if(this.el=Z.createElement(l,i),X.currentNode=this.el.content,2===t||3===t){const e=this.el.content.firstChild;e.replaceWith(...e.childNodes)}for(;null!==(s=X.nextNode())&&n.length<r;){if(1===s.nodeType){if(s.hasAttributes())for(const e of s.getAttributeNames())if(e.endsWith(z)){const t=d[o++],i=s.getAttribute(e).split(M),r=/([.?@])?(.*)/.exec(t);n.push({type:1,index:a,name:r[2],strings:i,ctor:"."===r[1]?se:"?"===r[1]?ae:"@"===r[1]?oe:ie}),s.removeAttribute(e)}else e.startsWith(M)&&(n.push({type:6,index:a}),s.removeAttribute(e));if(U.test(s.tagName)){const e=s.textContent.split(M),t=e.length-1;if(t>0){s.textContent=S?S.emptyScript:"";for(let i=0;i<t;i++)s.append(e[i],I()),X.nextNode(),n.push({type:2,index:++a});s.append(e[t],I())}}}else if(8===s.nodeType)if(s.data===C)n.push({type:2,index:a});else{let e=-1;for(;-1!==(e=s.data.indexOf(M,e+1));)n.push({type:7,index:a}),e+=M.length-1}a++}}static createElement(e,t){const i=B.createElement("template");return i.innerHTML=e,i}}function Y(e,t,i=e,s){if(t===q)return t;let a=void 0!==s?i._$Co?.[s]:i._$Cl;const o=P(t)?void 0:t._$litDirective$;return a?.constructor!==o&&(a?._$AO?.(!1),void 0===o?a=void 0:(a=new o(e),a._$AT(e,i,s)),void 0!==s?(i._$Co??=[])[s]=a:i._$Cl=a),void 0!==a&&(t=Y(e,a._$AS(e,t.values),a,s)),t}class ee{constructor(e,t){this._$AV=[],this._$AN=void 0,this._$AD=e,this._$AM=t}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(e){const{el:{content:t},parts:i}=this._$AD,s=(e?.creationScope??B).importNode(t,!0);X.currentNode=s;let a=X.nextNode(),o=0,r=0,n=i[0];for(;void 0!==n;){if(o===n.index){let t;2===n.type?t=new te(a,a.nextSibling,this,e):1===n.type?t=new n.ctor(a,n.name,n.strings,this,e):6===n.type&&(t=new re(a,this,e)),this._$AV.push(t),n=i[++r]}o!==n?.index&&(a=X.nextNode(),o++)}return X.currentNode=B,s}p(e){let t=0;for(const i of this._$AV)void 0!==i&&(void 0!==i.strings?(i._$AI(e,i,t),t+=i.strings.length-2):i._$AI(e[t])),t++}}class te{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(e,t,i,s){this.type=2,this._$AH=F,this._$AN=void 0,this._$AA=e,this._$AB=t,this._$AM=i,this.options=s,this._$Cv=s?.isConnected??!0}get parentNode(){let e=this._$AA.parentNode;const t=this._$AM;return void 0!==t&&11===e?.nodeType&&(e=t.parentNode),e}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(e,t=this){e=Y(this,e,t),P(e)?e===F||null==e||""===e?(this._$AH!==F&&this._$AR(),this._$AH=F):e!==this._$AH&&e!==q&&this._(e):void 0!==e._$litType$?this.$(e):void 0!==e.nodeType?this.T(e):(e=>N(e)||"function"==typeof e?.[Symbol.iterator])(e)?this.k(e):this._(e)}O(e){return this._$AA.parentNode.insertBefore(e,this._$AB)}T(e){this._$AH!==e&&(this._$AR(),this._$AH=this.O(e))}_(e){this._$AH!==F&&P(this._$AH)?this._$AA.nextSibling.data=e:this.T(B.createTextNode(e)),this._$AH=e}$(e){const{values:t,_$litType$:i}=e,s="number"==typeof i?this._$AC(e):(void 0===i.el&&(i.el=Z.createElement(Q(i.h,i.h[0]),this.options)),i);if(this._$AH?._$AD===s)this._$AH.p(t);else{const e=new ee(s,this),i=e.u(this.options);e.p(t),this.T(i),this._$AH=e}}_$AC(e){let t=G.get(e.strings);return void 0===t&&G.set(e.strings,t=new Z(e)),t}k(e){N(this._$AH)||(this._$AH=[],this._$AR());const t=this._$AH;let i,s=0;for(const a of e)s===t.length?t.push(i=new te(this.O(I()),this.O(I()),this,this.options)):i=t[s],i._$AI(a),s++;s<t.length&&(this._$AR(i&&i._$AB.nextSibling,s),t.length=s)}_$AR(e=this._$AA.nextSibling,t){for(this._$AP?.(!1,!0,t);e!==this._$AB;){const t=k(e).nextSibling;k(e).remove(),e=t}}setConnected(e){void 0===this._$AM&&(this._$Cv=e,this._$AP?.(e))}}class ie{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(e,t,i,s,a){this.type=1,this._$AH=F,this._$AN=void 0,this.element=e,this.name=t,this._$AM=s,this.options=a,i.length>2||""!==i[0]||""!==i[1]?(this._$AH=Array(i.length-1).fill(new String),this.strings=i):this._$AH=F}_$AI(e,t=this,i,s){const a=this.strings;let o=!1;if(void 0===a)e=Y(this,e,t,0),o=!P(e)||e!==this._$AH&&e!==q,o&&(this._$AH=e);else{const s=e;let r,n;for(e=a[0],r=0;r<a.length-1;r++)n=Y(this,s[i+r],t,r),n===q&&(n=this._$AH[r]),o||=!P(n)||n!==this._$AH[r],n===F?e=F:e!==F&&(e+=(n??"")+a[r+1]),this._$AH[r]=n}o&&!s&&this.j(e)}j(e){e===F?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,e??"")}}class se extends ie{constructor(){super(...arguments),this.type=3}j(e){this.element[this.name]=e===F?void 0:e}}class ae extends ie{constructor(){super(...arguments),this.type=4}j(e){this.element.toggleAttribute(this.name,!!e&&e!==F)}}class oe extends ie{constructor(e,t,i,s,a){super(e,t,i,s,a),this.type=5}_$AI(e,t=this){if((e=Y(this,e,t,0)??F)===q)return;const i=this._$AH,s=e===F&&i!==F||e.capture!==i.capture||e.once!==i.once||e.passive!==i.passive,a=e!==F&&(i===F||s);s&&this.element.removeEventListener(this.name,this,i),a&&this.element.addEventListener(this.name,this,e),this._$AH=e}handleEvent(e){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,e):this._$AH.handleEvent(e)}}class re{constructor(e,t,i){this.element=e,this.type=6,this._$AN=void 0,this._$AM=t,this.options=i}get _$AU(){return this._$AM._$AU}_$AI(e){Y(this,e)}}const ne=w.litHtmlPolyfillSupport;ne?.(Z,te),(w.litHtmlVersions??=[]).push("3.3.2");const le=globalThis;class de extends y{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0}createRenderRoot(){const e=super.createRenderRoot();return this.renderOptions.renderBefore??=e.firstChild,e}update(e){const t=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(e),this._$Do=((e,t,i)=>{const s=i?.renderBefore??t;let a=s._$litPart$;if(void 0===a){const e=i?.renderBefore??null;s._$litPart$=a=new te(t.insertBefore(I(),e),e,void 0,i??{})}return a._$AI(e),a})(t,this.renderRoot,this.renderOptions)}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0)}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1)}render(){return q}}de._$litElement$=!0,de.finalized=!0,le.litElementHydrateSupport?.({LitElement:de});const ce=le.litElementPolyfillSupport;ce?.({LitElement:de}),(le.litElementVersions??=[]).push("4.2.2");const pe=e=>(t,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(e,t)}):customElements.define(e,t)},he={attribute:!0,type:String,converter:f,reflect:!1,hasChanged:x},ue=(e=he,t,i)=>{const{kind:s,metadata:a}=i;let o=globalThis.litPropertyMetadata.get(a);if(void 0===o&&globalThis.litPropertyMetadata.set(a,o=new Map),"setter"===s&&((e=Object.create(e)).wrapped=!0),o.set(i.name,e),"accessor"===s){const{name:s}=i;return{set(i){const a=t.get.call(this);t.set.call(this,i),this.requestUpdate(s,a,e,!0,i)},init(t){return void 0!==t&&this.C(s,void 0,e,t),t}}}if("setter"===s){const{name:s}=i;return function(i){const a=this[s];t.call(this,i),this.requestUpdate(s,a,e,!0,i)}}throw Error("Unsupported decorator location: "+s)};function ve(e){return(t,i)=>"object"==typeof i?ue(e,t,i):((e,t,i)=>{const s=t.hasOwnProperty(i);return t.constructor.createProperty(i,e),s?Object.getOwnPropertyDescriptor(t,i):void 0})(e,t,i)}function ge(e){return ve({...e,state:!0,attribute:!1})}const _e=r`
+function e(e,t,i,s){var a,r=arguments.length,n=r<3?t:null===s?s=Object.getOwnPropertyDescriptor(t,i):s;if("object"==typeof Reflect&&"function"==typeof Reflect.decorate)n=Reflect.decorate(e,t,i,s);else for(var o=e.length-1;o>=0;o--)(a=e[o])&&(n=(r<3?a(n):r>3?a(t,i,n):a(t,i))||n);return r>3&&n&&Object.defineProperty(t,i,n),n}"function"==typeof SuppressedError&&SuppressedError;const t=globalThis,i=t.ShadowRoot&&(void 0===t.ShadyCSS||t.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,s=Symbol(),a=new WeakMap;let r=class{constructor(e,t,i){if(this._$cssResult$=!0,i!==s)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=e,this.t=t}get styleSheet(){let e=this.o;const t=this.t;if(i&&void 0===e){const i=void 0!==t&&1===t.length;i&&(e=a.get(t)),void 0===e&&((this.o=e=new CSSStyleSheet).replaceSync(this.cssText),i&&a.set(t,e))}return e}toString(){return this.cssText}};const n=(e,...t)=>{const i=1===e.length?e[0]:t.reduce((t,i,s)=>t+(e=>{if(!0===e._$cssResult$)return e.cssText;if("number"==typeof e)return e;throw Error("Value passed to 'css' function must be a 'css' function result: "+e+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(i)+e[s+1],e[0]);return new r(i,e,s)},o=i?e=>e:e=>e instanceof CSSStyleSheet?(e=>{let t="";for(const i of e.cssRules)t+=i.cssText;return(e=>new r("string"==typeof e?e:e+"",void 0,s))(t)})(e):e,{is:l,defineProperty:d,getOwnPropertyDescriptor:c,getOwnPropertyNames:p,getOwnPropertySymbols:h,getPrototypeOf:u}=Object,v=globalThis,g=v.trustedTypes,m=g?g.emptyScript:"",f=v.reactiveElementPolyfillSupport,b=(e,t)=>e,_={toAttribute(e,t){switch(t){case Boolean:e=e?m:null;break;case Object:case Array:e=null==e?e:JSON.stringify(e)}return e},fromAttribute(e,t){let i=e;switch(t){case Boolean:i=null!==e;break;case Number:i=null===e?null:Number(e);break;case Object:case Array:try{i=JSON.parse(e)}catch(e){i=null}}return i}},w=(e,t)=>!l(e,t),x={attribute:!0,type:String,converter:_,reflect:!1,useDefault:!1,hasChanged:w};Symbol.metadata??=Symbol("metadata"),v.litPropertyMetadata??=new WeakMap;let $=class extends HTMLElement{static addInitializer(e){this._$Ei(),(this.l??=[]).push(e)}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(e,t=x){if(t.state&&(t.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(e)&&((t=Object.create(t)).wrapped=!0),this.elementProperties.set(e,t),!t.noAccessor){const i=Symbol(),s=this.getPropertyDescriptor(e,i,t);void 0!==s&&d(this.prototype,e,s)}}static getPropertyDescriptor(e,t,i){const{get:s,set:a}=c(this.prototype,e)??{get(){return this[t]},set(e){this[t]=e}};return{get:s,set(t){const r=s?.call(this);a?.call(this,t),this.requestUpdate(e,r,i)},configurable:!0,enumerable:!0}}static getPropertyOptions(e){return this.elementProperties.get(e)??x}static _$Ei(){if(this.hasOwnProperty(b("elementProperties")))return;const e=u(this);e.finalize(),void 0!==e.l&&(this.l=[...e.l]),this.elementProperties=new Map(e.elementProperties)}static finalize(){if(this.hasOwnProperty(b("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(b("properties"))){const e=this.properties,t=[...p(e),...h(e)];for(const i of t)this.createProperty(i,e[i])}const e=this[Symbol.metadata];if(null!==e){const t=litPropertyMetadata.get(e);if(void 0!==t)for(const[e,i]of t)this.elementProperties.set(e,i)}this._$Eh=new Map;for(const[e,t]of this.elementProperties){const i=this._$Eu(e,t);void 0!==i&&this._$Eh.set(i,e)}this.elementStyles=this.finalizeStyles(this.styles)}static finalizeStyles(e){const t=[];if(Array.isArray(e)){const i=new Set(e.flat(1/0).reverse());for(const e of i)t.unshift(o(e))}else void 0!==e&&t.push(o(e));return t}static _$Eu(e,t){const i=t.attribute;return!1===i?void 0:"string"==typeof i?i:"string"==typeof e?e.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev()}_$Ev(){this._$ES=new Promise(e=>this.enableUpdating=e),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach(e=>e(this))}addController(e){(this._$EO??=new Set).add(e),void 0!==this.renderRoot&&this.isConnected&&e.hostConnected?.()}removeController(e){this._$EO?.delete(e)}_$E_(){const e=new Map,t=this.constructor.elementProperties;for(const i of t.keys())this.hasOwnProperty(i)&&(e.set(i,this[i]),delete this[i]);e.size>0&&(this._$Ep=e)}createRenderRoot(){const e=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return((e,s)=>{if(i)e.adoptedStyleSheets=s.map(e=>e instanceof CSSStyleSheet?e:e.styleSheet);else for(const i of s){const s=document.createElement("style"),a=t.litNonce;void 0!==a&&s.setAttribute("nonce",a),s.textContent=i.cssText,e.appendChild(s)}})(e,this.constructor.elementStyles),e}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach(e=>e.hostConnected?.())}enableUpdating(e){}disconnectedCallback(){this._$EO?.forEach(e=>e.hostDisconnected?.())}attributeChangedCallback(e,t,i){this._$AK(e,i)}_$ET(e,t){const i=this.constructor.elementProperties.get(e),s=this.constructor._$Eu(e,i);if(void 0!==s&&!0===i.reflect){const a=(void 0!==i.converter?.toAttribute?i.converter:_).toAttribute(t,i.type);this._$Em=e,null==a?this.removeAttribute(s):this.setAttribute(s,a),this._$Em=null}}_$AK(e,t){const i=this.constructor,s=i._$Eh.get(e);if(void 0!==s&&this._$Em!==s){const e=i.getPropertyOptions(s),a="function"==typeof e.converter?{fromAttribute:e.converter}:void 0!==e.converter?.fromAttribute?e.converter:_;this._$Em=s;const r=a.fromAttribute(t,e.type);this[s]=r??this._$Ej?.get(s)??r,this._$Em=null}}requestUpdate(e,t,i,s=!1,a){if(void 0!==e){const r=this.constructor;if(!1===s&&(a=this[e]),i??=r.getPropertyOptions(e),!((i.hasChanged??w)(a,t)||i.useDefault&&i.reflect&&a===this._$Ej?.get(e)&&!this.hasAttribute(r._$Eu(e,i))))return;this.C(e,t,i)}!1===this.isUpdatePending&&(this._$ES=this._$EP())}C(e,t,{useDefault:i,reflect:s,wrapped:a},r){i&&!(this._$Ej??=new Map).has(e)&&(this._$Ej.set(e,r??t??this[e]),!0!==a||void 0!==r)||(this._$AL.has(e)||(this.hasUpdated||i||(t=void 0),this._$AL.set(e,t)),!0===s&&this._$Em!==e&&(this._$Eq??=new Set).add(e))}async _$EP(){this.isUpdatePending=!0;try{await this._$ES}catch(e){Promise.reject(e)}const e=this.scheduleUpdate();return null!=e&&await e,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[e,t]of this._$Ep)this[e]=t;this._$Ep=void 0}const e=this.constructor.elementProperties;if(e.size>0)for(const[t,i]of e){const{wrapped:e}=i,s=this[t];!0!==e||this._$AL.has(t)||void 0===s||this.C(t,void 0,i,s)}}let e=!1;const t=this._$AL;try{e=this.shouldUpdate(t),e?(this.willUpdate(t),this._$EO?.forEach(e=>e.hostUpdate?.()),this.update(t)):this._$EM()}catch(t){throw e=!1,this._$EM(),t}e&&this._$AE(t)}willUpdate(e){}_$AE(e){this._$EO?.forEach(e=>e.hostUpdated?.()),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(e)),this.updated(e)}_$EM(){this._$AL=new Map,this.isUpdatePending=!1}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(e){return!0}update(e){this._$Eq&&=this._$Eq.forEach(e=>this._$ET(e,this[e])),this._$EM()}updated(e){}firstUpdated(e){}};$.elementStyles=[],$.shadowRootOptions={mode:"open"},$[b("elementProperties")]=new Map,$[b("finalized")]=new Map,f?.({ReactiveElement:$}),(v.reactiveElementVersions??=[]).push("2.1.2");const y=globalThis,k=e=>e,S=y.trustedTypes,A=S?S.createPolicy("lit-html",{createHTML:e=>e}):void 0,z="$lit$",C=`lit$${Math.random().toFixed(9).slice(2)}$`,M="?"+C,E=`<${M}>`,B=document,N=()=>B.createComment(""),D=e=>null===e||"object"!=typeof e&&"function"!=typeof e,H=Array.isArray,T="[ \t\n\f\r]",I=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,P=/-->/g,R=/>/g,W=RegExp(`>|${T}(?:([^\\s"'>=/]+)(${T}*=${T}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),O=/'/g,L=/"/g,j=/^(?:script|style|textarea|title)$/i,V=e=>(t,...i)=>({_$litType$:e,strings:t,values:i}),U=V(1),q=V(2),F=Symbol.for("lit-noChange"),G=Symbol.for("lit-nothing"),Z=new WeakMap,J=B.createTreeWalker(B,129);function K(e,t){if(!H(e)||!e.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==A?A.createHTML(t):t}const X=(e,t)=>{const i=e.length-1,s=[];let a,r=2===t?"<svg>":3===t?"<math>":"",n=I;for(let t=0;t<i;t++){const i=e[t];let o,l,d=-1,c=0;for(;c<i.length&&(n.lastIndex=c,l=n.exec(i),null!==l);)c=n.lastIndex,n===I?"!--"===l[1]?n=P:void 0!==l[1]?n=R:void 0!==l[2]?(j.test(l[2])&&(a=RegExp("</"+l[2],"g")),n=W):void 0!==l[3]&&(n=W):n===W?">"===l[0]?(n=a??I,d=-1):void 0===l[1]?d=-2:(d=n.lastIndex-l[2].length,o=l[1],n=void 0===l[3]?W:'"'===l[3]?L:O):n===L||n===O?n=W:n===P||n===R?n=I:(n=W,a=void 0);const p=n===W&&e[t+1].startsWith("/>")?" ":"";r+=n===I?i+E:d>=0?(s.push(o),i.slice(0,d)+z+i.slice(d)+C+p):i+C+(-2===d?t:p)}return[K(e,r+(e[i]||"<?>")+(2===t?"</svg>":3===t?"</math>":"")),s]};class Q{constructor({strings:e,_$litType$:t},i){let s;this.parts=[];let a=0,r=0;const n=e.length-1,o=this.parts,[l,d]=X(e,t);if(this.el=Q.createElement(l,i),J.currentNode=this.el.content,2===t||3===t){const e=this.el.content.firstChild;e.replaceWith(...e.childNodes)}for(;null!==(s=J.nextNode())&&o.length<n;){if(1===s.nodeType){if(s.hasAttributes())for(const e of s.getAttributeNames())if(e.endsWith(z)){const t=d[r++],i=s.getAttribute(e).split(C),n=/([.?@])?(.*)/.exec(t);o.push({type:1,index:a,name:n[2],strings:i,ctor:"."===n[1]?se:"?"===n[1]?ae:"@"===n[1]?re:ie}),s.removeAttribute(e)}else e.startsWith(C)&&(o.push({type:6,index:a}),s.removeAttribute(e));if(j.test(s.tagName)){const e=s.textContent.split(C),t=e.length-1;if(t>0){s.textContent=S?S.emptyScript:"";for(let i=0;i<t;i++)s.append(e[i],N()),J.nextNode(),o.push({type:2,index:++a});s.append(e[t],N())}}}else if(8===s.nodeType)if(s.data===M)o.push({type:2,index:a});else{let e=-1;for(;-1!==(e=s.data.indexOf(C,e+1));)o.push({type:7,index:a}),e+=C.length-1}a++}}static createElement(e,t){const i=B.createElement("template");return i.innerHTML=e,i}}function Y(e,t,i=e,s){if(t===F)return t;let a=void 0!==s?i._$Co?.[s]:i._$Cl;const r=D(t)?void 0:t._$litDirective$;return a?.constructor!==r&&(a?._$AO?.(!1),void 0===r?a=void 0:(a=new r(e),a._$AT(e,i,s)),void 0!==s?(i._$Co??=[])[s]=a:i._$Cl=a),void 0!==a&&(t=Y(e,a._$AS(e,t.values),a,s)),t}class ee{constructor(e,t){this._$AV=[],this._$AN=void 0,this._$AD=e,this._$AM=t}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(e){const{el:{content:t},parts:i}=this._$AD,s=(e?.creationScope??B).importNode(t,!0);J.currentNode=s;let a=J.nextNode(),r=0,n=0,o=i[0];for(;void 0!==o;){if(r===o.index){let t;2===o.type?t=new te(a,a.nextSibling,this,e):1===o.type?t=new o.ctor(a,o.name,o.strings,this,e):6===o.type&&(t=new ne(a,this,e)),this._$AV.push(t),o=i[++n]}r!==o?.index&&(a=J.nextNode(),r++)}return J.currentNode=B,s}p(e){let t=0;for(const i of this._$AV)void 0!==i&&(void 0!==i.strings?(i._$AI(e,i,t),t+=i.strings.length-2):i._$AI(e[t])),t++}}class te{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(e,t,i,s){this.type=2,this._$AH=G,this._$AN=void 0,this._$AA=e,this._$AB=t,this._$AM=i,this.options=s,this._$Cv=s?.isConnected??!0}get parentNode(){let e=this._$AA.parentNode;const t=this._$AM;return void 0!==t&&11===e?.nodeType&&(e=t.parentNode),e}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(e,t=this){e=Y(this,e,t),D(e)?e===G||null==e||""===e?(this._$AH!==G&&this._$AR(),this._$AH=G):e!==this._$AH&&e!==F&&this._(e):void 0!==e._$litType$?this.$(e):void 0!==e.nodeType?this.T(e):(e=>H(e)||"function"==typeof e?.[Symbol.iterator])(e)?this.k(e):this._(e)}O(e){return this._$AA.parentNode.insertBefore(e,this._$AB)}T(e){this._$AH!==e&&(this._$AR(),this._$AH=this.O(e))}_(e){this._$AH!==G&&D(this._$AH)?this._$AA.nextSibling.data=e:this.T(B.createTextNode(e)),this._$AH=e}$(e){const{values:t,_$litType$:i}=e,s="number"==typeof i?this._$AC(e):(void 0===i.el&&(i.el=Q.createElement(K(i.h,i.h[0]),this.options)),i);if(this._$AH?._$AD===s)this._$AH.p(t);else{const e=new ee(s,this),i=e.u(this.options);e.p(t),this.T(i),this._$AH=e}}_$AC(e){let t=Z.get(e.strings);return void 0===t&&Z.set(e.strings,t=new Q(e)),t}k(e){H(this._$AH)||(this._$AH=[],this._$AR());const t=this._$AH;let i,s=0;for(const a of e)s===t.length?t.push(i=new te(this.O(N()),this.O(N()),this,this.options)):i=t[s],i._$AI(a),s++;s<t.length&&(this._$AR(i&&i._$AB.nextSibling,s),t.length=s)}_$AR(e=this._$AA.nextSibling,t){for(this._$AP?.(!1,!0,t);e!==this._$AB;){const t=k(e).nextSibling;k(e).remove(),e=t}}setConnected(e){void 0===this._$AM&&(this._$Cv=e,this._$AP?.(e))}}class ie{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(e,t,i,s,a){this.type=1,this._$AH=G,this._$AN=void 0,this.element=e,this.name=t,this._$AM=s,this.options=a,i.length>2||""!==i[0]||""!==i[1]?(this._$AH=Array(i.length-1).fill(new String),this.strings=i):this._$AH=G}_$AI(e,t=this,i,s){const a=this.strings;let r=!1;if(void 0===a)e=Y(this,e,t,0),r=!D(e)||e!==this._$AH&&e!==F,r&&(this._$AH=e);else{const s=e;let n,o;for(e=a[0],n=0;n<a.length-1;n++)o=Y(this,s[i+n],t,n),o===F&&(o=this._$AH[n]),r||=!D(o)||o!==this._$AH[n],o===G?e=G:e!==G&&(e+=(o??"")+a[n+1]),this._$AH[n]=o}r&&!s&&this.j(e)}j(e){e===G?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,e??"")}}class se extends ie{constructor(){super(...arguments),this.type=3}j(e){this.element[this.name]=e===G?void 0:e}}class ae extends ie{constructor(){super(...arguments),this.type=4}j(e){this.element.toggleAttribute(this.name,!!e&&e!==G)}}class re extends ie{constructor(e,t,i,s,a){super(e,t,i,s,a),this.type=5}_$AI(e,t=this){if((e=Y(this,e,t,0)??G)===F)return;const i=this._$AH,s=e===G&&i!==G||e.capture!==i.capture||e.once!==i.once||e.passive!==i.passive,a=e!==G&&(i===G||s);s&&this.element.removeEventListener(this.name,this,i),a&&this.element.addEventListener(this.name,this,e),this._$AH=e}handleEvent(e){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,e):this._$AH.handleEvent(e)}}class ne{constructor(e,t,i){this.element=e,this.type=6,this._$AN=void 0,this._$AM=t,this.options=i}get _$AU(){return this._$AM._$AU}_$AI(e){Y(this,e)}}const oe=y.litHtmlPolyfillSupport;oe?.(Q,te),(y.litHtmlVersions??=[]).push("3.3.2");const le=globalThis;class de extends ${constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0}createRenderRoot(){const e=super.createRenderRoot();return this.renderOptions.renderBefore??=e.firstChild,e}update(e){const t=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(e),this._$Do=((e,t,i)=>{const s=i?.renderBefore??t;let a=s._$litPart$;if(void 0===a){const e=i?.renderBefore??null;s._$litPart$=a=new te(t.insertBefore(N(),e),e,void 0,i??{})}return a._$AI(e),a})(t,this.renderRoot,this.renderOptions)}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0)}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1)}render(){return F}}de._$litElement$=!0,de.finalized=!0,le.litElementHydrateSupport?.({LitElement:de});const ce=le.litElementPolyfillSupport;ce?.({LitElement:de}),(le.litElementVersions??=[]).push("4.2.2");const pe=e=>(t,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(e,t)}):customElements.define(e,t)},he={attribute:!0,type:String,converter:_,reflect:!1,hasChanged:w},ue=(e=he,t,i)=>{const{kind:s,metadata:a}=i;let r=globalThis.litPropertyMetadata.get(a);if(void 0===r&&globalThis.litPropertyMetadata.set(a,r=new Map),"setter"===s&&((e=Object.create(e)).wrapped=!0),r.set(i.name,e),"accessor"===s){const{name:s}=i;return{set(i){const a=t.get.call(this);t.set.call(this,i),this.requestUpdate(s,a,e,!0,i)},init(t){return void 0!==t&&this.C(s,void 0,e,t),t}}}if("setter"===s){const{name:s}=i;return function(i){const a=this[s];t.call(this,i),this.requestUpdate(s,a,e,!0,i)}}throw Error("Unsupported decorator location: "+s)};function ve(e){return(t,i)=>"object"==typeof i?ue(e,t,i):((e,t,i)=>{const s=t.hasOwnProperty(i);return t.constructor.createProperty(i,e),s?Object.getOwnPropertyDescriptor(t,i):void 0})(e,t,i)}function ge(e){return ve({...e,state:!0,attribute:!1})}const me=n`
   :host {
     display: block;
     height: 100%;
@@ -85,7 +85,7 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
     --density-gap: 10px;
     --row-h: 44px;
   }
-`,be=r`
+`,fe=n`
   :host { display: block; }
 
   * { box-sizing: border-box; }
@@ -567,130 +567,130 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
     .content__inner { padding: 18px 16px 40px; }
     .topbar { padding: 12px 16px; }
   }
-`;function me(e,t=16,i=1.6){const s=t,a=i;switch(e){case"dashboard":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>`;case"calendar":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>`;case"clock":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`;case"cloud":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17a4 4 0 1 1 1.3-7.8A5 5 0 0 1 18 10a3.5 3.5 0 0 1-.5 7H7z"/></svg>`;case"sun":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/></svg>`;case"rain":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M7 15a4 4 0 1 1 1.3-7.8A5 5 0 0 1 18 8a3.5 3.5 0 0 1-.5 7"/><path d="M9 19l-1 2M13 19l-1 2M17 19l-1 2"/></svg>`;case"snow":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 7l14 10M19 7 5 17"/></svg>`;case"device":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h6v6H9z"/></svg>`;case"live":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M6 6a8.5 8.5 0 0 0 0 12M18 6a8.5 8.5 0 0 1 0 12"/></svg>`;case"settings":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.9 2.9l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.9-2.9l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.9-2.9l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.9 2.9l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>`;case"wand":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4V2M15 16v-2M8 9h2M20 9h2M17.8 11.8l1.4 1.4M17.8 6.2l1.4-1.4"/><path d="m3 21 9-9"/><path d="M12.5 11.5 14 10l2 2-1.5 1.5z"/></svg>`;case"plus":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>`;case"chevron-right":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>`;case"chevron-left":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg>`;case"play":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v16l14-8z" fill="currentColor" stroke="none"/></svg>`;case"pause":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="4" height="14" fill="currentColor" stroke="none"/><rect x="14" y="5" width="4" height="14" fill="currentColor" stroke="none"/></svg>`;case"thermostat":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="3" width="4" height="12" rx="2"/><circle cx="12" cy="17" r="3.5"/><path d="M12 8v7"/></svg>`;case"light":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.6.6 1 1.4 1 2.3V17h6v-1.2c0-.9.4-1.7 1-2.3A6 6 0 0 0 12 3z"/></svg>`;case"blind":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16M4 4v14h16V4M4 8h16M4 12h16M4 16h16M11 20v2M13 20v2"/></svg>`;case"irrigation":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c3 4 5 6.5 5 10a5 5 0 0 1-10 0c0-3.5 2-6 5-10z"/></svg>`;case"plug":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v4M15 3v4M7 7h10v4a5 5 0 0 1-10 0zM12 16v5"/></svg>`;case"fan":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M12 10V5a4 4 0 0 1 4 4M14 12h5a4 4 0 0 1-4 4M12 14v5a4 4 0 0 1-4-4M10 12H5a4 4 0 0 1 4-4"/></svg>`;case"boiler":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="10" r="2.5"/><path d="M9 16h6"/></svg>`;case"mower":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15h18l-1 3a2 2 0 0 1-2 1.5H6A2 2 0 0 1 4 18zM7 15v-3a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v3M10 7V4M14 7V4"/></svg>`;case"vacuum":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 4v2M20 12h-2"/></svg>`;case"repeat":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4M3 12v-2a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 12v2a4 4 0 0 1-4 4H3"/></svg>`;case"bolt":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3 4 14h7l-1 7 9-11h-7z"/></svg>`;case"check":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg>`;case"close":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"/></svg>`;case"menu":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>`;case"edit":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10-10-4-4L4 16zM13 7l4 4"/></svg>`;case"trash":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>`;case"temp":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4a2 2 0 1 1 4 0v10a4 4 0 1 1-4 0z"/></svg>`;case"droplet":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11z"/></svg>`;case"wind":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h9"/></svg>`;case"power":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v9M6 6a8 8 0 1 0 12 0"/></svg>`;case"moon":return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z"/></svg>`;default:return J`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/></svg>`}}const fe={thermostat:"thermostat",light:"light",blind:"blind",irrigation:"irrigation",plug:"plug",fan:"fan",boiler:"boiler",mower:"mower",vacuum:"vacuum"};function xe(e,t=16){return me(fe[e]||"device",t)}const $e={sun:"sun",sunny:"sun",rain:"rain",rainy:"rain",cloud:"cloud",cloudy:"cloud",partlycloudy:"cloud",snow:"snow",snowy:"snow",fog:"cloud",windy:"wind"};function ye(e,t=16){return me($e[e]||"cloud",t)}const we={on:"var(--mode-comfort)",off:"var(--mode-off)",set:"var(--mode-eco)",preset:"var(--mode-night)",cmd:"var(--mode-boost)"},ke={thermostat:[{id:"set_temperature",label:"Imposta temperatura",kind:"set",service:"climate.set_temperature",value:{type:"number",unit:"°C",min:5,max:35,step:.5,default:21}},{id:"set_preset",label:"Preset",kind:"preset",service:"climate.set_preset_mode",value:{type:"enum",options:["none","eco","comfort","sleep","away","boost","home"],default:"comfort"}},{id:"turn_off",label:"Spegni",kind:"off",service:"climate.turn_off"}],boiler:[{id:"set_temperature",label:"Imposta temperatura",kind:"set",service:"water_heater.set_temperature",value:{type:"number",unit:"°C",min:30,max:75,step:1,default:55}},{id:"set_operation",label:"Operation mode",kind:"preset",service:"water_heater.set_operation_mode",value:{type:"enum",options:["off","eco","electric","gas","heat_pump","high_demand","performance"],default:"eco"}},{id:"turn_off",label:"Spegni",kind:"off",service:"water_heater.turn_off"}],light:[{id:"turn_on",label:"Accendi",kind:"on",service:"light.turn_on",value:{type:"number",unit:"%",min:1,max:100,step:1,default:80,label:"Luminosità"}},{id:"turn_off",label:"Spegni",kind:"off",service:"light.turn_off"}],blind:[{id:"set_position",label:"Posiziona",kind:"set",service:"cover.set_cover_position",value:{type:"number",unit:"%",min:0,max:100,step:5,default:100,label:"Apertura"}},{id:"open_cover",label:"Apri",kind:"on",service:"cover.open_cover"},{id:"close_cover",label:"Chiudi",kind:"off",service:"cover.close_cover"}],irrigation:[{id:"turn_on",label:"Avvia",kind:"on",service:"valve.open_valve",value:{type:"number",unit:"min",min:1,max:240,step:1,default:30,label:"Durata"}},{id:"turn_off",label:"Stop",kind:"off",service:"valve.close_valve"}],plug:[{id:"turn_on",label:"Accendi",kind:"on",service:"switch.turn_on"},{id:"turn_off",label:"Spegni",kind:"off",service:"switch.turn_off"}],fan:[{id:"turn_on",label:"Accendi",kind:"on",service:"fan.turn_on",value:{type:"number",unit:"%",min:10,max:100,step:10,default:50,label:"Velocità"}},{id:"turn_off",label:"Spegni",kind:"off",service:"fan.turn_off"}],mower:[{id:"start_mowing",label:"Avvia taglio",kind:"on",service:"lawn_mower.start_mowing"},{id:"pause",label:"Pausa",kind:"cmd",service:"lawn_mower.pause"},{id:"dock",label:"Torna in base",kind:"off",service:"lawn_mower.dock"}],vacuum:[{id:"start",label:"Avvia pulizia",kind:"on",service:"vacuum.start"},{id:"pause",label:"Pausa",kind:"cmd",service:"vacuum.pause"},{id:"return_to_base",label:"Torna in base",kind:"off",service:"vacuum.return_to_base"}]};let Se={};function Ae(e){return Se[e]||ke[e]||[]}function ze(e,t){return Ae(e).find(e=>e.id===t)}function Me(e,t){if(!t)return"—";const i=ze(e,t.id);return i?i.value&&void 0!==t.value&&null!==t.value&&""!==t.value?`${t.value}${i.value.unit||""}`:i.label:t.id}function Ce(e,t){if(!t)return"var(--mode-off)";const i=ze(e,t.id);return we[i?.kind||"on"]||"var(--mode-comfort)"}function Ee(e){const t=Ae(e)[0];return t?{id:t.id,value:t.value?t.value.default:void 0}:{id:"turn_on"}}async function Be(e){return e.callWS({type:"chronos/devices/list"})}async function Ie(e){return e.callWS({type:"chronos/schedules/list"})}async function Pe(e,t){return e.callWS({type:"chronos/schedules/save",schedule:t})}async function Ne(e){return e.callWS({type:"chronos/settings/get"})}async function Oe(e){return e.callWS({type:"chronos/preview/forecast"})}async function De(e){return e.callWS({type:"chronos/entities/available"})}async function He(e){return e.callWS({type:"chronos/weather/entities"})}async function Te(e){return e.callWS({type:"chronos/sensor/entities"})}async function Re(e){return e.callWS({type:"chronos/actions"})}async function je(e){return e.callWS({type:"chronos/weather/attributes"})}function Le(e){const t=Math.floor(e),i=Math.round(60*(e-t));return`${String(t).padStart(2,"0")}:${String(i).padStart(2,"0")}`}function Ue(e,t,i){return Math.max(t,Math.min(i,e))}function Ve(e,t=15){const i=60/t;return Math.round(e*i)/i}const We=["Lun","Mar","Mer","Gio","Ven","Sab","Dom"],Je={thermostat:{label:"Termostato",domain:"climate",capabilities:["set_temperature","hvac_mode","preset_mode"]},light:{label:"Luce",domain:"light",capabilities:["turn_on","turn_off","brightness","color_temp"]},blind:{label:"Tapparella",domain:"cover",capabilities:["open","close","set_position","stop"]},irrigation:{label:"Irrigazione",domain:"valve",capabilities:["turn_on","turn_off","duration"]},plug:{label:"Presa smart",domain:"switch",capabilities:["turn_on","turn_off"]},fan:{label:"Ventilatore",domain:"fan",capabilities:["turn_on","turn_off","speed","oscillate"]},boiler:{label:"Boiler",domain:"water_heater",capabilities:["set_temperature","operation_mode"]},mower:{label:"Tosaerba",domain:"lawn_mower",capabilities:["start_mowing","pause","dock"]},vacuum:{label:"Robot aspirapolvere",domain:"vacuum",capabilities:["start","pause","return_to_base","fan_speed"]}};const qe=[{max:10,color:"#3b82f6"},{max:15,color:"#06b6d4"},{max:19,color:"#fbbf24"},{max:23,color:"#10b981"},{max:25,color:"#fbbf24"},{max:999,color:"#ef4444"}],Fe=[{max:35,color:"#3b82f6"},{max:50,color:"#10b981"},{max:60,color:"#fbbf24"},{max:999,color:"#ef4444"}],Ge={eco:"#10b981",comfort:"#3b82f6",sleep:"#6366f1",away:"#9ca3af",boost:"#ef4444",home:"#06b6d4",none:"#9ca3af"};function Xe(e,t){if(!e)return"boiler"===t?Fe:qe;const i=e["boiler"===t?"color_stops_boiler":"color_stops_climate"];return i&&i.length?[...i].sort((e,t)=>e.max-t.max):"boiler"===t?Fe:qe}function Qe(e){const t=e?.color_presets;return{...Ge,...t||{}}}function Ke(e){const t=e?.color_light_use_state;return void 0===t||!!t}const Ze={accent:"var(--accent)",soft:"var(--accent-soft)",live:!1};function Ye(e,t,i){if(!t)return Ze;const s=t.state||"",a=t.attributes||{};if("light"===e.type){if("off"===s||"unavailable"===s)return{accent:"var(--text-muted)",soft:"var(--bg-sunken)",live:!1};if(Ke(i)){const e=a.rgb_color;if(Array.isArray(e)&&3===e.length){return{accent:`rgb(${e[0]}, ${e[1]}, ${e[2]})`,soft:`rgba(${e[0]}, ${e[1]}, ${e[2]}, 0.18)`,live:!0}}}return{accent:"#fbbf24",soft:"rgba(251, 191, 36, 0.18)",live:!0}}if("thermostat"===e.type||"boiler"===e.type){const t=Qe(i),o=a.preset_mode;if(o&&t[o]&&"off"!==s){const e=t[o];return{accent:e,soft:et(e),live:!0}}const r=function(e){const t=[e.current_temperature,e.temperature];for(const e of t){if("number"==typeof e)return e;const t=parseFloat(e);if(!isNaN(t))return t}return}(a);if("number"==typeof r){const t=function(e,t){const i=[...t].sort((e,t)=>e.max-t.max);for(const t of i)if(e<=t.max)return t.color;return i[i.length-1]?.color||"#9ca3af"}(r,Xe(i,e.type));return{accent:t,soft:et(t),live:!0}}return Ze}if("blind"===e.type){const e=a.current_position;if("number"==typeof e){const t=e/100,i=Math.round(60+140*t),s=Math.round(80+100*t),a=Math.round(120+135*t);return{accent:`rgb(${i}, ${s}, ${a})`,soft:`rgba(${i}, ${s}, ${a}, 0.18)`,live:!0}}}if("fan"===e.type){const e=a.percentage;if("number"==typeof e&&"on"===s){const t=function(e,t,i){const s=e.replace("#",""),a=t.replace("#",""),o=parseInt(s.slice(0,2),16),r=parseInt(s.slice(2,4),16),n=parseInt(s.slice(4,6),16),l=parseInt(a.slice(0,2),16),d=parseInt(a.slice(2,4),16),c=parseInt(a.slice(4,6),16),p=Math.round(o+(l-o)*i),h=Math.round(r+(d-r)*i),u=Math.round(n+(c-n)*i);return`rgb(${p}, ${h}, ${u})`}("#06b6d4","#3b82f6",e/100);return{accent:t,soft:et(t),live:!0}}}return"on"===s||"open"===s||"cleaning"===s||"mowing"===s?{accent:"#10b981",soft:"rgba(16, 185, 129, 0.18)",live:!0}:"off"===s||"closed"===s||"docked"===s||"unavailable"===s?{accent:"var(--text-muted)",soft:"var(--bg-sunken)",live:!1}:Ze}function et(e){if(!e.startsWith("#"))return"var(--bg-sunken)";const t=e.replace("#","");return`rgba(${parseInt(3===t.length?t[0]+t[0]:t.slice(0,2),16)}, ${parseInt(3===t.length?t[1]+t[1]:t.slice(2,4),16)}, ${parseInt(3===t.length?t[2]+t[2]:t.slice(4,6),16)}, 0.18)`}let tt=class extends de{constructor(){super(...arguments),this.variant="linear",this.deviceType="thermostat",this.blocks=[],this.selectedIdx=-1,this.now=null,this.interactive=!0,this.height="normal",this.showWeather=!0,this.forecast=[],this._drag=null,this._boundMove=null,this._boundUp=null}render(){return"radial"===this.variant?this._renderRadial():"list"===this.variant?this._renderList():this._renderLinear()}_renderLinear(){const e=e=>e/24*100,t="compact"===this.height?"timeline timeline--compact":"mini"===this.height?"timeline timeline--mini":"timeline";return W`
+`;function be(e,t=16,i=1.6){const s=t,a=i;switch(e){case"dashboard":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>`;case"calendar":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>`;case"clock":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`;case"cloud":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17a4 4 0 1 1 1.3-7.8A5 5 0 0 1 18 10a3.5 3.5 0 0 1-.5 7H7z"/></svg>`;case"sun":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/></svg>`;case"rain":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M7 15a4 4 0 1 1 1.3-7.8A5 5 0 0 1 18 8a3.5 3.5 0 0 1-.5 7"/><path d="M9 19l-1 2M13 19l-1 2M17 19l-1 2"/></svg>`;case"snow":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 7l14 10M19 7 5 17"/></svg>`;case"device":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h6v6H9z"/></svg>`;case"live":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M6 6a8.5 8.5 0 0 0 0 12M18 6a8.5 8.5 0 0 1 0 12"/></svg>`;case"settings":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.9 2.9l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.9-2.9l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.9-2.9l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.9 2.9l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>`;case"wand":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4V2M15 16v-2M8 9h2M20 9h2M17.8 11.8l1.4 1.4M17.8 6.2l1.4-1.4"/><path d="m3 21 9-9"/><path d="M12.5 11.5 14 10l2 2-1.5 1.5z"/></svg>`;case"plus":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>`;case"chevron-right":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>`;case"chevron-left":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg>`;case"play":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v16l14-8z" fill="currentColor" stroke="none"/></svg>`;case"pause":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="4" height="14" fill="currentColor" stroke="none"/><rect x="14" y="5" width="4" height="14" fill="currentColor" stroke="none"/></svg>`;case"thermostat":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="3" width="4" height="12" rx="2"/><circle cx="12" cy="17" r="3.5"/><path d="M12 8v7"/></svg>`;case"light":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.6.6 1 1.4 1 2.3V17h6v-1.2c0-.9.4-1.7 1-2.3A6 6 0 0 0 12 3z"/></svg>`;case"blind":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16M4 4v14h16V4M4 8h16M4 12h16M4 16h16M11 20v2M13 20v2"/></svg>`;case"irrigation":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c3 4 5 6.5 5 10a5 5 0 0 1-10 0c0-3.5 2-6 5-10z"/></svg>`;case"plug":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v4M15 3v4M7 7h10v4a5 5 0 0 1-10 0zM12 16v5"/></svg>`;case"fan":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M12 10V5a4 4 0 0 1 4 4M14 12h5a4 4 0 0 1-4 4M12 14v5a4 4 0 0 1-4-4M10 12H5a4 4 0 0 1 4-4"/></svg>`;case"boiler":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="10" r="2.5"/><path d="M9 16h6"/></svg>`;case"mower":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15h18l-1 3a2 2 0 0 1-2 1.5H6A2 2 0 0 1 4 18zM7 15v-3a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v3M10 7V4M14 7V4"/></svg>`;case"vacuum":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 4v2M20 12h-2"/></svg>`;case"repeat":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4M3 12v-2a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 12v2a4 4 0 0 1-4 4H3"/></svg>`;case"bolt":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3 4 14h7l-1 7 9-11h-7z"/></svg>`;case"check":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg>`;case"close":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"/></svg>`;case"menu":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>`;case"edit":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10-10-4-4L4 16zM13 7l4 4"/></svg>`;case"trash":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>`;case"temp":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4a2 2 0 1 1 4 0v10a4 4 0 1 1-4 0z"/></svg>`;case"droplet":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11z"/></svg>`;case"wind":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h9"/></svg>`;case"power":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v9M6 6a8 8 0 1 0 12 0"/></svg>`;case"moon":return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z"/></svg>`;default:return q`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${a}" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/></svg>`}}const _e={thermostat:"thermostat",light:"light",blind:"blind",irrigation:"irrigation",plug:"plug",fan:"fan",boiler:"boiler",mower:"mower",vacuum:"vacuum"};function we(e,t=16){return be(_e[e]||"device",t)}const xe={sun:"sun",sunny:"sun",rain:"rain",rainy:"rain",cloud:"cloud",cloudy:"cloud",partlycloudy:"cloud",snow:"snow",snowy:"snow",fog:"cloud",windy:"wind"};function $e(e,t=16){return be(xe[e]||"cloud",t)}const ye={on:"var(--mode-comfort)",off:"var(--mode-off)",set:"var(--mode-eco)",preset:"var(--mode-night)",cmd:"var(--mode-boost)"},ke={thermostat:[{id:"set_temperature",label:"Imposta temperatura",kind:"set",service:"climate.set_temperature",value:{type:"number",unit:"°C",min:5,max:35,step:.5,default:21}},{id:"set_preset",label:"Preset",kind:"preset",service:"climate.set_preset_mode",value:{type:"enum",options:["none","eco","comfort","sleep","away","boost","home"],default:"comfort"}},{id:"turn_off",label:"Spegni",kind:"off",service:"climate.turn_off"}],boiler:[{id:"set_temperature",label:"Imposta temperatura",kind:"set",service:"water_heater.set_temperature",value:{type:"number",unit:"°C",min:30,max:75,step:1,default:55}},{id:"set_operation",label:"Operation mode",kind:"preset",service:"water_heater.set_operation_mode",value:{type:"enum",options:["off","eco","electric","gas","heat_pump","high_demand","performance"],default:"eco"}},{id:"turn_off",label:"Spegni",kind:"off",service:"water_heater.turn_off"}],light:[{id:"turn_on",label:"Accendi",kind:"on",service:"light.turn_on",value:{type:"number",unit:"%",min:1,max:100,step:1,default:80,label:"Luminosità"}},{id:"turn_off",label:"Spegni",kind:"off",service:"light.turn_off"}],blind:[{id:"set_position",label:"Posiziona",kind:"set",service:"cover.set_cover_position",value:{type:"number",unit:"%",min:0,max:100,step:5,default:100,label:"Apertura"}},{id:"open_cover",label:"Apri",kind:"on",service:"cover.open_cover"},{id:"close_cover",label:"Chiudi",kind:"off",service:"cover.close_cover"}],irrigation:[{id:"turn_on",label:"Avvia",kind:"on",service:"valve.open_valve",value:{type:"number",unit:"min",min:1,max:240,step:1,default:30,label:"Durata"}},{id:"turn_off",label:"Stop",kind:"off",service:"valve.close_valve"}],plug:[{id:"turn_on",label:"Accendi",kind:"on",service:"switch.turn_on"},{id:"turn_off",label:"Spegni",kind:"off",service:"switch.turn_off"}],fan:[{id:"turn_on",label:"Accendi",kind:"on",service:"fan.turn_on",value:{type:"number",unit:"%",min:10,max:100,step:10,default:50,label:"Velocità"}},{id:"turn_off",label:"Spegni",kind:"off",service:"fan.turn_off"}],mower:[{id:"start_mowing",label:"Avvia taglio",kind:"on",service:"lawn_mower.start_mowing"},{id:"pause",label:"Pausa",kind:"cmd",service:"lawn_mower.pause"},{id:"dock",label:"Torna in base",kind:"off",service:"lawn_mower.dock"}],vacuum:[{id:"start",label:"Avvia pulizia",kind:"on",service:"vacuum.start"},{id:"pause",label:"Pausa",kind:"cmd",service:"vacuum.pause"},{id:"return_to_base",label:"Torna in base",kind:"off",service:"vacuum.return_to_base"}]};let Se={};function Ae(e){return Se[e]||ke[e]||[]}function ze(e,t){return Ae(e).find(e=>e.id===t)}function Ce(e,t){if(!t)return"—";const i=ze(e,t.id);return i?i.value&&void 0!==t.value&&null!==t.value&&""!==t.value?`${t.value}${i.value.unit||""}`:i.label:t.id}function Me(e,t){if(!t)return"var(--mode-off)";const i=ze(e,t.id);return ye[i?.kind||"on"]||"var(--mode-comfort)"}function Ee(e){const t=Ae(e)[0];return t?{id:t.id,value:t.value?t.value.default:void 0}:{id:"turn_on"}}const Be=["it","en","fr","de"];let Ne="it";function De(e,t){const i=He[e];let s=i?.[Ne]||i?.it||e;if(t)for(const e of Object.keys(t))s=s.replace(new RegExp(`\\{${e}\\}`,"g"),String(t[e]));return s}const He={"common.cancel":{it:"Annulla",en:"Cancel",fr:"Annuler",de:"Abbrechen"},"common.save":{it:"Salva",en:"Save",fr:"Enregistrer",de:"Speichern"},"common.delete":{it:"Elimina",en:"Delete",fr:"Supprimer",de:"Löschen"},"common.remove":{it:"Rimuovi",en:"Remove",fr:"Retirer",de:"Entfernen"},"common.add":{it:"Aggiungi",en:"Add",fr:"Ajouter",de:"Hinzufügen"},"common.back":{it:"Indietro",en:"Back",fr:"Retour",de:"Zurück"},"common.next":{it:"Avanti",en:"Next",fr:"Suivant",de:"Weiter"},"common.confirm":{it:"Conferma",en:"Confirm",fr:"Confirmer",de:"Bestätigen"},"common.close":{it:"Chiudi",en:"Close",fr:"Fermer",de:"Schließen"},"common.reset":{it:"Reset",en:"Reset",fr:"Réinitialiser",de:"Zurücksetzen"},"common.default":{it:"Default",en:"Default",fr:"Défaut",de:"Standard"},"common.none":{it:"Nessuna",en:"None",fr:"Aucune",de:"Keine"},"common.search":{it:"Cerca",en:"Search",fr:"Rechercher",de:"Suchen"},"common.yes":{it:"Sì",en:"Yes",fr:"Oui",de:"Ja"},"common.no":{it:"No",en:"No",fr:"Non",de:"Nein"},"common.enabled":{it:"Attiva",en:"Active",fr:"Active",de:"Aktiv"},"common.disabled":{it:"Disattivata",en:"Disabled",fr:"Désactivée",de:"Deaktiviert"},"common.loading":{it:"Caricamento…",en:"Loading…",fr:"Chargement…",de:"Lädt…"},"common.optional":{it:"opzionale",en:"optional",fr:"facultatif",de:"optional"},"common.value":{it:"Valore",en:"Value",fr:"Valeur",de:"Wert"},"common.min":{it:"min",en:"min",fr:"min",de:"Min."},"common.hour_short":{it:"h",en:"h",fr:"h",de:"Std."},"nav.section.main":{it:"Principale",en:"Main",fr:"Principal",de:"Hauptmenü"},"nav.section.actions":{it:"Azioni",en:"Actions",fr:"Actions",de:"Aktionen"},"nav.overview":{it:"Panoramica",en:"Overview",fr:"Aperçu",de:"Übersicht"},"nav.editor":{it:"Editor",en:"Editor",fr:"Éditeur",de:"Editor"},"nav.week":{it:"Settimana",en:"Week",fr:"Semaine",de:"Woche"},"nav.weather_rules":{it:"Regole meteo",en:"Weather rules",fr:"Règles météo",de:"Wetterregeln"},"nav.devices":{it:"Dispositivi",en:"Devices",fr:"Appareils",de:"Geräte"},"nav.live":{it:"Stato live",en:"Live",fr:"Direct",de:"Live"},"nav.new_schedule":{it:"Nuova schedulazione",en:"New schedule",fr:"Nouvelle planification",de:"Neuer Zeitplan"},"nav.manage_devices":{it:"Gestisci dispositivi",en:"Manage devices",fr:"Gérer les appareils",de:"Geräte verwalten"},"nav.settings":{it:"Impostazioni",en:"Settings",fr:"Réglages",de:"Einstellungen"},"nav.menu_open":{it:"Apri menu",en:"Open menu",fr:"Ouvrir le menu",de:"Menü öffnen"},"nav.menu_close":{it:"Chiudi menu",en:"Close menu",fr:"Fermer le menu",de:"Menü schließen"},"screen.overview.title":{it:"Panoramica",en:"Overview",fr:"Aperçu",de:"Übersicht"},"screen.editor.title":{it:"Editor schedulazione",en:"Schedule editor",fr:"Éditeur de planification",de:"Zeitplan-Editor"},"screen.weather_rule.title":{it:"Regola meteo",en:"Weather rule",fr:"Règle météo",de:"Wetterregel"},"screen.device.title":{it:"Dispositivo",en:"Device",fr:"Appareil",de:"Gerät"},"screen.week.title":{it:"Vista settimanale",en:"Week view",fr:"Vue semaine",de:"Wochenansicht"},"screen.live.title":{it:"Stato live",en:"Live status",fr:"État en direct",de:"Live-Status"},"screen.wizard.title":{it:"Wizard",en:"Wizard",fr:"Assistant",de:"Assistent"},"screen.devices.title":{it:"Gestisci dispositivi",en:"Manage devices",fr:"Gérer les appareils",de:"Geräte verwalten"},"screen.settings.title":{it:"Impostazioni",en:"Settings",fr:"Réglages",de:"Einstellungen"},"modal.unsaved.title":{it:"Modifiche non salvate",en:"Unsaved changes",fr:"Modifications non enregistrées",de:"Nicht gespeicherte Änderungen"},"modal.unsaved.body":{it:"Hai modifiche in sospeso su questa schedulazione. Vuoi davvero uscire e perderle?",en:"You have pending changes on this schedule. Leave and discard them?",fr:"Des modifications sont en attente sur cette planification. Quitter et les perdre ?",de:"Du hast noch offene Änderungen an diesem Zeitplan. Wirklich verlassen und verwerfen?"},"modal.unsaved.stay":{it:"Resta qui",en:"Stay",fr:"Rester",de:"Bleiben"},"modal.unsaved.discard":{it:"Scarta modifiche",en:"Discard changes",fr:"Ignorer",de:"Verwerfen"},"modal.unsaved.save":{it:"Salva ed esci",en:"Save and exit",fr:"Enregistrer et quitter",de:"Speichern und verlassen"},"overview.subtitle":{it:"Schedulazioni configurate · {n} attive su {tot}",en:"Configured schedules · {n} active of {tot}",fr:"Planifications configurées · {n} actives sur {tot}",de:"Konfigurierte Zeitpläne · {n} aktiv von {tot}"},"overview.kpi.active":{it:"Attive",en:"Active",fr:"Actives",de:"Aktiv"},"overview.kpi.weather_rules":{it:"Regole meteo",en:"Weather rules",fr:"Règles météo",de:"Wetterregeln"},"overview.kpi.devices":{it:"Dispositivi",en:"Devices",fr:"Appareils",de:"Geräte"},"overview.kpi.now":{it:"Ora corrente",en:"Now",fr:"Maintenant",de:"Jetzt"},"overview.no_schedules":{it:"Nessuna schedulazione",en:"No schedules",fr:"Aucune planification",de:"Keine Zeitpläne"},"overview.no_schedules.cta":{it:"Avvia il wizard per crearne una",en:"Start the wizard to create one",fr:"Lance l'assistant pour en créer une",de:"Starte den Assistenten, um einen zu erstellen"},"overview.rules_count":{it:"{n} regole",en:"{n} rules",fr:"{n} règles",de:"{n} Regeln"},"editor.field.name":{it:"Nome",en:"Name",fr:"Nom",de:"Name"},"editor.timeline_variant":{it:"Visualizzazione",en:"View",fr:"Affichage",de:"Ansicht"},"editor.add_block_hint":{it:"Clicca su una zona vuota della barra per aggiungere una fascia. Trascina i bordi per modificare durata e posizione.",en:"Click on an empty area of the bar to add a block. Drag the edges to adjust duration and position.",fr:"Clique sur une zone vide de la barre pour ajouter un créneau. Fais glisser les bords pour ajuster la durée et la position.",de:"Klicke auf einen freien Bereich der Leiste, um einen Block hinzuzufügen. Ziehe die Ränder, um Dauer und Position anzupassen."},"editor.block.from":{it:"Da",en:"From",fr:"De",de:"Von"},"editor.block.to":{it:"A",en:"To",fr:"À",de:"Bis"},"editor.block.action":{it:"Azione",en:"Action",fr:"Action",de:"Aktion"},"editor.block.delete":{it:"Elimina fascia",en:"Delete block",fr:"Supprimer le créneau",de:"Block löschen"},"editor.block.no_selection":{it:"Nessuna fascia selezionata. Clicca su una fascia esistente per modificarla, oppure su una zona libera per aggiungerne una nuova.",en:"No block selected. Click an existing block to edit it, or an empty area to add a new one.",fr:"Aucun créneau sélectionné. Clique sur un créneau existant pour le modifier, ou sur une zone libre pour en ajouter un.",de:"Kein Block ausgewählt. Klicke auf einen vorhandenen Block, um ihn zu bearbeiten, oder in einen freien Bereich, um einen neuen hinzuzufügen."},"editor.coverage":{it:"{n} fasce · totale coperto {h}h / 24h",en:"{n} blocks · total coverage {h}h / 24h",fr:"{n} créneaux · couverture totale {h}h / 24h",de:"{n} Blöcke · Abdeckung gesamt {h}h / 24h"},"editor.days.repeat":{it:"Ripetizione",en:"Repeat",fr:"Répétition",de:"Wiederholung"},"editor.days.all":{it:"Tutti i giorni",en:"Every day",fr:"Tous les jours",de:"Jeden Tag"},"editor.days.weekdays":{it:"Lavorativi",en:"Weekdays",fr:"Jours ouvrés",de:"Wochentags"},"editor.days.weekend":{it:"Weekend",en:"Weekend",fr:"Week-end",de:"Wochenende"},"editor.weather_rules.title":{it:"Regole meteo",en:"Weather rules",fr:"Règles météo",de:"Wetterregeln"},"editor.weather_rules.add":{it:"Aggiungi regola",en:"Add rule",fr:"Ajouter une règle",de:"Regel hinzufügen"},"editor.weather_rules.empty":{it:"Nessuna regola meteo · esecuzione fissa indipendente dal meteo",en:"No weather rules · fixed execution regardless of weather",fr:"Aucune règle météo · exécution fixe indépendamment de la météo",de:"Keine Wetterregeln · feste Ausführung unabhängig vom Wetter"},"editor.devices_section":{it:"Dispositivi influenzati",en:"Affected devices",fr:"Appareils concernés",de:"Betroffene Geräte"},"editor.devices_count":{it:"{n} selezionati",en:"{n} selected",fr:"{n} sélectionnés",de:"{n} ausgewählt"},"editor.dirty.unsaved":{it:"Modifiche non salvate",en:"Unsaved changes",fr:"Modifications non enregistrées",de:"Ungespeicherte Änderungen"},"editor.dirty.saved":{it:"Tutto salvato",en:"All saved",fr:"Tout enregistré",de:"Alles gespeichert"},"wizard.title":{it:"Crea schedulazione",en:"Create schedule",fr:"Créer une planification",de:"Zeitplan erstellen"},"wizard.subtitle":{it:"Procedura guidata · puoi modificare tutto in seguito",en:"Guided setup · you can edit everything later",fr:"Procédure guidée · tu pourras tout modifier ensuite",de:"Geführte Einrichtung · alles kann später angepasst werden"},"wizard.step.name":{it:"Nome",en:"Name",fr:"Nom",de:"Name"},"wizard.step.devices":{it:"Dispositivi",en:"Devices",fr:"Appareils",de:"Geräte"},"wizard.step.time":{it:"Fasce orarie",en:"Time blocks",fr:"Créneaux",de:"Zeitblöcke"},"wizard.step.days":{it:"Ripetizione",en:"Repeat",fr:"Répétition",de:"Wiederholung"},"wizard.step.weather":{it:"Meteo",en:"Weather",fr:"Météo",de:"Wetter"},"wizard.step.review":{it:"Riepilogo",en:"Review",fr:"Résumé",de:"Zusammenfassung"},"wizard.name.heading":{it:"Dai un nome alla schedulazione",en:"Give the schedule a name",fr:"Donne un nom à la planification",de:"Gib dem Zeitplan einen Namen"},"wizard.name.hint":{it:"Sarà visibile nella panoramica e nelle notifiche.",en:"It will appear in the overview and in notifications.",fr:"Il apparaîtra dans l'aperçu et les notifications.",de:"Wird in der Übersicht und in Benachrichtigungen angezeigt."},"wizard.name.suggestions":{it:"Suggerimenti:",en:"Suggestions:",fr:"Suggestions :",de:"Vorschläge:"},"wizard.devices.heading":{it:"Quali dispositivi sono coinvolti?",en:"Which devices are involved?",fr:"Quels appareils sont concernés ?",de:"Welche Geräte sind beteiligt?"},"wizard.devices.hint":{it:"Verranno tutti controllati dalla stessa programmazione.",en:"They will all be controlled by the same schedule.",fr:"Ils seront tous contrôlés par la même planification.",de:"Alle werden vom selben Zeitplan gesteuert."},"wizard.time.heading":{it:"Imposta le fasce orarie",en:"Set up time blocks",fr:"Définis les créneaux horaires",de:"Zeitblöcke festlegen"},"wizard.time.reset_preset":{it:"Reset preset",en:"Reset preset",fr:"Réinitialiser le préréglage",de:"Voreinstellung zurücksetzen"},"wizard.time.selected":{it:"Fascia selezionata",en:"Selected block",fr:"Créneau sélectionné",de:"Ausgewählter Block"},"wizard.days.heading":{it:"Quali giorni della settimana?",en:"Which days of the week?",fr:"Quels jours de la semaine ?",de:"An welchen Wochentagen?"},"wizard.days.hint":{it:"La schedulazione si ripeterà automaticamente ogni settimana.",en:"The schedule will repeat automatically every week.",fr:"La planification se répétera chaque semaine.",de:"Der Zeitplan wiederholt sich jede Woche."},"wizard.weather.heading":{it:"Logica meteo",en:"Weather logic",fr:"Logique météo",de:"Wetterlogik"},"wizard.weather.hint":{it:"Vuoi che il meteo locale modifichi automaticamente questa programmazione?",en:"Should local weather automatically affect this schedule?",fr:"La météo locale doit-elle modifier automatiquement cette planification ?",de:"Soll das lokale Wetter diesen Zeitplan automatisch anpassen?"},"wizard.weather.yes":{it:"Sì, abilita",en:"Yes, enable",fr:"Oui, activer",de:"Ja, aktivieren"},"wizard.weather.yes.desc":{it:"Suggeriremo regole utili in base al tipo di dispositivo",en:"We'll suggest useful rules based on the device type",fr:"Des règles utiles seront suggérées selon le type d'appareil",de:"Nützliche Regeln werden je nach Gerätetyp vorgeschlagen"},"wizard.weather.no":{it:"No, solo orari",en:"No, time-based only",fr:"Non, juste les horaires",de:"Nein, nur zeitbasiert"},"wizard.weather.no.desc":{it:"Esecuzione fissa indipendente dal meteo",en:"Fixed execution regardless of weather",fr:"Exécution fixe indépendante de la météo",de:"Feste Ausführung unabhängig vom Wetter"},"wizard.review.heading":{it:"Riepilogo",en:"Review",fr:"Résumé",de:"Zusammenfassung"},"wizard.review.devices":{it:"{n} selezionati",en:"{n} selected",fr:"{n} sélectionnés",de:"{n} ausgewählt"},"wizard.review.weather_on":{it:"Abilitata",en:"Enabled",fr:"Activée",de:"Aktiviert"},"wizard.review.weather_off":{it:"Disabilitata",en:"Disabled",fr:"Désactivée",de:"Deaktiviert"},"wizard.review.note":{it:"Potrai modificare ogni dettaglio dall'editor dopo la creazione.",en:"You'll be able to edit every detail after creation.",fr:"Tu pourras modifier chaque détail après la création.",de:"Nach der Erstellung kannst du alle Details bearbeiten."},"wizard.create":{it:"Crea schedulazione",en:"Create schedule",fr:"Créer la planification",de:"Zeitplan erstellen"},"devices.subtitle":{it:"Entità di Home Assistant importate · {n} dispositivi controllati",en:"Imported Home Assistant entities · {n} devices controlled",fr:"Entités Home Assistant importées · {n} appareils contrôlés",de:"Importierte Home-Assistant-Entitäten · {n} gesteuerte Geräte"},"devices.add_entity":{it:"Aggiungi entità",en:"Add entity",fr:"Ajouter une entité",de:"Entität hinzufügen"},"devices.empty.title":{it:"Nessun dispositivo importato",en:"No devices imported",fr:"Aucun appareil importé",de:"Keine Geräte importiert"},"devices.empty.hint":{it:"Aggiungi le tue prime entità HA per iniziare.",en:"Add your first HA entities to get started.",fr:"Ajoute tes premières entités HA pour commencer.",de:"Füge deine ersten HA-Entitäten hinzu, um zu starten."},"devices.types_hint":{it:"Tipo e capabilities vengono dedotti automaticamente dal dominio dell'entità HA (es. climate.* → termostato).",en:"Type and capabilities are auto-detected from the HA entity domain (e.g. climate.* → thermostat).",fr:"Le type et les capacités sont déduits automatiquement du domaine de l'entité HA (ex. climate.* → thermostat).",de:"Typ und Fähigkeiten werden automatisch aus der HA-Entitätsdomäne abgeleitet (z. B. climate.* → Thermostat)."},"devices.alias":{it:"Alias",en:"Alias",fr:"Alias",de:"Alias"},"devices.alias.placeholder":{it:"Alias (opzionale)",en:"Alias (optional)",fr:"Alias (facultatif)",de:"Alias (optional)"},"devices.import":{it:"Importa",en:"Import",fr:"Importer",de:"Importieren"},"devices.unlink":{it:"Sgancia",en:"Unlink",fr:"Détacher",de:"Trennen"},"devices.picker.title":{it:"Aggiungi entità HA",en:"Add HA entity",fr:"Ajouter une entité HA",de:"HA-Entität hinzufügen"},"devices.picker.count":{it:"{n} entità disponibili nel tuo Home Assistant",en:"{n} entities available in your Home Assistant",fr:"{n} entités disponibles dans ton Home Assistant",de:"{n} Entitäten in deinem Home Assistant verfügbar"},"devices.picker.search":{it:"Cerca per nome o entity_id…",en:"Search by name or entity_id…",fr:"Recherche par nom ou entity_id…",de:"Suche nach Name oder entity_id…"},"devices.picker.all_imported":{it:"Tutto importato",en:"All imported",fr:"Tout importé",de:"Alles importiert"},"devices.picker.all_imported.hint":{it:"Tutte le entità disponibili sono già state aggiunte.",en:"All available entities have already been added.",fr:"Toutes les entités disponibles ont déjà été ajoutées.",de:"Alle verfügbaren Entitäten wurden bereits hinzugefügt."},"settings.subtitle":{it:"Parametri globali dell'integrazione Chronos · validi per tutte le schedulazioni",en:"Global Chronos integration settings · apply to all schedules",fr:"Paramètres globaux de l'intégration Chronos · valables pour toutes les planifications",de:"Globale Chronos-Einstellungen · gelten für alle Zeitpläne"},"settings.weather.title":{it:"Sorgente meteo",en:"Weather source",fr:"Source météo",de:"Wetterquelle"},"settings.weather.subtitle":{it:"Entità HA usata per valutare le regole meteo · puoi anche puntare attributi specifici a sensori puntuali (stazione meteo locale, Ecowitt, …)",en:"HA entity used to evaluate weather rules · you can also map specific attributes to point sensors (local weather station, Ecowitt, …)",fr:"Entité HA utilisée pour évaluer les règles météo · tu peux aussi mapper des attributs spécifiques à des capteurs ponctuels (station météo locale, Ecowitt, …)",de:"HA-Entität zur Auswertung der Wetterregeln · einzelne Attribute können auch auf Punktsensoren gemappt werden (lokale Wetterstation, Ecowitt, …)"},"settings.weather.entity":{it:"Entità meteo principale",en:"Main weather entity",fr:"Entité météo principale",de:"Haupt-Wetterentität"},"settings.weather.entity.hint":{it:"Usata per le forecast.* e come fallback se nessun override è impostato qui sotto",en:"Used for forecast.* and as a fallback if no override is set below",fr:"Utilisée pour forecast.* et comme repli si aucun remplacement n'est défini ci-dessous",de:"Wird für forecast.* und als Fallback verwendet, wenn unten keine Überschreibung gesetzt ist"},"settings.weather.overrides.title":{it:"Override su sensori puntuali",en:"Point-sensor overrides",fr:"Surcharges par capteurs",de:"Punktsensor-Überschreibung"},"settings.weather.overrides.hint":{it:"Per ogni attributo puoi specificare un'entità sensor.* da cui leggere il valore. Se vuoto, viene letto dall'entità weather principale.",en:"For each attribute you can specify a sensor.* entity to read from. If empty, the value is read from the main weather entity.",fr:"Pour chaque attribut, tu peux spécifier une entité sensor.* à lire. Si vide, la valeur est lue depuis l'entité météo principale.",de:"Für jedes Attribut kannst du eine sensor.*-Entität angeben. Leer = Wert wird aus der Haupt-Wetterentität gelesen."},"settings.weather.overrides.use_main":{it:"— usa entità weather —",en:"— use weather entity —",fr:"— utiliser l'entité météo —",de:"— Wetterentität verwenden —"},"settings.weather.overrides.suggested":{it:"suggeriti",en:"suggested",fr:"suggérés",de:"empfohlen"},"settings.weather.overrides.others":{it:"Altri sensori",en:"Other sensors",fr:"Autres capteurs",de:"Weitere Sensoren"},"settings.behavior.title":{it:"Comportamento esecuzione",en:"Execution behavior",fr:"Comportement d'exécution",de:"Ausführungsverhalten"},"settings.behavior.subtitle":{it:"Frequenza di aggiornamento e granularità",en:"Update frequency and granularity",fr:"Fréquence de mise à jour et granularité",de:"Aktualisierungsfrequenz und Granularität"},"settings.polling":{it:"Polling meteo",en:"Weather polling",fr:"Sondage météo",de:"Wetter-Abfrage"},"settings.polling.hint":{it:"Ogni quanto rivalutare le regole",en:"How often rules are re-evaluated",fr:"Fréquence de réévaluation des règles",de:"Intervall zur Neuberechnung der Regeln"},"settings.snap":{it:"Snap timeline",en:"Timeline snap",fr:"Pas de la timeline",de:"Timeline-Raster"},"settings.snap.hint":{it:"Granularità nel disegnare le fasce",en:"Granularity when drawing blocks",fr:"Granularité lors du tracé des créneaux",de:"Granularität beim Zeichnen der Blöcke"},"settings.notify.title":{it:"Notifiche",en:"Notifications",fr:"Notifications",de:"Benachrichtigungen"},"settings.notify.subtitle":{it:"Eventi che vogliono una notifica HA",en:"Events that want an HA notification",fr:"Événements qui déclenchent une notification HA",de:"Ereignisse, die eine HA-Benachrichtigung auslösen"},"settings.notify.rule_triggered":{it:"Regola meteo attivata",en:"Weather rule triggered",fr:"Règle météo déclenchée",de:"Wetterregel ausgelöst"},"settings.notify.rule_triggered.desc":{it:"Quando una regola override entra in azione",en:"When an override rule kicks in",fr:"Quand une règle de remplacement s'active",de:"Wenn eine Überschreibungsregel greift"},"settings.notify.sched_skipped":{it:"Schedulazione saltata",en:"Schedule skipped",fr:"Planification ignorée",de:"Zeitplan übersprungen"},"settings.notify.sched_skipped.desc":{it:"Quando una fascia viene skippata per condizioni meteo",en:"When a block is skipped due to weather conditions",fr:"Quand un créneau est ignoré pour cause de météo",de:"Wenn ein Block aufgrund von Wetterbedingungen übersprungen wird"},"settings.notify.command_error":{it:"Errore comando",en:"Command error",fr:"Erreur de commande",de:"Befehlsfehler"},"settings.notify.command_error.desc":{it:"Se un dispositivo non risponde",en:"If a device fails to respond",fr:"Si un appareil ne répond pas",de:"Wenn ein Gerät nicht antwortet"},"settings.appearance.title":{it:"Aspetto",en:"Appearance",fr:"Apparence",de:"Erscheinungsbild"},"settings.appearance.subtitle":{it:"Tema e densità predefinita",en:"Theme and default density",fr:"Thème et densité par défaut",de:"Theme und Standarddichte"},"settings.theme":{it:"Tema",en:"Theme",fr:"Thème",de:"Theme"},"settings.theme.light":{it:"Chiaro",en:"Light",fr:"Clair",de:"Hell"},"settings.theme.dark":{it:"Scuro",en:"Dark",fr:"Sombre",de:"Dunkel"},"settings.theme.auto":{it:"Auto",en:"Auto",fr:"Auto",de:"Auto"},"settings.density":{it:"Densità",en:"Density",fr:"Densité",de:"Dichte"},"settings.density.comfortable":{it:"Comoda",en:"Comfortable",fr:"Confortable",de:"Komfortabel"},"settings.density.compact":{it:"Compatta",en:"Compact",fr:"Compact",de:"Kompakt"},"settings.timeline_default.title":{it:"Timeline predefinita",en:"Default timeline",fr:"Timeline par défaut",de:"Standard-Timeline"},"settings.timeline_default.subtitle":{it:"Quale variante mostrare di default nell'editor",en:"Which variant to show by default in the editor",fr:"Quelle variante afficher par défaut dans l'éditeur",de:"Welche Variante im Editor standardmäßig angezeigt wird"},"settings.colors.title":{it:"Colori dispositivi",en:"Device colors",fr:"Couleurs des appareils",de:"Gerätefarben"},"settings.colors.subtitle":{it:"L'accent del dispositivo riflette il suo stato corrente",en:"The device accent reflects its current state",fr:"L'accent de l'appareil reflète son état actuel",de:"Die Akzentfarbe des Geräts spiegelt seinen aktuellen Zustand wider"},"settings.colors.lights.title":{it:"Luci · usa colore reale da Home Assistant",en:"Lights · use real color from Home Assistant",fr:"Lumières · utiliser la couleur réelle de Home Assistant",de:"Lichter · echte Farbe aus Home Assistant verwenden"},"settings.colors.lights.desc":{it:"Se attivo, l'icona della luce riflette il colore RGB corrente. Altrimenti usa giallo soft.",en:"When on, the light icon reflects the current RGB color. Otherwise uses soft yellow.",fr:"Si activé, l'icône de la lumière reflète la couleur RGB actuelle. Sinon utilise un jaune doux.",de:"Wenn aktiv, spiegelt das Lichtsymbol die aktuelle RGB-Farbe wider. Sonst weiches Gelb."},"settings.colors.thermostat.title":{it:"Termostati · gradiente temperatura",en:"Thermostats · temperature gradient",fr:"Thermostats · dégradé de température",de:"Thermostate · Temperaturverlauf"},"settings.colors.thermostat.desc":{it:"Soglia ≤ → colore. La fascia oltre l'ultima soglia usa l'ultimo colore.",en:"Threshold ≤ → color. Values above the last threshold use the last color.",fr:"Seuil ≤ → couleur. Au-delà du dernier seuil, la dernière couleur est utilisée.",de:"Schwelle ≤ → Farbe. Werte über der letzten Schwelle nutzen die letzte Farbe."},"settings.colors.boiler.title":{it:"Boiler · gradiente temperatura",en:"Water heater · temperature gradient",fr:"Chauffe-eau · dégradé de température",de:"Boiler · Temperaturverlauf"},"settings.colors.boiler.desc":{it:"Stessa logica del termostato, range tipico 30-75°C.",en:"Same logic as the thermostat, typical range 30-75°C.",fr:"Même logique que le thermostat, plage typique 30-75°C.",de:"Gleiche Logik wie Thermostat, typischer Bereich 30-75 °C."},"settings.colors.preset.title":{it:"Preset modalità (climate)",en:"Climate preset modes",fr:"Préréglages climate",de:"Climate-Presets"},"settings.colors.preset.desc":{it:"Override del colore quando il termostato è in un preset specifico",en:"Color override when the thermostat is in a specific preset",fr:"Surcharge de couleur quand le thermostat est dans un préréglage spécifique",de:"Farb-Überschreibung, wenn das Thermostat in einem bestimmten Preset ist"},"settings.colors.add_stop":{it:"Stop",en:"Stop",fr:"Palier",de:"Stopp"},"settings.colors.remove_stop":{it:"Rimuovi",en:"Remove",fr:"Retirer",de:"Entfernen"},"settings.language.title":{it:"Lingua",en:"Language",fr:"Langue",de:"Sprache"},"settings.language.subtitle":{it:"Lingua dell'interfaccia Chronos",en:"Chronos UI language",fr:"Langue de l'interface Chronos",de:"Sprache der Chronos-Oberfläche"},"settings.language.auto":{it:"Auto (segui Home Assistant)",en:"Auto (follow Home Assistant)",fr:"Auto (suit Home Assistant)",de:"Auto (Home Assistant folgen)"},"live.weather.title":{it:"Meteo locale",en:"Local weather",fr:"Météo locale",de:"Lokales Wetter"},"live.weather.subtitle":{it:"Sorgente: {entity}",en:"Source: {entity}",fr:"Source : {entity}",de:"Quelle: {entity}"},"live.no_weather":{it:"Nessuna sorgente meteo configurata · vai in Impostazioni",en:"No weather source configured · go to Settings",fr:"Aucune source météo configurée · va dans Réglages",de:"Keine Wetterquelle konfiguriert · siehe Einstellungen"},"live.forecast.title":{it:"Forecast 24h",en:"24h forecast",fr:"Prévisions 24 h",de:"24-h-Vorhersage"},"live.schedules.title":{it:"Schedulazioni · stato live",en:"Schedules · live status",fr:"Planifications · état en direct",de:"Zeitpläne · Live-Status"},"live.devices.title":{it:"Dispositivi · stato live",en:"Devices · live status",fr:"Appareils · état en direct",de:"Geräte · Live-Status"},"live.devices.subtitle":{it:"Valori in tempo reale",en:"Real-time values",fr:"Valeurs en temps réel",de:"Echtzeitwerte"},"live.condition.sunny":{it:"Soleggiato",en:"Sunny",fr:"Ensoleillé",de:"Sonnig"},"live.condition.rainy":{it:"Pioggia",en:"Rainy",fr:"Pluvieux",de:"Regnerisch"},"live.condition.cloudy":{it:"Nuvoloso",en:"Cloudy",fr:"Nuageux",de:"Bewölkt"},"live.condition.partlycloudy":{it:"Parzialmente nuvoloso",en:"Partly cloudy",fr:"Partiellement nuageux",de:"Teilweise bewölkt"},"live.condition.snowy":{it:"Neve",en:"Snowy",fr:"Neige",de:"Schnee"},"live.condition.fog":{it:"Nebbia",en:"Fog",fr:"Brouillard",de:"Nebel"},"live.condition.windy":{it:"Ventoso",en:"Windy",fr:"Venteux",de:"Windig"},"week.subtitle":{it:"Vista a 7 giorni · {n} schedulazioni attive",en:"7-day view · {n} active schedules",fr:"Vue 7 jours · {n} planifications actives",de:"7-Tage-Ansicht · {n} aktive Zeitpläne"},"week.legend":{it:"Legenda",en:"Legend",fr:"Légende",de:"Legende"},"week.today":{it:"Oggi",en:"Today",fr:"Aujourd'hui",de:"Heute"},"device.state":{it:"Stato attuale",en:"Current state",fr:"État actuel",de:"Aktueller Zustand"},"device.state.live":{it:"aggiornato live",en:"live updates",fr:"mises à jour en direct",de:"Live-Aktualisierung"},"device.type":{it:"Tipo dispositivo",en:"Device type",fr:"Type d'appareil",de:"Gerätetyp"},"device.linked_schedules":{it:"Schedule collegate",en:"Linked schedules",fr:"Planifications associées",de:"Verknüpfte Zeitpläne"},"device.linked_schedules.active":{it:"{n} attive",en:"{n} active",fr:"{n} actives",de:"{n} aktiv"},"device.capabilities":{it:"Capabilities rilevate",en:"Detected capabilities",fr:"Capacités détectées",de:"Erkannte Fähigkeiten"},"device.capabilities.subtitle":{it:"Servizi HA chiamabili su questo dispositivo",en:"HA services callable on this device",fr:"Services HA disponibles pour cet appareil",de:"Auf diesem Gerät aufrufbare HA-Dienste"},"device.schedules_using.title":{it:"Schedulazioni che usano questo dispositivo",en:"Schedules using this device",fr:"Planifications qui utilisent cet appareil",de:"Zeitpläne, die dieses Gerät verwenden"},"device.schedules_using.subtitle":{it:"{n} programmazioni collegate",en:"{n} linked schedules",fr:"{n} planifications liées",de:"{n} verknüpfte Zeitpläne"},"device.no_schedules":{it:"Nessuna programmazione",en:"No schedules",fr:"Aucune planification",de:"Keine Zeitpläne"},"device.no_schedules.hint":{it:"Questo dispositivo non è incluso in nessuno schedule.",en:"This device is not included in any schedule.",fr:"Cet appareil n'est inclus dans aucune planification.",de:"Dieses Gerät ist in keinem Zeitplan enthalten."},"device.no_device.title":{it:"Nessun dispositivo",en:"No device",fr:"Aucun appareil",de:"Kein Gerät"},"device.no_device.hint":{it:"Importa prima un'entità HA.",en:"Import an HA entity first.",fr:"Importe d'abord une entité HA.",de:"Importiere zuerst eine HA-Entität."},"device.open_schedule":{it:"Apri",en:"Open",fr:"Ouvrir",de:"Öffnen"},"wr.heading":{it:"Regola meteo",en:"Weather rule",fr:"Règle météo",de:"Wetterregel"},"wr.subtitle":{it:"Costruisci una condizione IF/THEN. Verrà valutata ad ogni transizione di fascia.",en:"Build an IF/THEN condition. It is evaluated on every block transition.",fr:"Construis une condition SI/ALORS. Évaluée à chaque transition de créneau.",de:"Erstelle eine WENN/DANN-Bedingung. Wird bei jedem Blockwechsel ausgewertet."},"wr.if.title":{it:"Condizione · quando",en:"Condition · when",fr:"Condition · quand",de:"Bedingung · wann"},"wr.if.subtitle":{it:"Cosa deve essere vero per attivare la regola",en:"What must be true for the rule to fire",fr:"Ce qui doit être vrai pour déclencher la règle",de:"Was wahr sein muss, damit die Regel auslöst"},"wr.var":{it:"Variabile meteo",en:"Weather variable",fr:"Variable météo",de:"Wettervariable"},"wr.op":{it:"Operatore",en:"Operator",fr:"Opérateur",de:"Operator"},"wr.threshold":{it:"Soglia",en:"Threshold",fr:"Seuil",de:"Schwelle"},"wr.then.title":{it:"Azione · cosa fare",en:"Action · what to do",fr:"Action · que faire",de:"Aktion · was tun"},"wr.then.subtitle":{it:"L'effetto sulla fascia oraria attiva",en:"Effect on the active time block",fr:"Effet sur le créneau horaire actif",de:"Auswirkung auf den aktiven Zeitblock"},"wr.action.skip":{it:"Salta esecuzione",en:"Skip execution",fr:"Sauter l'exécution",de:"Ausführung überspringen"},"wr.action.skip.desc":{it:"La fascia non viene eseguita",en:"The block is not executed",fr:"Le créneau n'est pas exécuté",de:"Der Block wird nicht ausgeführt"},"wr.action.shift":{it:"Trasla orario",en:"Shift time",fr:"Décaler l'horaire",de:"Zeit verschieben"},"wr.action.shift.desc":{it:"Sposta l'inizio di X ore",en:"Move the start by X hours",fr:"Décale le début de X heures",de:"Verschiebt den Start um X Stunden"},"wr.action.force":{it:"Forza azione",en:"Force action",fr:"Forcer une action",de:"Aktion erzwingen"},"wr.action.force.desc":{it:"Esegue un'azione specifica",en:"Run a specific action",fr:"Exécute une action spécifique",de:"Führt eine bestimmte Aktion aus"},"wr.action.duration":{it:"Cambia durata",en:"Change duration",fr:"Changer la durée",de:"Dauer ändern"},"wr.action.duration.desc":{it:"Estende o accorcia la fascia",en:"Extend or shorten the block",fr:"Allonge ou raccourcit le créneau",de:"Verlängert oder kürzt den Block"},"wr.preview":{it:"Preview",en:"Preview",fr:"Aperçu",de:"Vorschau"},"wr.preview.subtitle":{it:"Come si comporta sulla schedulazione corrente",en:"How it behaves on the current schedule",fr:"Comment elle se comporte sur la planification actuelle",de:"Wie sich die Regel auf den aktuellen Zeitplan auswirkt"},"schedule.active":{it:"Attiva",en:"Active",fr:"Active",de:"Aktiv"},"schedule.disabled":{it:"Disattivata",en:"Disabled",fr:"Désactivée",de:"Deaktiviert"},"schedule.next_block":{it:"Prossima fascia",en:"Next block",fr:"Prochain créneau",de:"Nächster Block"},"schedule.now_block":{it:"Fascia attuale",en:"Current block",fr:"Créneau actuel",de:"Aktueller Block"},"schedule.no_blocks":{it:"Nessuna fascia",en:"No blocks",fr:"Aucun créneau",de:"Keine Blöcke"},"schedule.every_day":{it:"Ogni giorno",en:"Every day",fr:"Tous les jours",de:"Jeden Tag"},"days.short.0":{it:"Lun",en:"Mon",fr:"Lun",de:"Mo"},"days.short.1":{it:"Mar",en:"Tue",fr:"Mar",de:"Di"},"days.short.2":{it:"Mer",en:"Wed",fr:"Mer",de:"Mi"},"days.short.3":{it:"Gio",en:"Thu",fr:"Jeu",de:"Do"},"days.short.4":{it:"Ven",en:"Fri",fr:"Ven",de:"Fr"},"days.short.5":{it:"Sab",en:"Sat",fr:"Sam",de:"Sa"},"days.short.6":{it:"Dom",en:"Sun",fr:"Dim",de:"So"},"timeline.linear":{it:"Lineare",en:"Linear",fr:"Linéaire",de:"Linear"},"timeline.radial":{it:"Radiale",en:"Radial",fr:"Radial",de:"Radial"},"timeline.list":{it:"Lista",en:"List",fr:"Liste",de:"Liste"}};async function Te(e){return e.callWS({type:"chronos/devices/list"})}async function Ie(e){return e.callWS({type:"chronos/schedules/list"})}async function Pe(e,t){return e.callWS({type:"chronos/schedules/save",schedule:t})}async function Re(e){return e.callWS({type:"chronos/settings/get"})}async function We(e){return e.callWS({type:"chronos/preview/forecast"})}async function Oe(e){return e.callWS({type:"chronos/entities/available"})}async function Le(e){return e.callWS({type:"chronos/weather/entities"})}async function je(e){return e.callWS({type:"chronos/sensor/entities"})}async function Ve(e){return e.callWS({type:"chronos/actions"})}async function Ue(e){return e.callWS({type:"chronos/weather/attributes"})}function qe(e){const t=Math.floor(e),i=Math.round(60*(e-t));return`${String(t).padStart(2,"0")}:${String(i).padStart(2,"0")}`}function Fe(e,t,i){return Math.max(t,Math.min(i,e))}function Ge(e,t=15){const i=60/t;return Math.round(e*i)/i}function Ze(){return[De("days.short.0"),De("days.short.1"),De("days.short.2"),De("days.short.3"),De("days.short.4"),De("days.short.5"),De("days.short.6")]}new Proxy([],{get(e,t){if("length"===t)return 7;if(t===Symbol.iterator)return Ze()[Symbol.iterator].bind(Ze());if("map"===t||"forEach"===t||"filter"===t||"every"===t||"some"===t)return(...e)=>Ze()[t](...e);const i="string"==typeof t?parseInt(t,10):NaN;return isNaN(i)?void 0:Ze()[i]}});const Je={thermostat:{label:"Termostato",domain:"climate",capabilities:["set_temperature","hvac_mode","preset_mode"]},light:{label:"Luce",domain:"light",capabilities:["turn_on","turn_off","brightness","color_temp"]},blind:{label:"Tapparella",domain:"cover",capabilities:["open","close","set_position","stop"]},irrigation:{label:"Irrigazione",domain:"valve",capabilities:["turn_on","turn_off","duration"]},plug:{label:"Presa smart",domain:"switch",capabilities:["turn_on","turn_off"]},fan:{label:"Ventilatore",domain:"fan",capabilities:["turn_on","turn_off","speed","oscillate"]},boiler:{label:"Boiler",domain:"water_heater",capabilities:["set_temperature","operation_mode"]},mower:{label:"Tosaerba",domain:"lawn_mower",capabilities:["start_mowing","pause","dock"]},vacuum:{label:"Robot aspirapolvere",domain:"vacuum",capabilities:["start","pause","return_to_base","fan_speed"]}};function Ke(e){if(!e||!e.length)return"";if(e.every(Boolean))return De("schedule.every_day");const t=Ze();return e.map((e,i)=>e?t[i]:null).filter(Boolean).join(" · ")}const Xe=[{max:10,color:"#3b82f6"},{max:15,color:"#06b6d4"},{max:19,color:"#fbbf24"},{max:23,color:"#10b981"},{max:25,color:"#fbbf24"},{max:999,color:"#ef4444"}],Qe=[{max:35,color:"#3b82f6"},{max:50,color:"#10b981"},{max:60,color:"#fbbf24"},{max:999,color:"#ef4444"}],Ye={eco:"#10b981",comfort:"#3b82f6",sleep:"#6366f1",away:"#9ca3af",boost:"#ef4444",home:"#06b6d4",none:"#9ca3af"};function et(e,t){if(!e)return"boiler"===t?Qe:Xe;const i=e["boiler"===t?"color_stops_boiler":"color_stops_climate"];return i&&i.length?[...i].sort((e,t)=>e.max-t.max):"boiler"===t?Qe:Xe}function tt(e){const t=e?.color_presets;return{...Ye,...t||{}}}function it(e){const t=e?.color_light_use_state;return void 0===t||!!t}const st={accent:"var(--accent)",soft:"var(--accent-soft)",live:!1};function at(e,t,i){if(!t)return st;const s=t.state||"",a=t.attributes||{};if("light"===e.type){if("off"===s||"unavailable"===s)return{accent:"var(--text-muted)",soft:"var(--bg-sunken)",live:!1};if(it(i)){const e=a.rgb_color;if(Array.isArray(e)&&3===e.length){return{accent:`rgb(${e[0]}, ${e[1]}, ${e[2]})`,soft:`rgba(${e[0]}, ${e[1]}, ${e[2]}, 0.18)`,live:!0}}}return{accent:"#fbbf24",soft:"rgba(251, 191, 36, 0.18)",live:!0}}if("thermostat"===e.type||"boiler"===e.type){const t=tt(i),r=a.preset_mode;if(r&&t[r]&&"off"!==s){const e=t[r];return{accent:e,soft:rt(e),live:!0}}const n=function(e){const t=[e.current_temperature,e.temperature];for(const e of t){if("number"==typeof e)return e;const t=parseFloat(e);if(!isNaN(t))return t}return}(a);if("number"==typeof n){const t=function(e,t){const i=[...t].sort((e,t)=>e.max-t.max);for(const t of i)if(e<=t.max)return t.color;return i[i.length-1]?.color||"#9ca3af"}(n,et(i,e.type));return{accent:t,soft:rt(t),live:!0}}return st}if("blind"===e.type){const e=a.current_position;if("number"==typeof e){const t=e/100,i=Math.round(60+140*t),s=Math.round(80+100*t),a=Math.round(120+135*t);return{accent:`rgb(${i}, ${s}, ${a})`,soft:`rgba(${i}, ${s}, ${a}, 0.18)`,live:!0}}}if("fan"===e.type){const e=a.percentage;if("number"==typeof e&&"on"===s){const t=function(e,t,i){const s=e.replace("#",""),a=t.replace("#",""),r=parseInt(s.slice(0,2),16),n=parseInt(s.slice(2,4),16),o=parseInt(s.slice(4,6),16),l=parseInt(a.slice(0,2),16),d=parseInt(a.slice(2,4),16),c=parseInt(a.slice(4,6),16),p=Math.round(r+(l-r)*i),h=Math.round(n+(d-n)*i),u=Math.round(o+(c-o)*i);return`rgb(${p}, ${h}, ${u})`}("#06b6d4","#3b82f6",e/100);return{accent:t,soft:rt(t),live:!0}}}return"on"===s||"open"===s||"cleaning"===s||"mowing"===s?{accent:"#10b981",soft:"rgba(16, 185, 129, 0.18)",live:!0}:"off"===s||"closed"===s||"docked"===s||"unavailable"===s?{accent:"var(--text-muted)",soft:"var(--bg-sunken)",live:!1}:st}function rt(e){if(!e.startsWith("#"))return"var(--bg-sunken)";const t=e.replace("#","");return`rgba(${parseInt(3===t.length?t[0]+t[0]:t.slice(0,2),16)}, ${parseInt(3===t.length?t[1]+t[1]:t.slice(2,4),16)}, ${parseInt(3===t.length?t[2]+t[2]:t.slice(4,6),16)}, 0.18)`}let nt=class extends de{constructor(){super(...arguments),this.variant="linear",this.deviceType="thermostat",this.blocks=[],this.selectedIdx=-1,this.now=null,this.interactive=!0,this.height="normal",this.showWeather=!0,this.forecast=[],this._drag=null,this._boundMove=null,this._boundUp=null}render(){return"radial"===this.variant?this._renderRadial():"list"===this.variant?this._renderList():this._renderLinear()}_renderLinear(){const e=e=>e/24*100,t="compact"===this.height?"timeline timeline--compact":"mini"===this.height?"timeline timeline--mini":"timeline";return U`
       <div class="${t}" @click=${this._onTrackClick}>
-        ${this.showWeather&&"mini"!==this.height?this._renderWeatherRibbon():F}
+        ${this.showWeather&&"mini"!==this.height?this._renderWeatherRibbon():G}
         <div class="timeline__hours">
-          ${Array.from({length:24}).map(()=>W`<div></div>`)}
+          ${Array.from({length:24}).map(()=>U`<div></div>`)}
         </div>
-        ${"normal"===this.height?W`
+        ${"normal"===this.height?U`
           <div class="timeline__labels">
-            ${[0,6,12,18,24].map(t=>W`<span style="left:${e(t)}%">${String(t).padStart(2,"0")}:00</span>`)}
+            ${[0,6,12,18,24].map(t=>U`<span style="left:${e(t)}%">${String(t).padStart(2,"0")}:00</span>`)}
           </div>
-        `:F}
-        ${this.blocks.map((t,i)=>W`
+        `:G}
+        ${this.blocks.map((t,i)=>U`
           <div
             class="tl-block"
             data-selected="${this.selectedIdx===i}"
-            style="left:${e(t.start)}%;width:${e(t.end-t.start)}%;background:${Ce(this.deviceType,t.action)}"
+            style="left:${e(t.start)}%;width:${e(t.end-t.start)}%;background:${Me(this.deviceType,t.action)}"
             @mousedown=${e=>this._onBlockDown(e,i,"move")}
             @click=${e=>{e.stopPropagation(),this._fireSelect(i)}}
           >
-            ${this.interactive?W`<div class="tl-block__handle tl-block__handle--l" @mousedown=${e=>this._onBlockDown(e,i,"l")}></div>`:F}
-            <span class="truncate">${Me(this.deviceType,t.action)}</span>
-            ${"mini"!==this.height?W`<span class="mono" style="font-size:10px;opacity:0.85">${Le(t.start)}</span>`:F}
-            ${this.interactive?W`<div class="tl-block__handle tl-block__handle--r" @mousedown=${e=>this._onBlockDown(e,i,"r")}></div>`:F}
+            ${this.interactive?U`<div class="tl-block__handle tl-block__handle--l" @mousedown=${e=>this._onBlockDown(e,i,"l")}></div>`:G}
+            <span class="truncate">${Ce(this.deviceType,t.action)}</span>
+            ${"mini"!==this.height?U`<span class="mono" style="font-size:10px;opacity:0.85">${qe(t.start)}</span>`:G}
+            ${this.interactive?U`<div class="tl-block__handle tl-block__handle--r" @mousedown=${e=>this._onBlockDown(e,i,"r")}></div>`:G}
           </div>
         `)}
-        ${null!==this.now?W`<div class="tl-now" style="left:${e(this.now)}%"></div>`:F}
+        ${null!==this.now?U`<div class="tl-now" style="left:${e(this.now)}%"></div>`:G}
       </div>
-    `}_renderWeatherRibbon(){return this.forecast.length?W`
+    `}_renderWeatherRibbon(){return this.forecast.length?U`
       <div class="tl-weather">
-        ${this.forecast.map(e=>{const t=e.condition||e.state||"cloud",i=t.includes("rain")?"rain":t.includes("sun")?"sun":t.includes("snow")?"snow":"cloud";return W`<div class="tl-weather__cell" data-state="${i}"></div>`})}
+        ${this.forecast.map(e=>{const t=e.condition||e.state||"cloud",i=t.includes("rain")?"rain":t.includes("sun")?"sun":t.includes("snow")?"snow":"cloud";return U`<div class="tl-weather__cell" data-state="${i}"></div>`})}
       </div>
-    `:F}_renderRadial(){const e=420,t=210,i=210,s=170,a=120,o=null!==this.now?this.now/24*Math.PI*2-Math.PI/2:null,r=(e,s,a)=>{const o=e/24*Math.PI*2-Math.PI/2,r=t+145*Math.cos(o),n=i+145*Math.sin(o);return J`
+    `:G}_renderRadial(){const e=420,t=210,i=210,s=170,a=120,r=null!==this.now?this.now/24*Math.PI*2-Math.PI/2:null,n=(e,s,a)=>{const r=e/24*Math.PI*2-Math.PI/2,n=t+145*Math.cos(r),o=i+145*Math.sin(r);return q`
         <g style="cursor:${this.interactive?"ew-resize":"default"}" @mousedown=${e=>this._onRadialHandleDown(e,s,a)}>
-          <circle cx="${r}" cy="${n}" r="9" fill="white" stroke="var(--accent)" stroke-width="2"/>
-          <circle cx="${r}" cy="${n}" r="3" fill="var(--accent)"/>
+          <circle cx="${n}" cy="${o}" r="9" fill="white" stroke="var(--accent)" stroke-width="2"/>
+          <circle cx="${n}" cy="${o}" r="3" fill="var(--accent)"/>
         </g>
-      `},n=this.selectedIdx>=0?this.blocks[this.selectedIdx]:null;return J`
+      `},o=this.selectedIdx>=0?this.blocks[this.selectedIdx]:null;return q`
       <svg class="radial" viewBox="0 0 ${e} ${e}" style="touch-action:none">
         <circle cx="${t}" cy="${i}" r="${145}" fill="none" stroke="var(--border-soft)" stroke-width="${50}"/>
-        ${this.blocks.map((e,o)=>J`
+        ${this.blocks.map((e,r)=>q`
           <path
-            d="${((e,s,a,o)=>{const r=e/24*Math.PI*2-Math.PI/2,n=s/24*Math.PI*2-Math.PI/2,l=s-e>12?1:0;return`M ${t+a*Math.cos(r)} ${i+a*Math.sin(r)} A ${a} ${a} 0 ${l} 1 ${t+a*Math.cos(n)} ${i+a*Math.sin(n)} L ${t+o*Math.cos(n)} ${i+o*Math.sin(n)} A ${o} ${o} 0 ${l} 0 ${t+o*Math.cos(r)} ${i+o*Math.sin(r)} Z`})(e.start,e.end,s,a)}"
-            fill="${Ce(this.deviceType,e.action)}"
-            stroke="${this.selectedIdx===o?"var(--accent)":"var(--block-edge)"}"
-            stroke-width="${this.selectedIdx===o?3:1.5}"
+            d="${((e,s,a,r)=>{const n=e/24*Math.PI*2-Math.PI/2,o=s/24*Math.PI*2-Math.PI/2,l=s-e>12?1:0;return`M ${t+a*Math.cos(n)} ${i+a*Math.sin(n)} A ${a} ${a} 0 ${l} 1 ${t+a*Math.cos(o)} ${i+a*Math.sin(o)} L ${t+r*Math.cos(o)} ${i+r*Math.sin(o)} A ${r} ${r} 0 ${l} 0 ${t+r*Math.cos(n)} ${i+r*Math.sin(n)} Z`})(e.start,e.end,s,a)}"
+            fill="${Me(this.deviceType,e.action)}"
+            stroke="${this.selectedIdx===r?"var(--accent)":"var(--block-edge)"}"
+            stroke-width="${this.selectedIdx===r?3:1.5}"
             stroke-linejoin="round"
             style="cursor:${this.interactive?"grab":"pointer"}"
-            @mousedown=${e=>this._onRadialHandleDown(e,o,"move")}
-            @click=${e=>{e.stopPropagation(),this._fireSelect(o)}}
+            @mousedown=${e=>this._onRadialHandleDown(e,r,"move")}
+            @click=${e=>{e.stopPropagation(),this._fireSelect(r)}}
           />
         `)}
-        ${Array.from({length:24}).map((e,s)=>{const a=s/24*Math.PI*2-Math.PI/2,o=s%6==0?156:162;return J`<line x1="${t+168*Math.cos(a)}" y1="${i+168*Math.sin(a)}" x2="${t+o*Math.cos(a)}" y2="${i+o*Math.sin(a)}" stroke="white" stroke-width="${s%6==0?2:1}" opacity="0.7" pointer-events="none"/>`})}
-        ${[0,6,12,18].map(e=>{const s=e/24*Math.PI*2-Math.PI/2;return J`<text x="${t+195*Math.cos(s)}" y="${i+195*Math.sin(s)}" text-anchor="middle" dy="4" font-size="11">${String(e).padStart(2,"0")}</text>`})}
-        ${this.interactive&&n?J`${r(n.start,this.selectedIdx,"l")}${r(n.end,this.selectedIdx,"r")}`:F}
-        ${null!==o?J`
+        ${Array.from({length:24}).map((e,s)=>{const a=s/24*Math.PI*2-Math.PI/2,r=s%6==0?156:162;return q`<line x1="${t+168*Math.cos(a)}" y1="${i+168*Math.sin(a)}" x2="${t+r*Math.cos(a)}" y2="${i+r*Math.sin(a)}" stroke="white" stroke-width="${s%6==0?2:1}" opacity="0.7" pointer-events="none"/>`})}
+        ${[0,6,12,18].map(e=>{const s=e/24*Math.PI*2-Math.PI/2;return q`<text x="${t+195*Math.cos(s)}" y="${i+195*Math.sin(s)}" text-anchor="middle" dy="4" font-size="11">${String(e).padStart(2,"0")}</text>`})}
+        ${this.interactive&&o?q`${n(o.start,this.selectedIdx,"l")}${n(o.end,this.selectedIdx,"r")}`:G}
+        ${null!==r?q`
           <g pointer-events="none">
-            <line x1="${t+90*Math.cos(o)}" y1="${i+90*Math.sin(o)}" x2="${t+190*Math.cos(o)}" y2="${i+190*Math.sin(o)}" stroke="var(--danger)" stroke-width="2"/>
-            <circle cx="${t+190*Math.cos(o)}" cy="${i+190*Math.sin(o)}" r="5" fill="var(--danger)"/>
+            <line x1="${t+90*Math.cos(r)}" y1="${i+90*Math.sin(r)}" x2="${t+190*Math.cos(r)}" y2="${i+190*Math.sin(r)}" stroke="var(--danger)" stroke-width="2"/>
+            <circle cx="${t+190*Math.cos(r)}" cy="${i+190*Math.sin(r)}" r="5" fill="var(--danger)"/>
           </g>
-        `:F}
-        <text x="${t}" y="${204}" text-anchor="middle" class="radial__label" font-size="32" font-weight="700" pointer-events="none">${null!==this.now?Le(this.now):"—"}</text>
+        `:G}
+        <text x="${t}" y="${204}" text-anchor="middle" class="radial__label" font-size="32" font-weight="700" pointer-events="none">${null!==this.now?qe(this.now):"—"}</text>
         <text x="${t}" y="${224}" text-anchor="middle" font-size="11" pointer-events="none">24h · oggi</text>
       </svg>
-    `}_renderList(){return W`
+    `}_renderList(){return U`
       <div class="tl-list">
-        ${this.blocks.map((e,t)=>W`
+        ${this.blocks.map((e,t)=>U`
           <div
             class="tl-list__row"
             style="border-color:${this.selectedIdx===t?"var(--accent)":"var(--border-soft)"};background:${this.selectedIdx===t?"var(--accent-soft)":"var(--bg-sunken)"}"
             @click=${()=>this._fireSelect(t)}
           >
-            <div class="tl-list__time">${Le(e.start)} → ${Le(e.end)}</div>
+            <div class="tl-list__time">${qe(e.start)} → ${qe(e.end)}</div>
             <div class="tl-list__mode">
-              <span class="tl-list__mode-dot" style="background:${Ce(this.deviceType,e.action)}"></span>
-              <strong>${Me(this.deviceType,e.action)}</strong>
+              <span class="tl-list__mode-dot" style="background:${Me(this.deviceType,e.action)}"></span>
+              <strong>${Ce(this.deviceType,e.action)}</strong>
             </div>
             <span class="mono text-xs text-mute">${Math.round(60*(e.end-e.start))} min</span>
           </div>
         `)}
       </div>
-    `}_onBlockDown(e,t,i){if(!this.interactive)return;e.stopPropagation(),e.preventDefault(),this._fireSelect(t);const s=this.blocks[t];this._drag={idx:t,handle:i,startX:e.clientX,origStart:s.start,origEnd:s.end},this._boundMove=e=>this._onDragMove(e),this._boundUp=()=>this._onDragUp(),window.addEventListener("mousemove",this._boundMove),window.addEventListener("mouseup",this._boundUp)}_onDragMove(e){if(!this._drag)return;const t=this.shadowRoot?.querySelector(".timeline");if(!t)return;const i=t.getBoundingClientRect(),s=Ve(Ue((e.clientX-i.left)/i.width*24,0,24)),a=[...this.blocks],o={...a[this._drag.idx]};if("l"===this._drag.handle)o.start=Ue(s,0,o.end-.25);else if("r"===this._drag.handle)o.end=Ue(s,o.start+.25,24);else{const t=(e.clientX-this._drag.startX)/i.width*24,s=this._drag.origEnd-this._drag.origStart;let a=Ue(this._drag.origStart+t,0,24-s);a=Ve(a),o.start=a,o.end=a+s}a[this._drag.idx]=o,this._fireBlocksChanged(a)}_onDragUp(){this._drag=null,this._boundMove&&window.removeEventListener("mousemove",this._boundMove),this._boundUp&&window.removeEventListener("mouseup",this._boundUp),this._boundMove=null,this._boundUp=null}_onRadialHandleDown(e,t,i){if(!this.interactive)return;e.stopPropagation(),e.preventDefault(),this._fireSelect(t);const s=this.blocks[t],a=this.shadowRoot?.querySelector(".radial");if(!a)return;const o=e=>{const t=a.getBoundingClientRect(),i=420,s=(e.clientX-t.left)/t.width*i,o=(e.clientY-t.top)/t.height*i;let r=Math.atan2(o-210,s-210)+Math.PI/2;return r<0&&(r+=2*Math.PI),r/(2*Math.PI)*24},r=o(e),n=e=>{const a=o(e),n=Ve(a),l=[...this.blocks],d={...l[t]};if("l"===i)d.start=Ue(n,0,d.end-.25);else if("r"===i)d.end=Ue(n,d.start+.25,24);else{const e=a-r,t=s.end-s.start;let i=s.start+e;i=Ve(i),i=Ue(i,0,24-t),d.start=i,d.end=i+t}l[t]=d,this._fireBlocksChanged(l)},l=()=>{window.removeEventListener("mousemove",n),window.removeEventListener("mouseup",l)};window.addEventListener("mousemove",n),window.addEventListener("mouseup",l)}_onTrackClick(e){if(!this.interactive)return;if(e.target.closest(".tl-block"))return;const t=this.shadowRoot?.querySelector(".timeline");if(!t)return;const i=t.getBoundingClientRect(),s=Ue((e.clientX-i.left)/i.width*24,0,24),a=Math.max(0,Ve(s)-.5),o=Math.min(24,a+1),r=this.blocks.some(e=>!(o<=e.start||a>=e.end));if(r)return;const n=[...this.blocks,{start:a,end:o,action:Ee(this.deviceType)}];this._fireBlocksChanged(n)}_fireSelect(e){this.dispatchEvent(new CustomEvent("block-select",{detail:{index:e}}))}_fireBlocksChanged(e){this.dispatchEvent(new CustomEvent("blocks-changed",{detail:{blocks:e}}))}};tt.styles=be,e([ve({type:String})],tt.prototype,"variant",void 0),e([ve({type:String})],tt.prototype,"deviceType",void 0),e([ve({type:Array})],tt.prototype,"blocks",void 0),e([ve({type:Number})],tt.prototype,"selectedIdx",void 0),e([ve({type:Number})],tt.prototype,"now",void 0),e([ve({type:Boolean})],tt.prototype,"interactive",void 0),e([ve({type:String})],tt.prototype,"height",void 0),e([ve({type:Boolean})],tt.prototype,"showWeather",void 0),e([ve({type:Array})],tt.prototype,"forecast",void 0),e([ge()],tt.prototype,"_drag",void 0),tt=e([pe("chronos-timeline")],tt);let it=class extends de{constructor(){super(...arguments),this.nowHour=0}render(){const{_schedules:e,_devices:t}=this.card,i=e.length,s=e.filter(e=>e.enabled).length,a=e.reduce((e,t)=>e+(t.weather_rules||[]).filter(e=>e.active).length,0);return W`
+    `}_onBlockDown(e,t,i){if(!this.interactive)return;e.stopPropagation(),e.preventDefault(),this._fireSelect(t);const s=this.blocks[t];this._drag={idx:t,handle:i,startX:e.clientX,origStart:s.start,origEnd:s.end},this._boundMove=e=>this._onDragMove(e),this._boundUp=()=>this._onDragUp(),window.addEventListener("mousemove",this._boundMove),window.addEventListener("mouseup",this._boundUp)}_onDragMove(e){if(!this._drag)return;const t=this.shadowRoot?.querySelector(".timeline");if(!t)return;const i=t.getBoundingClientRect(),s=Ge(Fe((e.clientX-i.left)/i.width*24,0,24)),a=[...this.blocks],r={...a[this._drag.idx]};if("l"===this._drag.handle)r.start=Fe(s,0,r.end-.25);else if("r"===this._drag.handle)r.end=Fe(s,r.start+.25,24);else{const t=(e.clientX-this._drag.startX)/i.width*24,s=this._drag.origEnd-this._drag.origStart;let a=Fe(this._drag.origStart+t,0,24-s);a=Ge(a),r.start=a,r.end=a+s}a[this._drag.idx]=r,this._fireBlocksChanged(a)}_onDragUp(){this._drag=null,this._boundMove&&window.removeEventListener("mousemove",this._boundMove),this._boundUp&&window.removeEventListener("mouseup",this._boundUp),this._boundMove=null,this._boundUp=null}_onRadialHandleDown(e,t,i){if(!this.interactive)return;e.stopPropagation(),e.preventDefault(),this._fireSelect(t);const s=this.blocks[t],a=this.shadowRoot?.querySelector(".radial");if(!a)return;const r=e=>{const t=a.getBoundingClientRect(),i=420,s=(e.clientX-t.left)/t.width*i,r=(e.clientY-t.top)/t.height*i;let n=Math.atan2(r-210,s-210)+Math.PI/2;return n<0&&(n+=2*Math.PI),n/(2*Math.PI)*24},n=r(e),o=e=>{const a=r(e),o=Ge(a),l=[...this.blocks],d={...l[t]};if("l"===i)d.start=Fe(o,0,d.end-.25);else if("r"===i)d.end=Fe(o,d.start+.25,24);else{const e=a-n,t=s.end-s.start;let i=s.start+e;i=Ge(i),i=Fe(i,0,24-t),d.start=i,d.end=i+t}l[t]=d,this._fireBlocksChanged(l)},l=()=>{window.removeEventListener("mousemove",o),window.removeEventListener("mouseup",l)};window.addEventListener("mousemove",o),window.addEventListener("mouseup",l)}_onTrackClick(e){if(!this.interactive)return;if(e.target.closest(".tl-block"))return;const t=this.shadowRoot?.querySelector(".timeline");if(!t)return;const i=t.getBoundingClientRect(),s=Fe((e.clientX-i.left)/i.width*24,0,24),a=Math.max(0,Ge(s)-.5),r=Math.min(24,a+1),n=this.blocks.some(e=>!(r<=e.start||a>=e.end));if(n)return;const o=[...this.blocks,{start:a,end:r,action:Ee(this.deviceType)}];this._fireBlocksChanged(o)}_fireSelect(e){this.dispatchEvent(new CustomEvent("block-select",{detail:{index:e}}))}_fireBlocksChanged(e){this.dispatchEvent(new CustomEvent("blocks-changed",{detail:{blocks:e}}))}};nt.styles=fe,e([ve({type:String})],nt.prototype,"variant",void 0),e([ve({type:String})],nt.prototype,"deviceType",void 0),e([ve({type:Array})],nt.prototype,"blocks",void 0),e([ve({type:Number})],nt.prototype,"selectedIdx",void 0),e([ve({type:Number})],nt.prototype,"now",void 0),e([ve({type:Boolean})],nt.prototype,"interactive",void 0),e([ve({type:String})],nt.prototype,"height",void 0),e([ve({type:Boolean})],nt.prototype,"showWeather",void 0),e([ve({type:Array})],nt.prototype,"forecast",void 0),e([ge()],nt.prototype,"_drag",void 0),nt=e([pe("chronos-timeline")],nt);let ot=class extends de{constructor(){super(...arguments),this.nowHour=0}render(){const{_schedules:e,_devices:t}=this.card,i=e.length,s=e.filter(e=>e.enabled).length,a=e.reduce((e,t)=>e+(t.weather_rules||[]).filter(e=>e.active).length,0);return U`
       <div class="col" style="gap:22px">
         <div>
-          <h1 class="page-title">Le tue schedulazioni</h1>
-          <p class="page-sub">Programmazione oraria con override meteo · ${s} di ${i} attive · ${a} regole meteo live</p>
+          <h1 class="page-title">${De("screen.overview.title")}</h1>
+          <p class="page-sub">${De("overview.subtitle",{n:s,tot:i})}</p>
         </div>
 
         <div class="grid-3">
           <div class="kpi">
-            <div class="kpi__label">Schedulazioni attive</div>
+            <div class="kpi__label">${De("overview.kpi.active")}</div>
             <div class="kpi__value">${s}<span class="text-mute" style="font-size:16px;margin-left:6px">/${i}</span></div>
-            <div class="kpi__delta">su ${t.length} dispositivi connessi</div>
+            <div class="kpi__delta">${t.length} ${De("overview.kpi.devices").toLowerCase()}</div>
           </div>
           <div class="kpi">
-            <div class="kpi__label">Regole meteo</div>
+            <div class="kpi__label">${De("overview.kpi.weather_rules")}</div>
             <div class="kpi__value">${a}</div>
-            <div class="kpi__delta">override condizionali</div>
+            <div class="kpi__delta">${De("device.state.live")}</div>
           </div>
           <div class="kpi">
-            <div class="kpi__label">Ora locale</div>
-            <div class="kpi__value">${Le(this.nowHour)}</div>
-            <div class="kpi__delta">aggiornamento live</div>
+            <div class="kpi__label">${De("overview.kpi.now")}</div>
+            <div class="kpi__value">${qe(this.nowHour)}</div>
+            <div class="kpi__delta">${De("device.state.live")}</div>
           </div>
         </div>
 
         <div class="sp-between">
           <div class="row">
-            <h2 style="margin:0;font-size:16px;font-weight:600;letter-spacing:-0.01em">Tutte le schedulazioni</h2>
+            <h2 style="margin:0;font-size:16px;font-weight:600;letter-spacing:-0.01em">${De("nav.overview")}</h2>
             <span class="tag mono">${i}</span>
           </div>
           <div class="row">
-            <button class="btn" @click=${()=>this.card.navigate("week")}>${me("calendar",14)} Vista settimana</button>
-            <button class="btn btn--primary" @click=${()=>this.card.navigate("wizard")}>${me("plus",14)} Nuova schedulazione</button>
+            <button class="btn" @click=${()=>this.card.navigate("week")}>${be("calendar",14)} ${De("nav.week")}</button>
+            <button class="btn btn--primary" @click=${()=>this.card.navigate("wizard")}>${be("plus",14)} ${De("nav.new_schedule")}</button>
           </div>
         </div>
 
         <div class="grid-auto">
-          ${e.map(e=>{const i=(e.device_ids||[]).map(e=>t.find(t=>t.id===e)).filter(Boolean),s=(e.weather_rules||[]).filter(e=>e.active).length;return W`
+          ${e.map(e=>{const i=(e.device_ids||[]).map(e=>t.find(t=>t.id===e)).filter(Boolean),s=(e.weather_rules||[]).filter(e=>e.active).length;return U`
               <div class="sched-card" data-selected="${e.id===this.card._selectedId}"
                 @click=${()=>this.card.selectSchedule(e.id,"editor")}>
                 <div class="sched-card__header">
                   <div style="flex:1;min-width:0">
                     <h3 class="sched-card__title">${e.name}</h3>
-                    <div class="sched-card__sub">${this._computeRepeat(e.days)} · ${e.blocks.length} fasce</div>
+                    <div class="sched-card__sub">${Ke(e.days)} · ${e.blocks.length}</div>
                   </div>
                   <label class="switch" @click=${e=>e.stopPropagation()}>
                     <input type="checkbox" .checked=${e.enabled} @change=${t=>{this.card.doToggleSchedule(e.id,t.target.checked)}}/>
@@ -711,33 +711,33 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
 
                 <div class="sched-card__footer">
                   <div class="sched-card__devices">
-                    ${i.slice(0,5).map(e=>{const t=Ye(e,this.card.hass?.states?.[e.entity_id],this.card._settings);return W`<div class="device-icon-pill" title="${e.alias}" style="background:${t.soft};color:${t.accent}">${xe(e.type,14)}</div>`})}
-                    ${i.length>5?W`<div class="device-icon-pill mono" style="font-size:10px">+${i.length-5}</div>`:F}
+                    ${i.slice(0,5).map(e=>{const t=at(e,this.card.hass?.states?.[e.entity_id],this.card._settings);return U`<div class="device-icon-pill" title="${e.alias}" style="background:${t.soft};color:${t.accent}">${we(e.type,14)}</div>`})}
+                    ${i.length>5?U`<div class="device-icon-pill mono" style="font-size:10px">+${i.length-5}</div>`:G}
                   </div>
                   <div style="flex:1"></div>
-                  ${s>0?W`<span class="chip chip--weather">${me("cloud",11)} ${s} regole</span>`:F}
-                  <span class="chip ${e.enabled?"chip--on":""}"><span class="chip__dot"></span>${e.enabled?"Attiva":"Disattivata"}</span>
+                  ${s>0?U`<span class="chip chip--weather">${be("cloud",11)} ${De("overview.rules_count",{n:s})}</span>`:G}
+                  <span class="chip ${e.enabled?"chip--on":""}"><span class="chip__dot"></span>${e.enabled?De("schedule.active"):De("schedule.disabled")}</span>
                 </div>
               </div>
             `})}
         </div>
       </div>
-    `}_computeRepeat(e){if(!e||!e.length)return"";const t=["Lun","Mar","Mer","Gio","Ven","Sab","Dom"];return e.every(Boolean)?"Ogni giorno":e.map((e,i)=>e?t[i]:null).filter(Boolean).join(" · ")}};it.styles=be,e([ve({attribute:!1,hasChanged:()=>!0})],it.prototype,"card",void 0),e([ve({type:Number})],it.prototype,"nowHour",void 0),it=e([pe("chronos-overview")],it);let st=class extends de{constructor(){super(...arguments),this.nowHour=0,this._selectedBlockIdx=0}render(){const e=this.card._schedules.find(e=>e.id===this.card._selectedId)||this.card._schedules[0];if(!e)return W`<div class="text-mute" style="padding:40px;text-align:center">Nessuna schedulazione selezionata</div>`;const t=e.blocks[this._selectedBlockIdx],i=(e.device_ids||[]).map(e=>this.card._devices.find(t=>t.id===e)).filter(Boolean),s=e.device_type,a=Je[s]||{label:s},o=Ae(s),r=t?.action?ze(s,t.action.id):null,n=this.card.isDirty;return W`
+    `}};ot.styles=fe,e([ve({attribute:!1,hasChanged:()=>!0})],ot.prototype,"card",void 0),e([ve({type:Number})],ot.prototype,"nowHour",void 0),ot=e([pe("chronos-overview")],ot);let lt=class extends de{constructor(){super(...arguments),this.nowHour=0,this._selectedBlockIdx=0}render(){const e=this.card._schedules.find(e=>e.id===this.card._selectedId)||this.card._schedules[0];if(!e)return U`<div class="text-mute" style="padding:40px;text-align:center">${De("overview.no_schedules")}</div>`;const t=e.blocks[this._selectedBlockIdx],i=(e.device_ids||[]).map(e=>this.card._devices.find(t=>t.id===e)).filter(Boolean),s=e.device_type,a=Je[s]||{label:s},r=Ae(s),n=t?.action?ze(s,t.action.id):null,o=this.card.isDirty;return U`
       <div class="col" style="gap:18px">
         <div class="sp-between">
           <div>
             <button class="btn btn--ghost btn--sm" @click=${()=>this.card.navigate("overview")} style="margin-bottom:6px">
-              ${me("chevron-left",14)} Torna alla panoramica
+              ${be("chevron-left",14)} ${De("nav.overview")}
             </button>
             <input class="input" .value=${e.name}
               @input=${t=>this.card.updateScheduleLocal(e.id,{name:t.target.value})}
               style="font-size:22px;font-weight:700;letter-spacing:-0.02em;border:1px solid transparent;background:transparent;padding:4px 8px;margin-left:-8px;width:460px"/>
             <div class="row" style="margin-top:6px;gap:10px;flex-wrap:wrap">
-              <span class="chip ${e.enabled?"chip--on":""}"><span class="chip__dot"></span>${e.enabled?"In esecuzione":"Disattivata"}</span>
-              <span class="chip">${me("repeat",11)} ${l=e.days,l.every(Boolean)?"Ogni giorno":l.map((e,t)=>e?We[t]:null).filter(Boolean).join(" · ")}</span>
-              <span class="chip chip--accent">${xe(s,11)} ${a.label}</span>
-              <span class="chip">${me("device",11)} ${i.length} dispositivi</span>
-              ${(e.weather_rules||[]).filter(e=>e.active).length>0?W`<span class="chip chip--weather">${me("cloud",11)} ${(e.weather_rules||[]).filter(e=>e.active).length} regole meteo</span>`:F}
+              <span class="chip ${e.enabled?"chip--on":""}"><span class="chip__dot"></span>${e.enabled?De("schedule.active"):De("schedule.disabled")}</span>
+              <span class="chip">${be("repeat",11)} ${Ke(e.days)}</span>
+              <span class="chip chip--accent">${we(s,11)} ${a.label}</span>
+              <span class="chip">${be("device",11)} ${i.length}</span>
+              ${(e.weather_rules||[]).filter(e=>e.active).length>0?U`<span class="chip chip--weather">${be("cloud",11)} ${De("overview.rules_count",{n:(e.weather_rules||[]).filter(e=>e.active).length})}</span>`:G}
             </div>
           </div>
           <div class="row" style="gap:10px">
@@ -746,11 +746,11 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
               <span class="switch__track"></span>
               <span class="switch__thumb"></span>
             </label>
-            <button class="btn" @click=${()=>this.card.doRemoveSchedule(e.id)}>${me("trash",14)}</button>
-            <button class="btn btn--primary" ?disabled=${!n}
-              style="opacity:${n?1:.5};cursor:${n?"pointer":"not-allowed"}"
+            <button class="btn" @click=${()=>this.card.doRemoveSchedule(e.id)}>${be("trash",14)}</button>
+            <button class="btn btn--primary" ?disabled=${!o}
+              style="opacity:${o?1:.5};cursor:${o?"pointer":"not-allowed"}"
               @click=${()=>this.card.saveCurrentSchedule()}>
-              ${me("check",14)} ${n?"Salva modifiche":"Salvato"}
+              ${be("check",14)} ${De(o?"editor.dirty.unsaved":"editor.dirty.saved")}
             </button>
           </div>
         </div>
@@ -761,13 +761,13 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
             <div class="card">
               <div class="card__header">
                 <div style="flex:1;min-width:0">
-                  <h3 class="card__title">Programmazione 24h</h3>
-                  <p class="card__sub">Trascina i bordi per ridimensionare · click sulla traccia vuota per aggiungere</p>
+                  <h3 class="card__title">${De("wizard.step.time")}</h3>
+                  <p class="card__sub">${De("editor.add_block_hint")}</p>
                 </div>
                 <div class="segmented">
-                  ${["linear","radial","list"].map(e=>W`
+                  ${["linear","radial","list"].map(e=>U`
                     <button data-active="${this.card._timelineVariant===e}" @click=${()=>this.card.setTimelineVariant(e)}>
-                      ${{linear:"Lineare",radial:"Radiale",list:"Lista"}[e]}
+                      ${De("timeline."+e)}
                     </button>
                   `)}
                 </div>
@@ -785,15 +785,15 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
               ></chronos-timeline>
               <div class="row" style="margin-top:14px;justify-content:space-between;flex-wrap:wrap;gap:10px">
                 <div class="row" style="gap:14px;flex-wrap:wrap">
-                  ${o.map(e=>W`
+                  ${r.map(e=>U`
                     <div class="row" style="gap:6px">
-                      <span style="width:10px;height:10px;border-radius:3px;background:${we[e.kind]};display:inline-block"></span>
+                      <span style="width:10px;height:10px;border-radius:3px;background:${ye[e.kind]};display:inline-block"></span>
                       <span class="text-xs">${e.label}</span>
                     </div>
                   `)}
                 </div>
                 <button class="btn btn--sm" @click=${()=>{const t=[...e.blocks,{start:12,end:13,action:Ee(s)}];this.card.updateBlocksLocal(e.id,t)}}>
-                  ${me("plus",12)} Aggiungi fascia
+                  ${be("plus",12)} ${De("common.add")}
                 </button>
               </div>
             </div>
@@ -801,20 +801,20 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
             <!-- Days -->
             <div class="card">
               <div class="card__header">
-                <div style="flex:1"><h3 class="card__title">Ripetizione settimanale</h3><p class="card__sub">Quali giorni applicare questa programmazione</p></div>
+                <div style="flex:1"><h3 class="card__title">${De("editor.days.repeat")}</h3><p class="card__sub">${De("wizard.days.hint")}</p></div>
               </div>
               <div class="row" style="gap:16px;flex-wrap:wrap">
                 <div class="row" style="gap:4px">
-                  ${We.map((t,i)=>{const s=e.days[i];return W`
+                  ${Ze().map((t,i)=>{const s=e.days[i];return U`
                       <button class="mono" @click=${()=>{const t=[...e.days];t[i]=t[i]?0:1,this.card.updateScheduleLocal(e.id,{days:t})}} style="width:34px;height:30px;border-radius:8px;font-size:11px;font-weight:600;letter-spacing:0.02em;background:${s?"var(--accent)":"var(--bg-sunken)"};color:${s?"white":"var(--text-muted)"};border:1px solid ${s?"transparent":"var(--border-soft)"};cursor:pointer">
                         ${t}
                       </button>
                     `})}
                 </div>
                 <div class="row" style="gap:6px">
-                  <button class="btn btn--sm btn--ghost" @click=${()=>this.card.updateScheduleLocal(e.id,{days:[1,1,1,1,1,1,1]})}>Tutti</button>
-                  <button class="btn btn--sm btn--ghost" @click=${()=>this.card.updateScheduleLocal(e.id,{days:[1,1,1,1,1,0,0]})}>Lavorativi</button>
-                  <button class="btn btn--sm btn--ghost" @click=${()=>this.card.updateScheduleLocal(e.id,{days:[0,0,0,0,0,1,1]})}>Weekend</button>
+                  <button class="btn btn--sm btn--ghost" @click=${()=>this.card.updateScheduleLocal(e.id,{days:[1,1,1,1,1,1,1]})}>${De("editor.days.all")}</button>
+                  <button class="btn btn--sm btn--ghost" @click=${()=>this.card.updateScheduleLocal(e.id,{days:[1,1,1,1,1,0,0]})}>${De("editor.days.weekdays")}</button>
+                  <button class="btn btn--sm btn--ghost" @click=${()=>this.card.updateScheduleLocal(e.id,{days:[0,0,0,0,0,1,1]})}>${De("editor.days.weekend")}</button>
                 </div>
               </div>
             </div>
@@ -822,15 +822,15 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
             <!-- Weather rules -->
             <div class="card">
               <div class="card__header">
-                <div style="flex:1"><h3 class="card__title">Regole meteo</h3><p class="card__sub">Override condizionali che modificano l'esecuzione</p></div>
-                <button class="btn btn--sm" @click=${()=>this.card.navigate("weatherRule")}>${me("plus",12)} Nuova regola</button>
+                <div style="flex:1"><h3 class="card__title">${De("editor.weather_rules.title")}</h3><p class="card__sub">${De("nav.weather_rules")}</p></div>
+                <button class="btn btn--sm" @click=${()=>this.card.navigate("weatherRule")}>${be("plus",12)} ${De("editor.weather_rules.add")}</button>
               </div>
-              ${(e.weather_rules||[]).length?W`<div class="col" style="gap:8px">
-                    ${(e.weather_rules||[]).map((t,i)=>W`
+              ${(e.weather_rules||[]).length?U`<div class="col" style="gap:8px">
+                    ${(e.weather_rules||[]).map((t,i)=>U`
                       <div class="rule-block">
-                        <span class="rule-block__label rule-block__label--if">SE</span>
+                        <span class="rule-block__label rule-block__label--if">IF</span>
                         <span class="rule-token rule-token--weather">${t.if}</span>
-                        <span class="rule-block__label rule-block__label--then">ALLORA</span>
+                        <span class="rule-block__label rule-block__label--then">THEN</span>
                         <span class="rule-token rule-token--accent">${t.then}</span>
                         <div style="flex:1"></div>
                         <label class="switch">
@@ -840,10 +840,9 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
                         </label>
                       </div>
                     `)}
-                  </div>`:W`<div style="text-align:center;padding:40px 20px;color:var(--text-muted)">
-                    <div style="width:52px;height:52px;margin:0 auto 12px;border-radius:14px;background:var(--bg-sunken);display:grid;place-items:center;color:var(--text-soft)">${me("cloud",22)}</div>
-                    <div style="font-weight:600;color:var(--text);font-size:14px">Nessuna regola meteo</div>
-                    <div style="font-size:12.5px;margin-top:4px">Aggiungine una per modulare il comportamento in base alle condizioni esterne.</div>
+                  </div>`:U`<div style="text-align:center;padding:40px 20px;color:var(--text-muted)">
+                    <div style="width:52px;height:52px;margin:0 auto 12px;border-radius:14px;background:var(--bg-sunken);display:grid;place-items:center;color:var(--text-soft)">${be("cloud",22)}</div>
+                    <div style="font-weight:600;color:var(--text);font-size:14px">${De("editor.weather_rules.empty")}</div>
                   </div>`}
             </div>
           </div>
@@ -852,57 +851,57 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
           <div class="col" style="gap:16px">
             <div class="card">
               <div class="card__header">
-                <div style="flex:1"><h3 class="card__title">Fascia selezionata</h3><p class="card__sub">${t?`${Le(t.start)} → ${Le(t.end)}`:""}</p></div>
+                <div style="flex:1"><h3 class="card__title">${De("wizard.time.selected")}</h3><p class="card__sub">${t?`${qe(t.start)} → ${qe(t.end)}`:""}</p></div>
               </div>
-              ${t?W`
+              ${t?U`
                 <div class="col" style="gap:12px">
                   <div class="grid-2">
-                    <div class="field"><label class="field__label">Da</label><input class="input mono" .value=${Le(t.start)} readonly/></div>
-                    <div class="field"><label class="field__label">A</label><input class="input mono" .value=${Le(t.end)} readonly/></div>
+                    <div class="field"><label class="field__label">${De("editor.block.from")}</label><input class="input mono" .value=${qe(t.start)} readonly/></div>
+                    <div class="field"><label class="field__label">${De("editor.block.to")}</label><input class="input mono" .value=${qe(t.end)} readonly/></div>
                   </div>
                   <div class="field">
-                    <label class="field__label">Azione su ${a.label?.toLowerCase()}</label>
+                    <label class="field__label">${De("editor.block.action")}</label>
                     <div class="row" style="gap:6px;flex-wrap:wrap">
-                      ${o.map(i=>{const s=t.action?.id===i.id;return W`<button class="btn btn--sm" @click=${()=>this._setBlockAction(e.id,i.id,i.value?.default)}
-                          style="background:${s?we[i.kind]:"var(--surface)"};color:${s?"white":"var(--text)"};border-color:${s?"transparent":"var(--border)"}">
+                      ${r.map(i=>{const s=t.action?.id===i.id;return U`<button class="btn btn--sm" @click=${()=>this._setBlockAction(e.id,i.id,i.value?.default)}
+                          style="background:${s?ye[i.kind]:"var(--surface)"};color:${s?"white":"var(--text)"};border-color:${s?"transparent":"var(--border)"}">
                           ${i.label}</button>`})}
                     </div>
-                    <span class="field__hint mono" style="margin-top:4px">${r?.service||""}</span>
+                    <span class="field__hint mono" style="margin-top:4px">${n?.service||""}</span>
                   </div>
-                  ${r?.value?W`
+                  ${n?.value?U`
                     <div class="field">
-                      <label class="field__label">${r.value.label||"Valore"} ${r.value.unit?W`<span class="text-mute">(${r.value.unit})</span>`:F}</label>
-                      ${"number"===r.value.type?W`
+                      <label class="field__label">${n.value.label||De("common.value")} ${n.value.unit?U`<span class="text-mute">(${n.value.unit})</span>`:G}</label>
+                      ${"number"===n.value.type?U`
                         <div class="row" style="gap:10px;align-items:center">
-                          <input type="range" min="${r.value.min}" max="${r.value.max}" step="${r.value.step}"
-                            .value=${String(t.action?.value??r.value.default)}
+                          <input type="range" min="${n.value.min}" max="${n.value.max}" step="${n.value.step}"
+                            .value=${String(t.action?.value??n.value.default)}
                             @input=${t=>this._setBlockValue(e.id,parseFloat(t.target.value))}
                             style="flex:1"/>
-                          <span class="mono" style="min-width:60px;text-align:right;font-weight:600">${t.action?.value??r.value.default}${r.value.unit}</span>
+                          <span class="mono" style="min-width:60px;text-align:right;font-weight:600">${t.action?.value??n.value.default}${n.value.unit}</span>
                         </div>
-                      `:"enum"===r.value.type?W`
+                      `:"enum"===n.value.type?U`
                         <select class="input"
                           @change=${t=>this._setBlockValue(e.id,t.target.value)}>
-                          ${(r.value.options||[]).map(e=>{const i=String(t.action?.value??r.value.default);return W`<option value="${e}" ?selected=${i===e}>${e}</option>`})}
+                          ${(n.value.options||[]).map(e=>{const i=String(t.action?.value??n.value.default);return U`<option value="${e}" ?selected=${i===e}>${e}</option>`})}
                         </select>
-                      `:F}
+                      `:G}
                     </div>
-                  `:F}
+                  `:G}
                   <button class="btn btn--ghost" style="color:var(--danger)" @click=${()=>this._removeBlock(e.id)}>
-                    ${me("trash",14)} Elimina fascia
+                    ${be("trash",14)} ${De("editor.block.delete")}
                   </button>
                 </div>
-              `:F}
+              `:G}
             </div>
 
             <div class="card">
               <div class="card__header">
-                <div style="flex:1"><h3 class="card__title">Dispositivi influenzati</h3><p class="card__sub">${i.length} selezionati</p></div>
+                <div style="flex:1"><h3 class="card__title">${De("editor.devices_section")}</h3><p class="card__sub">${De("editor.devices_count",{n:i.length})}</p></div>
               </div>
               <div class="col" style="gap:2px">
-                ${i.map(e=>W`
+                ${i.map(e=>U`
                   <div class="device-row">
-                    <div class="device-row__icon">${xe(e.type,17)}</div>
+                    <div class="device-row__icon">${we(e.type,17)}</div>
                     <div class="device-row__main">
                       <div class="device-row__name">${e.alias}</div>
                       <div class="device-row__meta">${e.area} · ${e.entity_id}</div>
@@ -914,37 +913,37 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
           </div>
         </div>
       </div>
-    `;var l}_setBlockAction(e,t,i){const s=this.card._schedules.find(t=>t.id===e);if(!s)return;const a=[...s.blocks];a[this._selectedBlockIdx]={...a[this._selectedBlockIdx],action:{id:t,value:i}},this.card.updateBlocksLocal(e,a)}_setBlockValue(e,t){const i=this.card._schedules.find(t=>t.id===e);if(!i)return;const s=[...i.blocks],a=s[this._selectedBlockIdx];s[this._selectedBlockIdx]={...a,action:{...a.action,value:t}},this.card.updateBlocksLocal(e,s)}_removeBlock(e){const t=this.card._schedules.find(t=>t.id===e);if(!t||t.blocks.length<=1)return;const i=t.blocks.filter((e,t)=>t!==this._selectedBlockIdx);this._selectedBlockIdx=Math.max(0,this._selectedBlockIdx-1),this.card.updateBlocksLocal(e,i)}};st.styles=be,e([ve({attribute:!1,hasChanged:()=>!0})],st.prototype,"card",void 0),e([ve({type:Number})],st.prototype,"nowHour",void 0),e([ge()],st.prototype,"_selectedBlockIdx",void 0),st=e([pe("chronos-editor")],st);const at=[{key:"skip",label:"Salta esecuzione",desc:"Annulla questa fascia"},{key:"shift",label:"Modifica valore",desc:"Aggiungi/sottrai dal valore"},{key:"force",label:"Forza azione",desc:"Sostituisci con un'altra azione"},{key:"duration",label:"Modifica durata",desc:"Estendi o riduci la fascia"}];let ot=class extends de{constructor(){super(...arguments),this.nowHour=0,this._variable="temperature",this._op=">",this._value="22",this._action="skip",this._actionValue=""}render(){const e=this.card._schedules.find(e=>e.id===this.card._selectedId)||this.card._schedules[0];if(!e)return F;const t=Ae(e.device_type),i=this.card._weatherAttributes,s=i.find(e=>e.key===this._variable)||i[0],a=this.card._settings?.weather_entity||"",o=`${this._variable} ${this._op} ${this._value}${s?.unit||""}`,r=t.find(e=>e.id===this._actionValue),n="skip"===this._action?"Salta esecuzione":"shift"===this._action?`${this._actionValue}${s?.unit||""} su tutte le fasce`:"force"===this._action?`Forza: ${r?.label||"—"}`:`Durata ${this._actionValue||"+30"} min`;return W`
+    `}_setBlockAction(e,t,i){const s=this.card._schedules.find(t=>t.id===e);if(!s)return;const a=[...s.blocks];a[this._selectedBlockIdx]={...a[this._selectedBlockIdx],action:{id:t,value:i}},this.card.updateBlocksLocal(e,a)}_setBlockValue(e,t){const i=this.card._schedules.find(t=>t.id===e);if(!i)return;const s=[...i.blocks],a=s[this._selectedBlockIdx];s[this._selectedBlockIdx]={...a,action:{...a.action,value:t}},this.card.updateBlocksLocal(e,s)}_removeBlock(e){const t=this.card._schedules.find(t=>t.id===e);if(!t||t.blocks.length<=1)return;const i=t.blocks.filter((e,t)=>t!==this._selectedBlockIdx);this._selectedBlockIdx=Math.max(0,this._selectedBlockIdx-1),this.card.updateBlocksLocal(e,i)}};lt.styles=fe,e([ve({attribute:!1,hasChanged:()=>!0})],lt.prototype,"card",void 0),e([ve({type:Number})],lt.prototype,"nowHour",void 0),e([ge()],lt.prototype,"_selectedBlockIdx",void 0),lt=e([pe("chronos-editor")],lt);let dt=class extends de{constructor(){super(...arguments),this.nowHour=0,this._variable="temperature",this._op=">",this._value="22",this._action="skip",this._actionValue=""}render(){const e=this.card._schedules.find(e=>e.id===this.card._selectedId)||this.card._schedules[0];if(!e)return G;const t=Ae(e.device_type),i=this.card._weatherAttributes,s=i.find(e=>e.key===this._variable)||i[0],a=this.card._settings?.weather_entity||"",r=`${this._variable} ${this._op} ${this._value}${s?.unit||""}`,n=t.find(e=>e.id===this._actionValue),o="skip"===this._action?De("wr.action.skip"):"shift"===this._action?`${this._actionValue}${s?.unit||""}`:"force"===this._action?`${De("wr.action.force")}: ${n?.label||"—"}`:`${this._actionValue||"+30"} ${De("common.min")}`;return U`
       <div class="col" style="gap:22px;max-width:1100px">
         <div>
           <button class="btn btn--ghost btn--sm" @click=${()=>this.card.navigate("editor")}>
-            ${me("chevron-left",14)} Torna all'editor
+            ${be("chevron-left",14)} ${De("nav.editor")}
           </button>
-          <h1 class="page-title" style="margin-top:6px">Nuova regola meteo</h1>
-          <p class="page-sub">Override condizionale per <strong>${e.name}</strong> · sorgente: <span class="mono">${a}</span></p>
+          <h1 class="page-title" style="margin-top:6px">${De("wr.heading")}</h1>
+          <p class="page-sub">${De("wr.subtitle")} · <strong>${e.name}</strong></p>
         </div>
 
         <div class="card" style="padding:22px">
           <div class="rule-block" style="background:var(--surface);border:2px dashed var(--border)">
-            <span class="rule-block__label rule-block__label--if">SE</span>
-            <span class="rule-token mono text-xs">${a}.</span>
-            <span class="rule-token rule-token--weather">${me(s?.icon||"cloud",11)} ${s?.label||this._variable}</span>
+            <span class="rule-block__label rule-block__label--if">IF</span>
+            <span class="rule-token mono text-xs">${a||"—"}.</span>
+            <span class="rule-token rule-token--weather">${be(s?.icon||"cloud",11)} ${s?.label||this._variable}</span>
             <span class="rule-token mono">${this._op}</span>
             <span class="rule-token rule-token--weather mono">${this._value}${s?.unit||""}</span>
-            <span class="rule-block__label rule-block__label--then">ALLORA</span>
-            <span class="rule-token rule-token--accent">${n}</span>
+            <span class="rule-block__label rule-block__label--then">THEN</span>
+            <span class="rule-token rule-token--accent">${o}</span>
           </div>
         </div>
 
         <div class="grid-2">
           <div class="card">
-            <div class="card__header"><div style="flex:1"><h3 class="card__title">Condizione · attributo meteo</h3><p class="card__sub">Esposto da ${a}</p></div></div>
+            <div class="card__header"><div style="flex:1"><h3 class="card__title">${De("wr.if.title")}</h3><p class="card__sub">${De("wr.if.subtitle")}</p></div></div>
             <div class="col" style="gap:12px">
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;max-height:380px;overflow-y:auto;padding-right:4px">
-                ${i.map(e=>W`
+                ${i.map(e=>U`
                   <button class="tile-pick" data-selected="${this._variable===e.key}" @click=${()=>{this._variable=e.key}} style="padding:10px">
                     <div class="row" style="gap:8px">
-                      <div class="tile-pick__icon" style="width:28px;height:28px">${me(e.icon,14)}</div>
+                      <div class="tile-pick__icon" style="width:28px;height:28px">${be(e.icon,14)}</div>
                       <div style="min-width:0;flex:1">
                         <div class="tile-pick__name" style="font-size:12.5px">${e.label}</div>
                         <div class="tile-pick__desc mono" style="font-size:10.5px">${e.key}${e.unit?` · ${e.unit}`:""}</div>
@@ -955,11 +954,11 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
               </div>
               <div class="grid-2">
                 <div class="field">
-                  <label class="field__label">Operatore</label>
+                  <label class="field__label">${De("wr.op")}</label>
                   <select class="select mono" @change=${e=>{this._op=e.target.value}}>
-                    ${"enum"===s?.type?W`
+                    ${"enum"===s?.type?U`
                           <option value="==" ?selected=${"=="===this._op}>uguale a (==)</option>
-                          <option value="!=" ?selected=${"!="===this._op}>diverso da (!=)</option>`:W`
+                          <option value="!=" ?selected=${"!="===this._op}>diverso da (!=)</option>`:U`
                           <option value=">" ?selected=${">"===this._op}>maggiore di (&gt;)</option>
                           <option value=">=" ?selected=${">="===this._op}>maggiore o uguale</option>
                           <option value="<" ?selected=${"<"===this._op}>minore di (&lt;)</option>
@@ -969,63 +968,63 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
                   </select>
                 </div>
                 <div class="field">
-                  <label class="field__label">Soglia</label>
-                  ${"enum"===s?.type?W`<select class="select" @change=${e=>{this._value=e.target.value}}>
-                        ${(s.options||[]).map(e=>W`<option value="${e}" ?selected=${this._value===e}>${e}</option>`)}
-                      </select>`:W`<input class="input mono" .value=${this._value} @input=${e=>{this._value=e.target.value}}/>`}
+                  <label class="field__label">${De("wr.threshold")}</label>
+                  ${"enum"===s?.type?U`<select class="select" @change=${e=>{this._value=e.target.value}}>
+                        ${(s.options||[]).map(e=>U`<option value="${e}" ?selected=${this._value===e}>${e}</option>`)}
+                      </select>`:U`<input class="input mono" .value=${this._value} @input=${e=>{this._value=e.target.value}}/>`}
                 </div>
               </div>
             </div>
           </div>
 
           <div class="card">
-            <div class="card__header"><div style="flex:1"><h3 class="card__title">Azione · cosa fare</h3><p class="card__sub">L'effetto sulla fascia oraria attiva</p></div></div>
+            <div class="card__header"><div style="flex:1"><h3 class="card__title">${De("wr.then.title")}</h3><p class="card__sub">${De("wr.then.subtitle")}</p></div></div>
             <div class="col" style="gap:12px">
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-                ${at.map(e=>W`
+                ${[{key:"skip",label:De("wr.action.skip"),desc:De("wr.action.skip.desc")},{key:"shift",label:De("wr.action.shift"),desc:De("wr.action.shift.desc")},{key:"force",label:De("wr.action.force"),desc:De("wr.action.force.desc")},{key:"duration",label:De("wr.action.duration"),desc:De("wr.action.duration.desc")}].map(e=>U`
                   <button class="tile-pick" data-selected="${this._action===e.key}" @click=${()=>{this._action=e.key}}>
                     <div class="tile-pick__name">${e.label}</div>
                     <div class="tile-pick__desc">${e.desc}</div>
                   </button>
                 `)}
               </div>
-              ${"skip"!==this._action?W`
+              ${"skip"!==this._action?U`
                 <div class="field">
-                  <label class="field__label">${"force"===this._action?"Azione da forzare":"Valore"}</label>
-                  ${"force"===this._action?W`<select class="select" @change=${e=>{this._actionValue=e.target.value}}>
-                        ${t.map(e=>W`<option value="${e.id}" ?selected=${this._actionValue===e.id}>${e.label}</option>`)}
-                      </select>`:W`<input class="input mono" .value=${this._actionValue} @input=${e=>{this._actionValue=e.target.value}}
+                  <label class="field__label">${"force"===this._action?De("wr.action.force"):De("common.value")}</label>
+                  ${"force"===this._action?U`<select class="select" @change=${e=>{this._actionValue=e.target.value}}>
+                        ${t.map(e=>U`<option value="${e.id}" ?selected=${this._actionValue===e.id}>${e.label}</option>`)}
+                      </select>`:U`<input class="input mono" .value=${this._actionValue} @input=${e=>{this._actionValue=e.target.value}}
                         placeholder="${"shift"===this._action?"-1, +2, …":"+30, -15, …"}"/>`}
                 </div>
-              `:F}
+              `:G}
             </div>
           </div>
         </div>
 
         <div class="card">
-          <div class="card__header"><div style="flex:1"><h3 class="card__title">Anteprima impatto · prossime 24h</h3></div></div>
+          <div class="card__header"><div style="flex:1"><h3 class="card__title">${De("wr.preview")}</h3><p class="card__sub">${De("wr.preview.subtitle")}</p></div></div>
           <chronos-timeline variant="linear" .deviceType=${e.device_type} .blocks=${e.blocks} .interactive=${!1} .now=${this.nowHour} .forecast=${this.card._forecast}></chronos-timeline>
         </div>
 
         <div class="row" style="justify-content:flex-end;gap:8px">
-          <button class="btn" @click=${()=>this.card.navigate("editor")}>Annulla</button>
-          <button class="btn btn--primary" @click=${()=>{const e=this.card._schedules.find(e=>e.id===this.card._selectedId);if(!e)return;const t=[...e.weather_rules||[],{if:o,then:n,active:!0}];this.card.updateScheduleLocal(e.id,{weather_rules:t}),this.card.navigate("editor")}}>${me("check",14)} Salva regola</button>
+          <button class="btn" @click=${()=>this.card.navigate("editor")}>${De("common.cancel")}</button>
+          <button class="btn btn--primary" @click=${()=>{const e=this.card._schedules.find(e=>e.id===this.card._selectedId);if(!e)return;const t=[...e.weather_rules||[],{if:r,then:o,active:!0}];this.card.updateScheduleLocal(e.id,{weather_rules:t}),this.card.navigate("editor")}}>${be("check",14)} ${De("common.save")}</button>
         </div>
       </div>
-    `}};ot.styles=be,e([ve({attribute:!1,hasChanged:()=>!0})],ot.prototype,"card",void 0),e([ve({type:Number})],ot.prototype,"nowHour",void 0),e([ge()],ot.prototype,"_variable",void 0),e([ge()],ot.prototype,"_op",void 0),e([ge()],ot.prototype,"_value",void 0),e([ge()],ot.prototype,"_action",void 0),e([ge()],ot.prototype,"_actionValue",void 0),ot=e([pe("chronos-weather-rule")],ot);let rt=class extends de{constructor(){super(...arguments),this.nowHour=0}render(){const e=this.card._devices.find(e=>e.id===this.card._deviceDetailId)||this.card._devices[0];if(!e)return W`<div style="text-align:center;padding:40px;color:var(--text-muted)">
-      <div style="font-weight:600;font-size:14px">Nessun dispositivo</div>
-      <div style="font-size:12.5px;margin-top:4px">Importa prima un'entità HA.</div>
-    </div>`;const t=Je[e.type]||{label:e.type,domain:"",capabilities:[]},i=this.card._schedules.filter(t=>t.device_ids.includes(e.id)),s=this.card.hass?.states?.[e.entity_id],a=s?.state||"—";return W`
+    `}};dt.styles=fe,e([ve({attribute:!1,hasChanged:()=>!0})],dt.prototype,"card",void 0),e([ve({type:Number})],dt.prototype,"nowHour",void 0),e([ge()],dt.prototype,"_variable",void 0),e([ge()],dt.prototype,"_op",void 0),e([ge()],dt.prototype,"_value",void 0),e([ge()],dt.prototype,"_action",void 0),e([ge()],dt.prototype,"_actionValue",void 0),dt=e([pe("chronos-weather-rule")],dt);let ct=class extends de{constructor(){super(...arguments),this.nowHour=0}render(){const e=this.card._devices.find(e=>e.id===this.card._deviceDetailId)||this.card._devices[0];if(!e)return U`<div style="text-align:center;padding:40px;color:var(--text-muted)">
+      <div style="font-weight:600;font-size:14px">${De("device.no_device.title")}</div>
+      <div style="font-size:12.5px;margin-top:4px">${De("device.no_device.hint")}</div>
+    </div>`;const t=Je[e.type]||{label:e.type,domain:"",capabilities:[]},i=this.card._schedules.filter(t=>t.device_ids.includes(e.id)),s=this.card.hass?.states?.[e.entity_id],a=s?.state||"—";return U`
       <div class="col" style="gap:18px">
         <div>
           <button class="btn btn--ghost btn--sm" @click=${()=>this.card.navigate("overview")}>
-            ${me("chevron-left",14)} Indietro
+            ${be("chevron-left",14)} ${De("common.back")}
           </button>
         </div>
 
         <div class="row" style="gap:16px">
-          <div style="width:60px;height:60px;border-radius:16px;background:${Ye(e,s,this.card._settings).soft};color:${Ye(e,s,this.card._settings).accent};display:grid;place-items:center">
-            ${xe(e.type,28)}
+          <div style="width:60px;height:60px;border-radius:16px;background:${at(e,s,this.card._settings).soft};color:${at(e,s,this.card._settings).accent};display:grid;place-items:center">
+            ${we(e.type,28)}
           </div>
           <div style="flex:1">
             <h1 class="page-title" style="margin-bottom:2px">${e.alias}</h1>
@@ -1033,62 +1032,49 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
           </div>
           <select class="select" style="width:240px"
             @change=${e=>this.card.selectDevice(e.target.value)}>
-            ${this.card._devices.map(t=>W`<option value="${t.id}" ?selected=${t.id===e.id}>${t.alias}</option>`)}
+            ${this.card._devices.map(t=>U`<option value="${t.id}" ?selected=${t.id===e.id}>${t.alias}</option>`)}
           </select>
         </div>
 
         <div class="grid-3">
-          <div class="kpi"><div class="kpi__label">Stato attuale</div><div class="kpi__value">${a}</div><div class="kpi__delta">aggiornato live</div></div>
-          <div class="kpi"><div class="kpi__label">Tipo dispositivo</div><div class="kpi__value" style="font-size:20px">${t.label}</div><div class="kpi__delta mono">dominio ${t.domain}</div></div>
-          <div class="kpi"><div class="kpi__label">Schedule collegate</div><div class="kpi__value">${i.length}</div><div class="kpi__delta">${i.filter(e=>e.enabled).length} attive</div></div>
+          <div class="kpi"><div class="kpi__label">${De("device.state")}</div><div class="kpi__value">${a}</div><div class="kpi__delta">${De("device.state.live")}</div></div>
+          <div class="kpi"><div class="kpi__label">${De("device.type")}</div><div class="kpi__value" style="font-size:20px">${t.label}</div><div class="kpi__delta mono">${t.domain}</div></div>
+          <div class="kpi"><div class="kpi__label">${De("device.linked_schedules")}</div><div class="kpi__value">${i.length}</div><div class="kpi__delta">${De("device.linked_schedules.active",{n:i.filter(e=>e.enabled).length})}</div></div>
         </div>
 
         <div class="card">
-          <div class="card__header"><div style="flex:1"><h3 class="card__title">Capabilities rilevate</h3><p class="card__sub">Servizi HA chiamabili su questo dispositivo</p></div></div>
+          <div class="card__header"><div style="flex:1"><h3 class="card__title">${De("device.capabilities")}</h3><p class="card__sub">${De("device.capabilities.subtitle")}</p></div></div>
           <div class="row" style="gap:6px;flex-wrap:wrap">
-            ${(t.capabilities||[]).map(e=>W`<span class="rule-token mono">${t.domain}.${e}</span>`)}
+            ${(t.capabilities||[]).map(e=>U`<span class="rule-token mono">${t.domain}.${e}</span>`)}
           </div>
         </div>
 
         <div class="card">
-          <div class="card__header"><div style="flex:1"><h3 class="card__title">Schedulazioni che usano questo dispositivo</h3><p class="card__sub">${i.length} programmazioni collegate</p></div></div>
-          ${i.length?W`<div class="col" style="gap:10px">
-                ${i.map(e=>W`
+          <div class="card__header"><div style="flex:1"><h3 class="card__title">${De("device.schedules_using.title")}</h3><p class="card__sub">${De("device.schedules_using.subtitle",{n:i.length})}</p></div></div>
+          ${i.length?U`<div class="col" style="gap:10px">
+                ${i.map(e=>U`
                   <div class="card card--ghost" style="padding:14px">
                     <div class="sp-between" style="margin-bottom:8px">
                       <div>
                         <div class="fw-600">${e.name}</div>
-                        <div class="text-xs text-mute mono">${this._computeRepeat(e.days)}</div>
+                        <div class="text-xs text-mute mono">${Ke(e.days)}</div>
                       </div>
-                      <button class="btn btn--sm" @click=${()=>this.card.selectSchedule(e.id,"editor")}>Apri ${me("chevron-right",12)}</button>
+                      <button class="btn btn--sm" @click=${()=>this.card.selectSchedule(e.id,"editor")}>${De("device.open_schedule")} ${be("chevron-right",12)}</button>
                     </div>
                     <chronos-timeline variant="linear" .deviceType=${e.device_type} .blocks=${e.blocks} .interactive=${!1} height="compact" .showWeather=${!1} .now=${e.enabled?this.nowHour:null}></chronos-timeline>
                   </div>
                 `)}
-              </div>`:W`<div style="text-align:center;padding:40px 20px;color:var(--text-muted)">
-                <div style="font-weight:600;color:var(--text);font-size:14px">Nessuna programmazione</div>
-                <div style="font-size:12.5px;margin-top:4px">Questo dispositivo non è incluso in nessuno schedule.</div>
+              </div>`:U`<div style="text-align:center;padding:40px 20px;color:var(--text-muted)">
+                <div style="font-weight:600;color:var(--text);font-size:14px">${De("device.no_schedules")}</div>
+                <div style="font-size:12.5px;margin-top:4px">${De("device.no_schedules.hint")}</div>
               </div>`}
         </div>
       </div>
-    `}_computeRepeat(e){const t=["Lun","Mar","Mer","Gio","Ven","Sab","Dom"];return e?.length?e.every(Boolean)?"Ogni giorno":e.map((e,i)=>e?t[i]:null).filter(Boolean).join(" · "):""}};rt.styles=be,e([ve({attribute:!1,hasChanged:()=>!0})],rt.prototype,"card",void 0),e([ve({type:Number})],rt.prototype,"nowHour",void 0),rt=e([pe("chronos-device-screen")],rt);let nt=class extends de{constructor(){super(...arguments),this.nowHour=0}render(){const{_schedules:e}=this.card,t=(new Date).getDay(),i=0===t?6:t-1;return W`
+    `}};ct.styles=fe,e([ve({attribute:!1,hasChanged:()=>!0})],ct.prototype,"card",void 0),e([ve({type:Number})],ct.prototype,"nowHour",void 0),ct=e([pe("chronos-device-screen")],ct);let pt=class extends de{constructor(){super(...arguments),this.nowHour=0}render(){const{_schedules:e}=this.card,t=e.filter(e=>e.enabled).length,i=(new Date).getDay(),s=0===i?6:i-1,a=Ze();return U`
       <div class="col" style="gap:22px">
         <div>
-          <h1 class="page-title">Vista settimanale</h1>
-          <p class="page-sub">Tutte le schedulazioni distribuite sui giorni della settimana</p>
-        </div>
-
-        <div class="row" style="justify-content:space-between">
-          <div class="row">
-            <button class="btn btn--icon btn--ghost">${me("chevron-left",14)}</button>
-            <strong class="mono">Settimana corrente</strong>
-            <button class="btn btn--icon btn--ghost">${me("chevron-right",14)}</button>
-          </div>
-          <div class="segmented">
-            <button data-active="false">Giorno</button>
-            <button data-active="true">Settimana</button>
-            <button data-active="false">Mese</button>
-          </div>
+          <h1 class="page-title">${De("screen.week.title")}</h1>
+          <p class="page-sub">${De("week.subtitle",{n:t})}</p>
         </div>
 
         <div class="card">
@@ -1096,28 +1082,28 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
             <div class="weekgrid__row" style="margin-bottom:6px">
               <div></div>
               <div style="position:relative;height:18px;font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">
-                ${[0,4,8,12,16,20,24].map(e=>W`
+                ${[0,4,8,12,16,20,24].map(e=>U`
                   <span style="position:absolute;left:${e/24*100}%;transform:translateX(-50%)">${String(e).padStart(2,"0")}</span>
                 `)}
               </div>
             </div>
-            ${We.map((t,s)=>W`
+            ${a.map((t,i)=>U`
               <div class="weekgrid__row">
-                <div class="weekgrid__day" style="color:${s===i?"var(--accent)":""}">
-                  ${t}${s===i?W`<span style="display:block;font-size:9px;margin-top:2px">OGGI</span>`:F}
+                <div class="weekgrid__day" style="color:${i===s?"var(--accent)":""}">
+                  ${t}${i===s?U`<span style="display:block;font-size:9px;margin-top:2px">${De("week.today").toUpperCase()}</span>`:G}
                 </div>
                 <div style="position:relative">
                   <div class="col" style="gap:4px">
-                    ${e.filter(e=>e.enabled&&e.days[s]).map(e=>W`
+                    ${e.filter(e=>e.enabled&&e.days[i]).map(e=>U`
                       <div class="row" style="gap:8px;align-items:center">
                         <span style="width:90px;font-size:11.5px;color:var(--text-muted);font-weight:500" class="truncate">${e.name}</span>
                         <div style="flex:1">
                           <chronos-timeline variant="linear" .deviceType=${e.device_type} .blocks=${e.blocks} .interactive=${!1} height="mini" .showWeather=${!1}
-                            .now=${s===i?this.nowHour:null}></chronos-timeline>
+                            .now=${i===s?this.nowHour:null}></chronos-timeline>
                         </div>
                       </div>
                     `)}
-                    ${e.filter(e=>e.enabled&&e.days[s]).length?F:W`<div class="text-xs text-mute" style="padding:8px 0;font-style:italic">Nessuna schedulazione attiva</div>`}
+                    ${e.filter(e=>e.enabled&&e.days[i]).length?G:U`<div class="text-xs text-mute" style="padding:8px 0;font-style:italic">—</div>`}
                   </div>
                 </div>
               </div>
@@ -1126,47 +1112,47 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
         </div>
 
         <div class="row" style="gap:14px;flex-wrap:wrap">
-          ${Object.entries(we).map(([e,t])=>W`
-            <div class="row" style="gap:6px">
-              <span style="width:12px;height:8px;border-radius:2px;background:${t}"></span>
-              <span class="text-xs">${{on:"Attiva",off:"Spenta",set:"Imposta valore",preset:"Preset",cmd:"Comando"}[e]}</span>
-            </div>
-          `)}
+          ${Object.entries(ye).map(([e,t])=>{const i={on:De("schedule.active"),off:De("schedule.disabled"),set:De("common.value"),preset:"Preset",cmd:De("editor.block.action")};return U`
+              <div class="row" style="gap:6px">
+                <span style="width:12px;height:8px;border-radius:2px;background:${t}"></span>
+                <span class="text-xs">${i[e]}</span>
+              </div>
+            `})}
         </div>
       </div>
-    `}};nt.styles=be,e([ve({attribute:!1,hasChanged:()=>!0})],nt.prototype,"card",void 0),e([ve({type:Number})],nt.prototype,"nowHour",void 0),nt=e([pe("chronos-week")],nt);let lt=class extends de{constructor(){super(...arguments),this.nowHour=0}render(){const{_schedules:e,_devices:t,_forecast:i,_settings:s}=this.card,a=s?.weather_entity||"",o=a?this.card.hass?.states?.[a]:null,r=o?.attributes?.temperature??"—",n=o?.state||"cloud",l=o?.attributes?.humidity??"—",d=o?.attributes?.wind_speed??"—",c=e.filter(e=>e.enabled).map(e=>{const t=e.blocks.find(e=>this.nowHour>=e.start&&this.nowHour<e.end);return{schedule:e,active:t}});return W`
+    `}};pt.styles=fe,e([ve({attribute:!1,hasChanged:()=>!0})],pt.prototype,"card",void 0),e([ve({type:Number})],pt.prototype,"nowHour",void 0),pt=e([pe("chronos-week")],pt);let ht=class extends de{constructor(){super(...arguments),this.nowHour=0}render(){const{_schedules:e,_devices:t,_forecast:i,_settings:s}=this.card,a=s?.weather_entity||"",r=a?this.card.hass?.states?.[a]:null,n=r?.attributes?.temperature??"—",o=r?.state||"cloud",l=r?.attributes?.humidity??"—",d=r?.attributes?.wind_speed??"—",c=e.filter(e=>e.enabled).map(e=>{const t=e.blocks.find(e=>this.nowHour>=e.start&&this.nowHour<e.end);return{schedule:e,active:t}});return U`
       <div class="col" style="gap:22px">
         <div class="sp-between">
           <div>
-            <h1 class="page-title">Stato live</h1>
-            <p class="page-sub">Cosa sta facendo ora il sistema</p>
+            <h1 class="page-title">${De("screen.live.title")}</h1>
+            <p class="page-sub">${a?De("live.weather.subtitle",{entity:a}):De("live.no_weather")}</p>
           </div>
           <div class="row">
-            <span class="chip chip--on"><span class="chip__dot"></span>In esecuzione</span>
+            <span class="chip chip--on"><span class="chip__dot"></span>${De("schedule.active")}</span>
           </div>
         </div>
 
         <!-- Weather hero -->
         <div class="grid-2">
           <div class="weather-hero">
-            <div class="weather-hero__icon">${ye(n,32)}</div>
+            <div class="weather-hero__icon">${$e(o,32)}</div>
             <div>
-              <div class="weather-hero__temp">${r}°<span style="font-size:16px;color:var(--text-muted)">C</span></div>
-              <div class="weather-hero__cond">${this._conditionLabel(n)}</div>
+              <div class="weather-hero__temp">${n}°<span style="font-size:16px;color:var(--text-muted)">C</span></div>
+              <div class="weather-hero__cond">${this._conditionLabel(o)}</div>
             </div>
             <div class="col" style="gap:4px;align-items:flex-end">
-              <span class="chip">${me("droplet",11)} ${l}%</span>
-              <span class="chip">${me("wind",11)} ${d} km/h</span>
+              <span class="chip">${be("droplet",11)} ${l}%</span>
+              <span class="chip">${be("wind",11)} ${d} km/h</span>
             </div>
           </div>
 
           <div class="card">
-            <div class="card__header"><div style="flex:1"><h3 class="card__title">Previsione 24h</h3><p class="card__sub">Forecast orario</p></div></div>
+            <div class="card__header"><div style="flex:1"><h3 class="card__title">${De("live.forecast.title")}</h3><p class="card__sub">${De("live.forecast.title")}</p></div></div>
             <div class="forecast-row">
-              ${i.filter((e,t)=>t%2==0).slice(0,12).map(e=>{const t=new Date(e.datetime||"").getHours?.()??0,i=e.condition||"cloud";return W`
+              ${i.filter((e,t)=>t%2==0).slice(0,12).map(e=>{const t=new Date(e.datetime||"").getHours?.()??0,i=e.condition||"cloud";return U`
                   <div class="forecast-cell">
                     <div class="forecast-cell__hour">${String(t).padStart(2,"0")}</div>
-                    <div class="forecast-cell__icon">${ye(i,20)}</div>
+                    <div class="forecast-cell__icon">${$e(i,20)}</div>
                     <div class="forecast-cell__temp">${e.temperature??"—"}°</div>
                   </div>
                 `})}
@@ -1176,18 +1162,18 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
 
         <!-- Live schedules -->
         <div class="card">
-          <div class="card__header"><div style="flex:1"><h3 class="card__title">Schedulazioni live</h3><p class="card__sub">${c.filter(e=>e.active).length} fasce attive ora</p></div></div>
+          <div class="card__header"><div style="flex:1"><h3 class="card__title">${De("live.schedules.title")}</h3><p class="card__sub">${c.filter(e=>e.active).length}</p></div></div>
           <div class="col" style="gap:12px">
-            ${c.map(({schedule:e,active:t})=>W`
+            ${c.map(({schedule:e,active:t})=>U`
               <div class="card card--ghost" style="padding:14px">
                 <div class="sp-between" style="margin-bottom:10px">
                   <div class="row" style="gap:10px">
                     <span style="width:8px;height:8px;border-radius:50%;background:${t?"var(--ok)":"var(--text-muted)"};box-shadow:${t?"0 0 0 4px color-mix(in srgb, var(--ok) 25%, transparent)":"none"}"></span>
                     <strong>${e.name}</strong>
-                    ${t?W`<span class="chip chip--accent">${Me(e.device_type,t.action)}</span>`:W`<span class="chip">In attesa</span>`}
+                    ${t?U`<span class="chip chip--accent">${Ce(e.device_type,t.action)}</span>`:U`<span class="chip">${De("schedule.next_block")}</span>`}
                   </div>
                   <button class="btn btn--sm btn--ghost" @click=${()=>this.card.selectSchedule(e.id,"editor")}>
-                    Apri ${me("chevron-right",12)}
+                    ${De("device.open_schedule")} ${be("chevron-right",12)}
                   </button>
                 </div>
                 <chronos-timeline variant="linear" .deviceType=${e.device_type} .blocks=${e.blocks} .interactive=${!1} height="compact" .showWeather=${!1} .now=${this.nowHour}></chronos-timeline>
@@ -1198,11 +1184,11 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
 
         <!-- Devices live -->
         <div class="card">
-          <div class="card__header"><div style="flex:1"><h3 class="card__title">Dispositivi · stato live</h3><p class="card__sub">Valori in tempo reale</p></div></div>
+          <div class="card__header"><div style="flex:1"><h3 class="card__title">${De("live.devices.title")}</h3><p class="card__sub">${De("live.devices.subtitle")}</p></div></div>
           <div class="col" style="gap:0">
-            ${t.map(e=>{const t=this.card.hass?.states?.[e.entity_id],i=Ye(e,t,this.card._settings),s=this._computeBarPercent(e,t);return W`
+            ${t.map(e=>{const t=this.card.hass?.states?.[e.entity_id],i=at(e,t,this.card._settings),s=this._computeBarPercent(e,t);return U`
                 <div class="live-device">
-                  <div class="device-row__icon" style="width:36px;height:36px;background:${i.soft};color:${i.accent}">${xe(e.type,17)}</div>
+                  <div class="device-row__icon" style="width:36px;height:36px;background:${i.soft};color:${i.accent}">${we(e.type,17)}</div>
                   <div class="device-row__main">
                     <div class="device-row__name">${e.alias}</div>
                     <div class="device-row__meta">${e.area}</div>
@@ -1214,18 +1200,18 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
           </div>
         </div>
       </div>
-    `}_computeBarPercent(e,t){if(!t)return 0;const i=t.attributes||{};if("light"===e.type){const e=i.brightness;return"number"==typeof e?Math.round(e/255*100):"on"===t.state?100:0}if("fan"===e.type)return"number"==typeof i.percentage?i.percentage:0;if("blind"===e.type)return"number"==typeof i.current_position?i.current_position:0;if("thermostat"===e.type||"boiler"===e.type){const e=i.current_temperature??i.temperature;if("number"==typeof e)return Math.min(100,Math.max(0,(e-5)/30*100))}return"on"===t.state||"open"===t.state?100:0}_formatState(e,t){if(!t)return"—";const i=t.attributes||{};if("thermostat"===e.type||"boiler"===e.type){const e=i.current_temperature??i.temperature;if("number"==typeof e)return`${e.toFixed(1)}°`}return"fan"===e.type&&"number"==typeof i.percentage?`${i.percentage}%`:"blind"===e.type&&"number"==typeof i.current_position?`${i.current_position}%`:"light"===e.type&&"on"===t.state&&"number"==typeof i.brightness?`${Math.round(i.brightness/255*100)}%`:t.state}_conditionLabel(e){return{sunny:"Soleggiato",rainy:"Pioggia",cloudy:"Nuvoloso",partlycloudy:"Parzialmente nuvoloso",snowy:"Neve",fog:"Nebbia",windy:"Ventoso"}[e]||e}};lt.styles=be,e([ve({attribute:!1,hasChanged:()=>!0})],lt.prototype,"card",void 0),e([ve({type:Number})],lt.prototype,"nowHour",void 0),lt=e([pe("chronos-live")],lt);let dt=class extends de{constructor(){super(...arguments),this.nowHour=0,this._step=0,this._name="Nuova schedulazione",this._pickedDevices=[],this._days=[1,1,1,1,1,1,1],this._weatherEnabled=!0,this._blocks=[],this._blocksDeviceType="",this._selectedBlockIdx=-1,this._variant="linear",this._steps=[{key:"name",label:"Nome"},{key:"device",label:"Dispositivi"},{key:"time",label:"Fasce orarie"},{key:"days",label:"Ripetizione"},{key:"weather",label:"Meteo"},{key:"review",label:"Riepilogo"}]}render(){return W`
+    `}_computeBarPercent(e,t){if(!t)return 0;const i=t.attributes||{};if("light"===e.type){const e=i.brightness;return"number"==typeof e?Math.round(e/255*100):"on"===t.state?100:0}if("fan"===e.type)return"number"==typeof i.percentage?i.percentage:0;if("blind"===e.type)return"number"==typeof i.current_position?i.current_position:0;if("thermostat"===e.type||"boiler"===e.type){const e=i.current_temperature??i.temperature;if("number"==typeof e)return Math.min(100,Math.max(0,(e-5)/30*100))}return"on"===t.state||"open"===t.state?100:0}_formatState(e,t){if(!t)return"—";const i=t.attributes||{};if("thermostat"===e.type||"boiler"===e.type){const e=i.current_temperature??i.temperature;if("number"==typeof e)return`${e.toFixed(1)}°`}return"fan"===e.type&&"number"==typeof i.percentage?`${i.percentage}%`:"blind"===e.type&&"number"==typeof i.current_position?`${i.current_position}%`:"light"===e.type&&"on"===t.state&&"number"==typeof i.brightness?`${Math.round(i.brightness/255*100)}%`:t.state}_conditionLabel(e){const t=`live.condition.${e}`,i=De(t);return i===t?e:i}};ht.styles=fe,e([ve({attribute:!1,hasChanged:()=>!0})],ht.prototype,"card",void 0),e([ve({type:Number})],ht.prototype,"nowHour",void 0),ht=e([pe("chronos-live")],ht);let ut=class extends de{constructor(){super(...arguments),this.nowHour=0,this._step=0,this._name="",this._pickedDevices=[],this._days=[1,1,1,1,1,1,1],this._weatherEnabled=!0,this._blocks=[],this._blocksDeviceType="",this._selectedBlockIdx=-1,this._variant="linear"}get _steps(){return[{key:"name",label:De("wizard.step.name")},{key:"device",label:De("wizard.step.devices")},{key:"time",label:De("wizard.step.time")},{key:"days",label:De("wizard.step.days")},{key:"weather",label:De("wizard.step.weather")},{key:"review",label:De("wizard.step.review")}]}render(){return U`
       <div class="col" style="gap:22px;max-width:900px;margin:0 auto">
         <div>
           <button class="btn btn--ghost btn--sm" @click=${()=>this.card.navigate("overview")}>
-            ${me("chevron-left",14)} Annulla
+            ${be("chevron-left",14)} ${De("common.cancel")}
           </button>
-          <h1 class="page-title" style="margin-top:6px">Crea schedulazione</h1>
-          <p class="page-sub">Procedura guidata · puoi modificare tutto in seguito</p>
+          <h1 class="page-title" style="margin-top:6px">${De("wizard.title")}</h1>
+          <p class="page-sub">${De("wizard.subtitle")}</p>
         </div>
 
         <div class="wizard-stepper">
-          ${this._steps.map((e,t)=>W`
+          ${this._steps.map((e,t)=>U`
             <div class="wizard-step" data-state="${t===this._step?"active":t<this._step?"done":"idle"}">
               <span class="wizard-step__num">${t<this._step?"✓":t+1}</span>
               <span>${e.label}</span>
@@ -1240,65 +1226,60 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
         <div class="row" style="justify-content:space-between">
           <button class="btn" ?disabled=${0===this._step} @click=${()=>{this._step=Math.max(0,this._step-1)}}
             style="opacity:${0===this._step?.4:1}">
-            ${me("chevron-left",14)} Indietro
+            ${be("chevron-left",14)} ${De("common.back")}
           </button>
-          ${this._step<this._steps.length-1?W`<button class="btn btn--primary" @click=${()=>{this._step++}}>
-                Avanti ${me("chevron-right",14)}
-              </button>`:W`<button class="btn btn--primary" @click=${()=>this._finish()}>
-                ${me("check",14)} Crea schedulazione
+          ${this._step<this._steps.length-1?U`<button class="btn btn--primary" @click=${()=>{this._step++}}>
+                ${De("common.next")} ${be("chevron-right",14)}
+              </button>`:U`<button class="btn btn--primary" @click=${()=>this._finish()}>
+                ${be("check",14)} ${De("wizard.create")}
               </button>`}
         </div>
       </div>
-    `}_renderStepContent(){switch(this._step){case 0:return W`
+    `}_renderStepContent(){switch(this._step){case 0:return U`
           <div class="col" style="gap:14px">
-            <h3 style="margin:0">Dai un nome alla schedulazione</h3>
-            <p class="text-mute text-sm" style="margin:0">Sarà visibile nella panoramica e nelle notifiche.</p>
+            <h3 style="margin:0">${De("wizard.name.heading")}</h3>
+            <p class="text-mute text-sm" style="margin:0">${De("wizard.name.hint")}</p>
             <input class="input" .value=${this._name} @input=${e=>{this._name=e.target.value}}
+              placeholder="${De("nav.new_schedule")}"
               style="font-size:18px;padding:12px 14px"/>
-            <div class="row" style="gap:6px;flex-wrap:wrap">
-              <span class="text-xs text-mute">Suggerimenti:</span>
-              ${["Riscaldamento Casa","Irrigazione Giardino","Tapparelle Sud","Luci Serata"].map(e=>W`
-                <button class="chip" @click=${()=>{this._name=e}} style="cursor:pointer">${e}</button>
-              `)}
-            </div>
           </div>
-        `;case 1:return W`
+        `;case 1:return U`
           <div class="col" style="gap:14px">
-            <h3 style="margin:0">Quali dispositivi sono coinvolti?</h3>
-            <p class="text-mute text-sm" style="margin:0">Verranno tutti controllati dalla stessa programmazione.</p>
+            <h3 style="margin:0">${De("wizard.devices.heading")}</h3>
+            <p class="text-mute text-sm" style="margin:0">${De("wizard.devices.hint")}</p>
             <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
-              ${this.card._devices.map(e=>W`
+              ${this.card._devices.map(e=>U`
                 <button class="tile-pick" data-selected="${this._pickedDevices.includes(e.id)}"
                   @click=${()=>this._togglePick(e.id)}>
                   <div class="row" style="gap:10px">
-                    <div class="tile-pick__icon">${xe(e.type,16)}</div>
+                    <div class="tile-pick__icon">${we(e.type,16)}</div>
                     <div style="min-width:0;flex:1">
                       <div class="tile-pick__name truncate">${e.alias}</div>
                       <div class="tile-pick__desc">${e.area} · ${Je[e.type]?.label||e.type}</div>
                     </div>
-                    ${this._pickedDevices.includes(e.id)?me("check",16):F}
+                    ${this._pickedDevices.includes(e.id)?be("check",16):G}
                   </div>
                 </button>
               `)}
             </div>
           </div>
-        `;case 2:{const e=this._inferDeviceType();this._ensureBlocksFor(e);const t=this._selectedBlockIdx>=0?this._blocks[this._selectedBlockIdx]:void 0,i=t?.action?ze(e,t.action.id):void 0,s=Ae(e);return W`
+        `;case 2:{const e=this._inferDeviceType();this._ensureBlocksFor(e);const t=this._selectedBlockIdx>=0?this._blocks[this._selectedBlockIdx]:void 0,i=t?.action?ze(e,t.action.id):void 0,s=Ae(e);return U`
           <div class="col" style="gap:14px">
-            <h3 style="margin:0">Imposta le fasce orarie</h3>
-            <p class="text-mute text-sm" style="margin:0">Clicca su una zona vuota della barra per aggiungere una fascia. Trascina i bordi per modificarne durata e posizione.</p>
+            <h3 style="margin:0">${De("wizard.time.heading")}</h3>
+            <p class="text-mute text-sm" style="margin:0">${De("editor.add_block_hint")}</p>
 
             <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">
-              <span class="text-xs text-mute">Visualizzazione:</span>
+              <span class="text-xs text-mute">${De("editor.timeline_variant")}:</span>
               <div class="segmented">
-                ${["linear","radial","list"].map(e=>W`
+                ${["linear","radial","list"].map(e=>U`
                   <button data-active="${this._variant===e}" @click=${()=>{this._variant=e}}>
-                    ${{linear:"Lineare",radial:"Radiale",list:"Lista"}[e]}
+                    ${De("timeline."+e)}
                   </button>
                 `)}
               </div>
               <div style="flex:1"></div>
               <button class="btn btn--sm" @click=${()=>this._resetBlocks(e)}>
-                ${me("repeat",12)} Reset preset
+                ${be("repeat",12)} ${De("wizard.time.reset_preset")}
               </button>
             </div>
 
@@ -1312,31 +1293,31 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
               @block-select=${e=>{this._selectedBlockIdx=e.detail.index}}
             ></chronos-timeline>
 
-            ${t?W`
+            ${t?U`
               <div class="card card--ghost" style="padding:14px">
                 <div class="sp-between" style="margin-bottom:10px">
                   <div>
-                    <div class="text-xs text-mute mono">Fascia selezionata</div>
+                    <div class="text-xs text-mute mono">${De("wizard.time.selected")}</div>
                     <div class="fw-600 mono">${this._fmtBlockRange(t)}</div>
                   </div>
                   <button class="btn btn--sm" style="color:var(--danger)" @click=${()=>this._removeSelected()}>
-                    ${me("trash",12)} Rimuovi fascia
+                    ${be("trash",12)} ${De("editor.block.delete")}
                   </button>
                 </div>
                 <div class="field">
-                  <label class="field__label">Azione</label>
+                  <label class="field__label">${De("editor.block.action")}</label>
                   <div class="row" style="gap:6px;flex-wrap:wrap">
-                    ${s.map(i=>W`
+                    ${s.map(i=>U`
                       <button class="chip" data-active="${t.action?.id===i.id}"
-                        style="background:${t.action?.id===i.id?Ce(e,{id:i.id}):"var(--bg-sunken)"};color:${t.action?.id===i.id?"white":"var(--text-soft)"};border:1px solid ${t.action?.id===i.id?"transparent":"var(--border-soft)"};cursor:pointer"
+                        style="background:${t.action?.id===i.id?Me(e,{id:i.id}):"var(--bg-sunken)"};color:${t.action?.id===i.id?"white":"var(--text-soft)"};border:1px solid ${t.action?.id===i.id?"transparent":"var(--border-soft)"};cursor:pointer"
                         @click=${()=>this._setAction(i.id)}>${i.label}</button>
                     `)}
                   </div>
                 </div>
-                ${i?.value?W`
+                ${i?.value?U`
                   <div class="field" style="margin-top:10px">
-                    <label class="field__label">${i.value.label||"Valore"} ${i.value.unit?W`<span class="text-mute">(${i.value.unit})</span>`:F}</label>
-                    ${"number"===i.value.type?W`
+                    <label class="field__label">${i.value.label||De("common.value")} ${i.value.unit?U`<span class="text-mute">(${i.value.unit})</span>`:G}</label>
+                    ${"number"===i.value.type?U`
                       <div class="row" style="gap:10px;align-items:center">
                         <input type="range" min="${i.value.min}" max="${i.value.max}" step="${i.value.step}"
                           .value=${String(t.action?.value??i.value.default)}
@@ -1344,178 +1325,187 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
                           style="flex:1"/>
                         <span class="mono" style="min-width:60px;text-align:right;font-weight:600">${t.action?.value??i.value.default}${i.value.unit||""}</span>
                       </div>
-                    `:"enum"===i.value.type?W`
+                    `:"enum"===i.value.type?U`
                       <select class="input" @change=${e=>this._setActionValue(e.target.value)}>
-                        ${(i.value.options||[]).map(e=>{const s=String(t.action?.value??i.value.default);return W`<option value="${e}" ?selected=${s===e}>${e}</option>`})}
+                        ${(i.value.options||[]).map(e=>{const s=String(t.action?.value??i.value.default);return U`<option value="${e}" ?selected=${s===e}>${e}</option>`})}
                       </select>
-                    `:F}
+                    `:G}
                   </div>
-                `:F}
+                `:G}
               </div>
-            `:W`
-              <p class="text-xs text-mute" style="margin:0">Nessuna fascia selezionata. Clicca su una fascia esistente per modificarla, oppure su una zona libera per aggiungerne una nuova.</p>
+            `:U`
+              <p class="text-xs text-mute" style="margin:0">${De("editor.block.no_selection")}</p>
             `}
 
-            <p class="text-xs text-mute" style="margin:0">${this._blocks.length} fasce · totale coperto ${this._totalCoverage()}h / 24h</p>
+            <p class="text-xs text-mute" style="margin:0">${De("editor.coverage",{n:this._blocks.length,h:this._totalCoverage()})}</p>
           </div>
-        `}case 3:return W`
+        `}case 3:return U`
           <div class="col" style="gap:14px">
-            <h3 style="margin:0">Quali giorni della settimana?</h3>
-            <p class="text-mute text-sm" style="margin:0">La schedulazione si ripeterà automaticamente ogni settimana.</p>
+            <h3 style="margin:0">${De("wizard.days.heading")}</h3>
+            <p class="text-mute text-sm" style="margin:0">${De("wizard.days.hint")}</p>
             <div class="row" style="gap:4px">
-              ${We.map((e,t)=>{const i=this._days[t];return W`
+              ${Ze().map((e,t)=>{const i=this._days[t];return U`
                   <button class="mono" @click=${()=>{const e=[...this._days];e[t]=e[t]?0:1,this._days=e}} style="width:34px;height:30px;border-radius:8px;font-size:11px;font-weight:600;background:${i?"var(--accent)":"var(--bg-sunken)"};color:${i?"white":"var(--text-muted)"};border:1px solid ${i?"transparent":"var(--border-soft)"};cursor:pointer">
                     ${e}
                   </button>
                 `})}
             </div>
             <div class="row" style="gap:6px">
-              <button class="btn btn--sm" @click=${()=>{this._days=[1,1,1,1,1,1,1]}}>Tutti i giorni</button>
-              <button class="btn btn--sm" @click=${()=>{this._days=[1,1,1,1,1,0,0]}}>Lavorativi</button>
-              <button class="btn btn--sm" @click=${()=>{this._days=[0,0,0,0,0,1,1]}}>Weekend</button>
+              <button class="btn btn--sm" @click=${()=>{this._days=[1,1,1,1,1,1,1]}}>${De("editor.days.all")}</button>
+              <button class="btn btn--sm" @click=${()=>{this._days=[1,1,1,1,1,0,0]}}>${De("editor.days.weekdays")}</button>
+              <button class="btn btn--sm" @click=${()=>{this._days=[0,0,0,0,0,1,1]}}>${De("editor.days.weekend")}</button>
             </div>
           </div>
-        `;case 4:return W`
+        `;case 4:return U`
           <div class="col" style="gap:14px">
-            <h3 style="margin:0">Logica meteo</h3>
-            <p class="text-mute text-sm" style="margin:0">Vuoi che il meteo locale modifichi automaticamente questa programmazione?</p>
+            <h3 style="margin:0">${De("wizard.weather.heading")}</h3>
+            <p class="text-mute text-sm" style="margin:0">${De("wizard.weather.hint")}</p>
             <div class="grid-2">
               <button class="tile-pick" data-selected="${this._weatherEnabled}" @click=${()=>{this._weatherEnabled=!0}}>
-                <div class="tile-pick__icon">${me("cloud",16)}</div>
-                <div class="tile-pick__name">Sì, abilita</div>
-                <div class="tile-pick__desc">Suggeriremo regole utili in base al tipo di dispositivo</div>
+                <div class="tile-pick__icon">${be("cloud",16)}</div>
+                <div class="tile-pick__name">${De("wizard.weather.yes")}</div>
+                <div class="tile-pick__desc">${De("wizard.weather.yes.desc")}</div>
               </button>
               <button class="tile-pick" data-selected="${!this._weatherEnabled}" @click=${()=>{this._weatherEnabled=!1}}>
-                <div class="tile-pick__icon" style="background:var(--bg-sunken);color:var(--text-soft)">${me("close",16)}</div>
-                <div class="tile-pick__name">No, solo orari</div>
-                <div class="tile-pick__desc">Esecuzione fissa indipendente dal meteo</div>
+                <div class="tile-pick__icon" style="background:var(--bg-sunken);color:var(--text-soft)">${be("close",16)}</div>
+                <div class="tile-pick__name">${De("wizard.weather.no")}</div>
+                <div class="tile-pick__desc">${De("wizard.weather.no.desc")}</div>
               </button>
             </div>
           </div>
-        `;case 5:return W`
+        `;case 5:return U`
           <div class="col" style="gap:12px">
-            <h3 style="margin:0">Riepilogo</h3>
+            <h3 style="margin:0">${De("wizard.review.heading")}</h3>
             <div class="card card--ghost" style="padding:14px">
               <div class="col" style="gap:10px">
-                <div class="sp-between"><span class="text-mute text-sm">Nome</span><strong>${this._name}</strong></div>
-                <div class="sp-between"><span class="text-mute text-sm">Dispositivi</span><strong>${this._pickedDevices.length} selezionati</strong></div>
-                <div class="sp-between"><span class="text-mute text-sm">Giorni</span><strong>${this._days.filter(Boolean).length}/7</strong></div>
-                <div class="sp-between"><span class="text-mute text-sm">Logica meteo</span><strong>${this._weatherEnabled?"Abilitata":"Disabilitata"}</strong></div>
-                <div class="sp-between"><span class="text-mute text-sm">Fasce orarie</span><strong>${this._blocks.length}</strong></div>
+                <div class="sp-between"><span class="text-mute text-sm">${De("editor.field.name")}</span><strong>${this._name||De("nav.new_schedule")}</strong></div>
+                <div class="sp-between"><span class="text-mute text-sm">${De("nav.devices")}</span><strong>${De("wizard.review.devices",{n:this._pickedDevices.length})}</strong></div>
+                <div class="sp-between"><span class="text-mute text-sm">${De("editor.days.repeat")}</span><strong>${this._days.filter(Boolean).length}/7</strong></div>
+                <div class="sp-between"><span class="text-mute text-sm">${De("wizard.weather.heading")}</span><strong>${this._weatherEnabled?De("wizard.review.weather_on"):De("wizard.review.weather_off")}</strong></div>
+                <div class="sp-between"><span class="text-mute text-sm">${De("wizard.step.time")}</span><strong>${this._blocks.length}</strong></div>
               </div>
             </div>
-            <p class="text-xs text-mute" style="margin:0">Potrai modificare ogni dettaglio dall'editor dopo la creazione.</p>
+            <p class="text-xs text-mute" style="margin:0">${De("wizard.review.note")}</p>
           </div>
-        `;default:return F}}_togglePick(e){this._pickedDevices.includes(e)?this._pickedDevices=this._pickedDevices.filter(t=>t!==e):this._pickedDevices=[...this._pickedDevices,e]}_inferDeviceType(){if(!this._pickedDevices.length)return"thermostat";const e=this.card._devices.find(e=>e.id===this._pickedDevices[0]);return e?.type||"thermostat"}_defaultBlocks(e){const t=Ee(e);return[{start:0,end:7,action:{...t}},{start:7,end:22,action:{...t}},{start:22,end:24,action:{...t}}]}_ensureBlocksFor(e){this._blocksDeviceType!==e&&(this._blocks=this._defaultBlocks(e),this._blocksDeviceType=e,this._selectedBlockIdx=-1)}_resetBlocks(e){this._blocks=this._defaultBlocks(e),this._selectedBlockIdx=-1}_removeSelected(){this._selectedBlockIdx<0||(this._blocks=this._blocks.filter((e,t)=>t!==this._selectedBlockIdx),this._selectedBlockIdx=-1)}_setAction(e){if(this._selectedBlockIdx<0)return;const t=ze(this._inferDeviceType(),e),i=[...this._blocks];i[this._selectedBlockIdx]={...i[this._selectedBlockIdx],action:{id:e,value:t?.value?t.value.default:void 0}},this._blocks=i}_setActionValue(e){if(this._selectedBlockIdx<0)return;const t=[...this._blocks],i=t[this._selectedBlockIdx];t[this._selectedBlockIdx]={...i,action:{...i.action||{id:""},value:e}},this._blocks=t}_fmtBlockRange(e){const t=e=>{const t=Math.floor(e),i=Math.round(60*(e-t));return`${String(t).padStart(2,"0")}:${String(i).padStart(2,"0")}`};return`${t(e.start)} → ${t(e.end)}`}_totalCoverage(){const e=this._blocks.reduce((e,t)=>e+(t.end-t.start),0);return e.toFixed(1).replace(/\.0$/,"")}async _finish(){const e=this._inferDeviceType();this._ensureBlocksFor(e);const t={id:"",name:this._name,device_type:e,device_ids:this._pickedDevices,days:this._days,enabled:!0,blocks:[...this._blocks].sort((e,t)=>e.start-t.start),weather_rules:this._weatherEnabled?[{if:"temperature > 22°C",then:"Salta esecuzione",active:!0}]:[]};await this.card.doAddSchedule(t)}};dt.styles=be,e([ve({attribute:!1,hasChanged:()=>!0})],dt.prototype,"card",void 0),e([ve({type:Number})],dt.prototype,"nowHour",void 0),e([ge()],dt.prototype,"_step",void 0),e([ge()],dt.prototype,"_name",void 0),e([ge()],dt.prototype,"_pickedDevices",void 0),e([ge()],dt.prototype,"_days",void 0),e([ge()],dt.prototype,"_weatherEnabled",void 0),e([ge()],dt.prototype,"_blocks",void 0),e([ge()],dt.prototype,"_blocksDeviceType",void 0),e([ge()],dt.prototype,"_selectedBlockIdx",void 0),e([ge()],dt.prototype,"_variant",void 0),dt=e([pe("chronos-wizard")],dt);let ct=class extends de{constructor(){super(...arguments),this.nowHour=0,this._pickerOpen=!1,this._search="",this._pickedAlias={}}render(){const{_devices:e,_availableEntities:t}=this.card;return W`
+        `;default:return G}}_togglePick(e){this._pickedDevices.includes(e)?this._pickedDevices=this._pickedDevices.filter(t=>t!==e):this._pickedDevices=[...this._pickedDevices,e]}_inferDeviceType(){if(!this._pickedDevices.length)return"thermostat";const e=this.card._devices.find(e=>e.id===this._pickedDevices[0]);return e?.type||"thermostat"}_defaultBlocks(e){const t=Ee(e);return[{start:0,end:7,action:{...t}},{start:7,end:22,action:{...t}},{start:22,end:24,action:{...t}}]}_ensureBlocksFor(e){this._blocksDeviceType!==e&&(this._blocks=this._defaultBlocks(e),this._blocksDeviceType=e,this._selectedBlockIdx=-1)}_resetBlocks(e){this._blocks=this._defaultBlocks(e),this._selectedBlockIdx=-1}_removeSelected(){this._selectedBlockIdx<0||(this._blocks=this._blocks.filter((e,t)=>t!==this._selectedBlockIdx),this._selectedBlockIdx=-1)}_setAction(e){if(this._selectedBlockIdx<0)return;const t=ze(this._inferDeviceType(),e),i=[...this._blocks];i[this._selectedBlockIdx]={...i[this._selectedBlockIdx],action:{id:e,value:t?.value?t.value.default:void 0}},this._blocks=i}_setActionValue(e){if(this._selectedBlockIdx<0)return;const t=[...this._blocks],i=t[this._selectedBlockIdx];t[this._selectedBlockIdx]={...i,action:{...i.action||{id:""},value:e}},this._blocks=t}_fmtBlockRange(e){const t=e=>{const t=Math.floor(e),i=Math.round(60*(e-t));return`${String(t).padStart(2,"0")}:${String(i).padStart(2,"0")}`};return`${t(e.start)} → ${t(e.end)}`}_totalCoverage(){const e=this._blocks.reduce((e,t)=>e+(t.end-t.start),0);return e.toFixed(1).replace(/\.0$/,"")}async _finish(){const e=this._inferDeviceType();this._ensureBlocksFor(e);const t={id:"",name:this._name,device_type:e,device_ids:this._pickedDevices,days:this._days,enabled:!0,blocks:[...this._blocks].sort((e,t)=>e.start-t.start),weather_rules:this._weatherEnabled?[{if:"temperature > 22°C",then:"Salta esecuzione",active:!0}]:[]};await this.card.doAddSchedule(t)}};ut.styles=fe,e([ve({attribute:!1,hasChanged:()=>!0})],ut.prototype,"card",void 0),e([ve({type:Number})],ut.prototype,"nowHour",void 0),e([ge()],ut.prototype,"_step",void 0),e([ge()],ut.prototype,"_name",void 0),e([ge()],ut.prototype,"_pickedDevices",void 0),e([ge()],ut.prototype,"_days",void 0),e([ge()],ut.prototype,"_weatherEnabled",void 0),e([ge()],ut.prototype,"_blocks",void 0),e([ge()],ut.prototype,"_blocksDeviceType",void 0),e([ge()],ut.prototype,"_selectedBlockIdx",void 0),e([ge()],ut.prototype,"_variant",void 0),ut=e([pe("chronos-wizard")],ut);let vt=class extends de{constructor(){super(...arguments),this.nowHour=0,this._pickerOpen=!1,this._search="",this._pickedAlias={}}render(){const{_devices:e,_availableEntities:t}=this.card;return U`
       <div class="col" style="gap:22px">
         <div class="sp-between">
           <div>
-            <h1 class="page-title">Gestisci dispositivi</h1>
-            <p class="page-sub">Entità di Home Assistant importate · ${e.length} dispositivi controllati</p>
+            <h1 class="page-title">${De("screen.devices.title")}</h1>
+            <p class="page-sub">${De("devices.subtitle",{n:e.length})}</p>
           </div>
           <button class="btn btn--primary" @click=${()=>{this._pickerOpen=!0}}>
-            ${me("plus",14)} Aggiungi entità
+            ${be("plus",14)} ${De("devices.add_entity")}
           </button>
         </div>
 
         <div class="card">
           <div class="col" style="gap:0">
-            ${e.map(e=>{const t=Je[e.type]||{label:e.type,capabilities:[]},i=this.card.hass?.states?.[e.entity_id],s=i?.state||"—",a=Ye(e,i,this.card._settings);return W`
+            ${e.map(e=>{const t=Je[e.type]||{label:e.type,capabilities:[]},i=this.card.hass?.states?.[e.entity_id],s=i?.state||"—",a=at(e,i,this.card._settings);return U`
                 <div class="device-row" style="border-bottom:1px solid var(--border-soft);border-radius:0;padding:14px 10px;align-items:center">
                   <div class="device-row__icon" style="background:${a.soft};color:${a.accent};flex:0 0 auto;border:1px solid ${a.soft}">
-                    ${xe(e.type,17)}
+                    ${we(e.type,17)}
                   </div>
                   <div class="device-row__main" style="min-width:0">
                     <input class="input" .value=${e.alias}
                       @change=${t=>this.card.doUpdateDevice(e.id,{alias:t.target.value})}
                       style="border:1px solid transparent;background:transparent;padding:4px 6px;font-weight:500;font-size:14px;margin-left:-6px;width:100%;max-width:240px"
-                      placeholder="Alias…"/>
+                      placeholder="${De("devices.alias")}…"/>
                     <div class="device-row__meta" style="margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
                       <span style="color:var(--text-muted)">${e.entity_id}</span>
-                      ${e.area?W` · ${e.area}`:F}
+                      ${e.area?U` · ${e.area}`:G}
                     </div>
                   </div>
                   <span class="chip chip--accent" style="flex:0 0 auto">${t.label}</span>
                   <div class="row" style="gap:4px;flex:0 1 auto;min-width:0;overflow:hidden">
-                    ${(t.capabilities||[]).slice(0,2).map(e=>W`<span class="tag mono" style="white-space:nowrap">${e}</span>`)}
-                    ${(t.capabilities||[]).length>2?W`<span class="tag mono">+${t.capabilities.length-2}</span>`:F}
+                    ${(t.capabilities||[]).slice(0,2).map(e=>U`<span class="tag mono" style="white-space:nowrap">${e}</span>`)}
+                    ${(t.capabilities||[]).length>2?U`<span class="tag mono">+${t.capabilities.length-2}</span>`:G}
                   </div>
                   <span class="mono text-xs text-mute" style="flex:0 0 auto;min-width:60px;text-align:right">${s}</span>
-                  <button class="btn btn--icon btn--ghost btn--sm" style="flex:0 0 auto" @click=${()=>this.card.doRemoveDevice(e.id)} title="Sgancia">
-                    ${me("trash",14)}
+                  <button class="btn btn--icon btn--ghost btn--sm" style="flex:0 0 auto" @click=${()=>this.card.doRemoveDevice(e.id)} title="${De("devices.unlink")}">
+                    ${be("trash",14)}
                   </button>
                 </div>
               `})}
-            ${e.length?F:W`<div style="text-align:center;padding:40px 20px;color:var(--text-muted)">
-              <div style="width:52px;height:52px;margin:0 auto 12px;border-radius:14px;background:var(--bg-sunken);display:grid;place-items:center;color:var(--text-soft)">${me("device",22)}</div>
-              <div style="font-weight:600;color:var(--text);font-size:14px">Nessun dispositivo importato</div>
-              <div style="font-size:12.5px;margin-top:4px">Aggiungi le tue prime entità HA per iniziare.</div>
+            ${e.length?G:U`<div style="text-align:center;padding:40px 20px;color:var(--text-muted)">
+              <div style="width:52px;height:52px;margin:0 auto 12px;border-radius:14px;background:var(--bg-sunken);display:grid;place-items:center;color:var(--text-soft)">${be("device",22)}</div>
+              <div style="font-weight:600;color:var(--text);font-size:14px">${De("devices.empty.title")}</div>
+              <div style="font-size:12.5px;margin-top:4px">${De("devices.empty.hint")}</div>
             </div>`}
           </div>
         </div>
 
-        <p class="text-xs text-mute" style="margin:0">
-          <strong>Tipo e capabilities</strong> vengono dedotti automaticamente dal dominio dell'entità HA (es. <span class="mono">climate.*</span> → termostato).
-        </p>
+        <p class="text-xs text-mute" style="margin:0">${De("devices.types_hint")}</p>
 
-        ${this._pickerOpen?this._renderPicker(t):F}
+        ${this._pickerOpen?this._renderPicker(t):G}
       </div>
-    `}_renderPicker(e){const t=e.filter(e=>!this._search||(e.entity_id+e.friendly_name).toLowerCase().includes(this._search.toLowerCase()));return W`
+    `}_renderPicker(e){const t=e.filter(e=>!this._search||(e.entity_id+e.friendly_name).toLowerCase().includes(this._search.toLowerCase()));return U`
       <div class="modal-overlay" @click=${()=>{this._pickerOpen=!1}}>
         <div class="card" style="width:min(640px,100%);max-height:80vh;display:flex;flex-direction:column" @click=${e=>e.stopPropagation()}>
           <div class="sp-between" style="margin-bottom:14px">
             <div>
-              <h3 style="margin:0">Aggiungi entità HA</h3>
-              <p class="text-mute text-sm" style="margin:2px 0 0">${e.length} entità disponibili nel tuo Home Assistant</p>
+              <h3 style="margin:0">${De("devices.picker.title")}</h3>
+              <p class="text-mute text-sm" style="margin:2px 0 0">${De("devices.picker.count",{n:e.length})}</p>
             </div>
-            <button class="btn btn--icon btn--ghost" @click=${()=>{this._pickerOpen=!1}}>${me("close",16)}</button>
+            <button class="btn btn--icon btn--ghost" @click=${()=>{this._pickerOpen=!1}}>${be("close",16)}</button>
           </div>
-          <input class="input" placeholder="Cerca per nome o entity_id…" .value=${this._search}
+          <input class="input" placeholder="${De("devices.picker.search")}" .value=${this._search}
             @input=${e=>{this._search=e.target.value}}
             style="margin-bottom:12px"/>
           <div style="overflow:auto;flex:1;display:flex;flex-direction:column;gap:4px">
-            ${t.map(e=>{const t=e.type||"plug",i=Je[t]||{label:t};return W`
+            ${t.map(e=>{const t=e.type||"plug",i=Je[t]||{label:t};return U`
                 <div class="device-row" style="background:var(--bg-sunken);padding:10px 12px">
-                  <div class="device-row__icon">${xe(t,16)}</div>
+                  <div class="device-row__icon">${we(t,16)}</div>
                   <div class="device-row__main">
                     <div class="device-row__name">${e.friendly_name}</div>
                     <div class="device-row__meta"><span class="mono">${e.entity_id}</span> · ${e.area||""}</div>
                   </div>
-                  <input class="input" placeholder="Alias (opzionale)"
+                  <input class="input" placeholder="${De("devices.alias.placeholder")}"
                     .value=${this._pickedAlias[e.entity_id]||""}
                     @input=${t=>{this._pickedAlias={...this._pickedAlias,[e.entity_id]:t.target.value}}}
                     style="width:160px;font-size:12px"/>
                   <span class="chip chip--accent">${i.label}</span>
-                  <button class="btn btn--sm btn--primary" @click=${async()=>{await this.card.doAddDevice(e.entity_id,this._pickedAlias[e.entity_id]||void 0),this._pickedAlias={...this._pickedAlias,[e.entity_id]:""}}}>${me("plus",12)} Importa</button>
+                  <button class="btn btn--sm btn--primary" @click=${async()=>{await this.card.doAddDevice(e.entity_id,this._pickedAlias[e.entity_id]||void 0),this._pickedAlias={...this._pickedAlias,[e.entity_id]:""}}}>${be("plus",12)} ${De("devices.import")}</button>
                 </div>
               `})}
-            ${e.length?F:W`<div style="text-align:center;padding:40px 20px;color:var(--text-muted)">
-              <div style="font-weight:600;color:var(--text);font-size:14px">Tutto importato</div>
-              <div style="font-size:12.5px;margin-top:4px">Tutte le entità disponibili sono già state aggiunte.</div>
+            ${e.length?G:U`<div style="text-align:center;padding:40px 20px;color:var(--text-muted)">
+              <div style="font-weight:600;color:var(--text);font-size:14px">${De("devices.picker.all_imported")}</div>
+              <div style="font-size:12.5px;margin-top:4px">${De("devices.picker.all_imported.hint")}</div>
             </div>`}
           </div>
         </div>
       </div>
-    `}};ct.styles=be,e([ve({attribute:!1,hasChanged:()=>!0})],ct.prototype,"card",void 0),e([ve({type:Number})],ct.prototype,"nowHour",void 0),e([ge()],ct.prototype,"_pickerOpen",void 0),e([ge()],ct.prototype,"_search",void 0),e([ge()],ct.prototype,"_pickedAlias",void 0),ct=e([pe("chronos-devices-screen")],ct);let pt=class extends de{constructor(){super(...arguments),this.nowHour=0}render(){const e=this.card._settings;return e?W`
+    `}};vt.styles=fe,e([ve({attribute:!1,hasChanged:()=>!0})],vt.prototype,"card",void 0),e([ve({type:Number})],vt.prototype,"nowHour",void 0),e([ge()],vt.prototype,"_pickerOpen",void 0),e([ge()],vt.prototype,"_search",void 0),e([ge()],vt.prototype,"_pickedAlias",void 0),vt=e([pe("chronos-devices-screen")],vt);let gt=class extends de{constructor(){super(...arguments),this.nowHour=0}render(){const e=this.card._settings;return e?U`
       <div class="col" style="gap:22px;max-width:980px">
         <div>
-          <h1 class="page-title">Impostazioni</h1>
-          <p class="page-sub">Parametri globali dell'integrazione Chronos · validi per tutte le schedulazioni</p>
+          <h1 class="page-title">${De("screen.settings.title")}</h1>
+          <p class="page-sub">${De("settings.subtitle")}</p>
         </div>
 
         <div class="card">
-          <div class="card__header"><div style="flex:1"><h3 class="card__title">Sorgente meteo</h3><p class="card__sub">Entità HA usata per valutare le regole meteo · puoi anche puntare attributi specifici a sensori puntuali (stazione meteo locale, Ecowitt, …)</p></div></div>
+          <div class="card__header"><div style="flex:1"><h3 class="card__title">${De("settings.language.title")}</h3><p class="card__sub">${De("settings.language.subtitle")}</p></div></div>
+          <div class="segmented">
+            ${["auto","it","en","fr","de"].map(t=>U`
+              <button data-active="${(e.language||"auto")===t}" @click=${()=>this._updateSetting("language",t)}>
+                ${"auto"===t?De("settings.language.auto"):t.toUpperCase()}
+              </button>
+            `)}
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__header"><div style="flex:1"><h3 class="card__title">${De("settings.weather.title")}</h3><p class="card__sub">${De("settings.weather.subtitle")}</p></div></div>
           <div class="col" style="gap:14px">
             <div class="field">
-              <label class="field__label">Entità meteo principale</label>
+              <label class="field__label">${De("settings.weather.entity")}</label>
               <select class="select mono"
                 @change=${e=>this._updateSetting("weather_entity",e.target.value)}>
-                <option value="" ?selected=${!e.weather_entity}>Nessuna</option>
-                ${this.card._weatherEntities.map(t=>W`
+                <option value="" ?selected=${!e.weather_entity}>${De("common.none")}</option>
+                ${this.card._weatherEntities.map(t=>U`
                   <option value="${t.entity_id}" ?selected=${e.weather_entity===t.entity_id}>${t.entity_id} — ${t.friendly_name}</option>
                 `)}
               </select>
-              <span class="field__hint">Usata per le forecast.* e come fallback se nessun override è impostato qui sotto</span>
+              <span class="field__hint">${De("settings.weather.entity.hint")}</span>
             </div>
 
             ${this._renderSensorOverrides()}
@@ -1523,33 +1513,33 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
         </div>
 
         <div class="card">
-          <div class="card__header"><div style="flex:1"><h3 class="card__title">Comportamento esecuzione</h3><p class="card__sub">Frequenza di aggiornamento e granularità</p></div></div>
+          <div class="card__header"><div style="flex:1"><h3 class="card__title">${De("settings.behavior.title")}</h3><p class="card__sub">${De("settings.behavior.subtitle")}</p></div></div>
           <div class="grid-2">
             <div class="field">
-              <label class="field__label">Polling meteo</label>
+              <label class="field__label">${De("settings.polling")}</label>
               <div class="segmented">
-                ${[1,5,15].map(t=>W`
-                  <button data-active="${e.polling_minutes===t}" @click=${()=>this._updateSetting("polling_minutes",t)}>${t} min</button>
+                ${[1,5,15].map(t=>U`
+                  <button data-active="${e.polling_minutes===t}" @click=${()=>this._updateSetting("polling_minutes",t)}>${t} ${De("common.min")}</button>
                 `)}
               </div>
-              <span class="field__hint">Ogni quanto rivalutare le regole</span>
+              <span class="field__hint">${De("settings.polling.hint")}</span>
             </div>
             <div class="field">
-              <label class="field__label">Snap timeline</label>
+              <label class="field__label">${De("settings.snap")}</label>
               <div class="segmented">
-                ${[15,30,60].map(t=>W`
-                  <button data-active="${e.snap_minutes===t}" @click=${()=>this._updateSetting("snap_minutes",t)}>${60===t?"1 h":`${t} min`}</button>
+                ${[15,30,60].map(t=>U`
+                  <button data-active="${e.snap_minutes===t}" @click=${()=>this._updateSetting("snap_minutes",t)}>${60===t?`1 ${De("common.hour_short")}`:`${t} ${De("common.min")}`}</button>
                 `)}
               </div>
-              <span class="field__hint">Granularità nel disegnare le fasce</span>
+              <span class="field__hint">${De("settings.snap.hint")}</span>
             </div>
           </div>
         </div>
 
         <div class="card">
-          <div class="card__header"><div style="flex:1"><h3 class="card__title">Notifiche</h3><p class="card__sub">Eventi che vogliono una notifica HA</p></div></div>
+          <div class="card__header"><div style="flex:1"><h3 class="card__title">${De("settings.notify.title")}</h3><p class="card__sub">${De("settings.notify.subtitle")}</p></div></div>
           <div class="col" style="gap:0">
-            ${[["notify_rule_triggered","Regola meteo attivata","Quando una regola override entra in azione"],["notify_sched_skipped","Schedulazione saltata","Quando una fascia viene skippata per condizioni meteo"],["notify_command_error","Errore comando","Se un dispositivo non risponde"]].map(([t,i,s])=>W`
+            ${[["notify_rule_triggered",De("settings.notify.rule_triggered"),De("settings.notify.rule_triggered.desc")],["notify_sched_skipped",De("settings.notify.sched_skipped"),De("settings.notify.sched_skipped.desc")],["notify_command_error",De("settings.notify.command_error"),De("settings.notify.command_error.desc")]].map(([t,i,s])=>U`
               <div class="device-row" style="border-bottom:1px solid var(--border-soft);border-radius:0">
                 <div class="device-row__main">
                   <div class="device-row__name">${i}</div>
@@ -1567,24 +1557,24 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
         </div>
 
         <div class="card">
-          <div class="card__header"><div style="flex:1"><h3 class="card__title">Aspetto</h3><p class="card__sub">Tema e densità predefinita</p></div></div>
+          <div class="card__header"><div style="flex:1"><h3 class="card__title">${De("settings.appearance.title")}</h3><p class="card__sub">${De("settings.appearance.subtitle")}</p></div></div>
           <div class="grid-2">
             <div class="field">
-              <label class="field__label">Tema</label>
+              <label class="field__label">${De("settings.theme")}</label>
               <div class="segmented">
-                ${["light","dark","auto"].map(t=>W`
+                ${["light","dark","auto"].map(t=>U`
                   <button data-active="${e.theme===t}" @click=${()=>this._updateSetting("theme",t)}>
-                    ${{light:"Chiaro",dark:"Scuro",auto:"Auto"}[t]}
+                    ${De("settings.theme."+t)}
                   </button>
                 `)}
               </div>
             </div>
             <div class="field">
-              <label class="field__label">Densità</label>
+              <label class="field__label">${De("settings.density")}</label>
               <div class="segmented">
-                ${["comfortable","compact"].map(t=>W`
+                ${["comfortable","compact"].map(t=>U`
                   <button data-active="${e.density===t}" @click=${()=>this._updateSetting("density",t)}>
-                    ${{comfortable:"Comoda",compact:"Compatta"}[t]}
+                    ${De("settings.density."+t)}
                   </button>
                 `)}
               </div>
@@ -1593,11 +1583,11 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
         </div>
 
         <div class="card">
-          <div class="card__header"><div style="flex:1"><h3 class="card__title">Timeline predefinita</h3><p class="card__sub">Quale variante mostrare di default nell'editor</p></div></div>
+          <div class="card__header"><div style="flex:1"><h3 class="card__title">${De("settings.timeline_default.title")}</h3><p class="card__sub">${De("settings.timeline_default.subtitle")}</p></div></div>
           <div class="segmented">
-            ${["linear","radial","list"].map(t=>W`
+            ${["linear","radial","list"].map(t=>U`
               <button data-active="${e.default_timeline_variant===t}" @click=${()=>this._updateSetting("default_timeline_variant",t)}>
-                ${{linear:"Lineare",radial:"Radiale",list:"Lista"}[t]}
+                ${De("timeline."+t)}
               </button>
             `)}
           </div>
@@ -1605,15 +1595,15 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
 
         ${this._renderColorsSection()}
       </div>
-    `:W`<div class="text-mute">Caricamento…</div>`}_renderColorsSection(){const e=this.card._settings,t=Xe(e,"thermostat"),i=Xe(e,"boiler"),s=Qe(e),a=Ke(e);return W`
+    `:U`<div class="text-mute">${De("common.loading")}</div>`}_renderColorsSection(){const e=this.card._settings,t=et(e,"thermostat"),i=et(e,"boiler"),s=tt(e),a=it(e);return U`
       <div class="card">
-        <div class="card__header"><div style="flex:1"><h3 class="card__title">Colori dispositivi</h3><p class="card__sub">L'accent del dispositivo riflette il suo stato corrente</p></div></div>
+        <div class="card__header"><div style="flex:1"><h3 class="card__title">${De("settings.colors.title")}</h3><p class="card__sub">${De("settings.colors.subtitle")}</p></div></div>
 
         <div class="col" style="gap:18px">
           <div class="device-row" style="border-bottom:1px solid var(--border-soft);border-radius:0;padding:8px 0">
             <div class="device-row__main">
-              <div class="device-row__name">Luci · usa colore reale da Home Assistant</div>
-              <div class="device-row__meta" style="font-family:var(--font-sans)">Se attivo, l'icona della luce riflette il colore RGB corrente. Altrimenti usa giallo soft.</div>
+              <div class="device-row__name">${De("settings.colors.lights.title")}</div>
+              <div class="device-row__meta" style="font-family:var(--font-sans)">${De("settings.colors.lights.desc")}</div>
             </div>
             <label class="switch">
               <input type="checkbox" .checked=${a}
@@ -1623,22 +1613,22 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
             </label>
           </div>
 
-          ${this._renderTempStops("Termostati · gradiente temperatura","Soglia ≤ → colore. La fascia oltre l'ultima soglia usa l'ultimo colore.",t,"color_stops_climate",qe)}
+          ${this._renderTempStops(De("settings.colors.thermostat.title"),De("settings.colors.thermostat.desc"),t,"color_stops_climate",Xe)}
 
-          ${this._renderTempStops("Boiler · gradiente temperatura","Stessa logica del termostato, range tipico 30-75°C.",i,"color_stops_boiler",Fe)}
+          ${this._renderTempStops(De("settings.colors.boiler.title"),De("settings.colors.boiler.desc"),i,"color_stops_boiler",Qe)}
 
           <div>
             <div class="row" style="justify-content:space-between;align-items:flex-end;margin-bottom:8px">
               <div>
-                <div class="fw-600" style="font-size:13.5px">Preset modalità (climate)</div>
-                <div class="text-xs text-mute">Override del colore quando il termostato è in un preset specifico</div>
+                <div class="fw-600" style="font-size:13.5px">${De("settings.colors.preset.title")}</div>
+                <div class="text-xs text-mute">${De("settings.colors.preset.desc")}</div>
               </div>
-              <button class="btn btn--sm" @click=${()=>this._updateSetting("color_presets",{...Ge})}>
-                ${me("repeat",12)} Reset default
+              <button class="btn btn--sm" @click=${()=>this._updateSetting("color_presets",{...Ye})}>
+                ${be("repeat",12)} ${De("common.default")}
               </button>
             </div>
             <div class="grid-2" style="gap:8px">
-              ${Object.entries(s).map(([e,t])=>W`
+              ${Object.entries(s).map(([e,t])=>U`
                 <div class="row" style="gap:10px;padding:8px 10px;background:var(--bg-sunken);border-radius:var(--r-md);align-items:center">
                   <div style="width:14px;height:14px;border-radius:50%;background:${t};border:1px solid var(--border)"></div>
                   <span class="mono text-sm" style="flex:1">${e}</span>
@@ -1651,7 +1641,7 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
           </div>
         </div>
       </div>
-    `}_renderTempStops(e,t,i,s,a){return W`
+    `}_renderTempStops(e,t,i,s,a){return U`
       <div>
         <div class="row" style="justify-content:space-between;align-items:flex-end;margin-bottom:8px">
           <div>
@@ -1660,18 +1650,18 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
           </div>
           <div class="row" style="gap:6px">
             <button class="btn btn--sm" @click=${()=>this._addStop(i,s)}>
-              ${me("plus",12)} Stop
+              ${be("plus",12)} ${De("settings.colors.add_stop")}
             </button>
             <button class="btn btn--sm" @click=${()=>this._updateSetting(s,a.map(e=>({...e})))}>
-              ${me("repeat",12)} Default
+              ${be("repeat",12)} ${De("common.default")}
             </button>
           </div>
         </div>
         <div class="col" style="gap:6px">
-          ${i.map((e,t)=>{const a=t===i.length-1;return W`
+          ${i.map((e,t)=>{const a=t===i.length-1;return U`
               <div class="row" style="gap:10px;padding:8px 10px;background:var(--bg-sunken);border-radius:var(--r-md);align-items:center">
                 <span class="text-sm text-mute" style="width:18px">${a?">":"≤"}</span>
-                ${a?W`<span class="mono text-sm" style="width:80px">${i[t-1]?.max??0}°+</span>`:W`<input type="number" class="input mono" step="0.5" .value=${String(e.max)}
+                ${a?U`<span class="mono text-sm" style="width:80px">${i[t-1]?.max??0}°+</span>`:U`<input type="number" class="input mono" step="0.5" .value=${String(e.max)}
                       @change=${e=>this._updateStopMax(i,s,t,parseFloat(e.target.value))}
                       style="width:80px;font-size:13px"/>`}
                 <span class="text-sm text-mute">°C</span>
@@ -1680,24 +1670,23 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
                 <input type="color" .value=${e.color}
                   @change=${e=>this._updateStopColor(i,s,t,e.target.value)}
                   style="width:36px;height:28px;padding:0;border:1px solid var(--border-soft);border-radius:6px;background:transparent;cursor:pointer"/>
-                ${i.length>1?W`
-                  <button class="btn btn--icon btn--ghost btn--sm" @click=${()=>this._removeStop(i,s,t)} title="Rimuovi">
-                    ${me("trash",12)}
+                ${i.length>1?U`
+                  <button class="btn btn--icon btn--ghost btn--sm" @click=${()=>this._removeStop(i,s,t)} title="${De("common.remove")}">
+                    ${be("trash",12)}
                   </button>
-                `:F}
+                `:G}
               </div>
             `})}
         </div>
       </div>
-    `}_addStop(e,t){const i=e.filter(e=>e.max<900),s={max:(i.length?i[i.length-1].max:20)+5,color:"#9ca3af"},a=e.find(e=>e.max>=900),o=[...i,s];a&&o.push(a),this._updateSetting(t,o)}_removeStop(e,t,i){const s=e.filter((e,t)=>t!==i);this._updateSetting(t,s)}_updateStopMax(e,t,i,s){if(isNaN(s))return;const a=e.map((e,t)=>t===i?{...e,max:s}:e);this._updateSetting(t,a)}_updateStopColor(e,t,i,s){const a=e.map((e,t)=>t===i?{...e,color:s}:e);this._updateSetting(t,a)}_updatePresetColor(e,t){const i=Qe(this.card._settings);this._updateSetting("color_presets",{...i,[e]:t})}_renderSensorOverrides(){const e=this.card._settings.weather_sensor_map||{},t=this.card._sensorEntities||[],i=(this.card._weatherAttributes||[]).filter(e=>!e.key.startsWith("forecast."));if(!i.length)return F;const s=this._groupSensorsByDeviceClass(t);return W`
+    `}_addStop(e,t){const i=e.filter(e=>e.max<900),s={max:(i.length?i[i.length-1].max:20)+5,color:"#9ca3af"},a=e.find(e=>e.max>=900),r=[...i,s];a&&r.push(a),this._updateSetting(t,r)}_removeStop(e,t,i){const s=e.filter((e,t)=>t!==i);this._updateSetting(t,s)}_updateStopMax(e,t,i,s){if(isNaN(s))return;const a=e.map((e,t)=>t===i?{...e,max:s}:e);this._updateSetting(t,a)}_updateStopColor(e,t,i,s){const a=e.map((e,t)=>t===i?{...e,color:s}:e);this._updateSetting(t,a)}_updatePresetColor(e,t){const i=tt(this.card._settings);this._updateSetting("color_presets",{...i,[e]:t})}_renderSensorOverrides(){const e=this.card._settings.weather_sensor_map||{},t=this.card._sensorEntities||[],i=(this.card._weatherAttributes||[]).filter(e=>!e.key.startsWith("forecast."));if(!i.length)return G;const s=this._groupSensorsByDeviceClass(t);return U`
       <div class="field" style="margin-top:8px">
-        <label class="field__label">Override su sensori puntuali</label>
+        <label class="field__label">${De("settings.weather.overrides.title")}</label>
         <span class="field__hint" style="margin-bottom:10px;display:block">
-          Per ogni attributo puoi specificare un'entità <span class="mono">sensor.*</span> da cui leggere il valore.
-          Se vuoto, viene letto dall'entità weather principale.
+          ${De("settings.weather.overrides.hint")}
         </span>
         <div class="col" style="gap:6px">
-          ${i.map(i=>{const a=e[i.key]||"",o=t.find(e=>e.entity_id===a),r=o?`${o.state}${o.unit_of_measurement?" "+o.unit_of_measurement:""}`:"";return W`
+          ${i.map(i=>{const a=e[i.key]||"",r=t.find(e=>e.entity_id===a),n=r?`${r.state}${r.unit_of_measurement?" "+r.unit_of_measurement:""}`:"";return U`
               <div class="row" style="gap:10px;padding:8px 10px;background:var(--bg-sunken);border-radius:var(--r-md);align-items:center;flex-wrap:wrap">
                 <div style="min-width:160px">
                   <div class="fw-600 text-sm">${i.label}</div>
@@ -1705,76 +1694,76 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
                 </div>
                 <select class="select mono" style="flex:1;min-width:240px"
                   @change=${e=>this._updateSensorOverride(i.key,e.target.value)}>
-                  <option value="" ?selected=${!a}>— usa entità weather —</option>
+                  <option value="" ?selected=${!a}>${De("settings.weather.overrides.use_main")}</option>
                   ${this._renderSensorOptions(s,i,a)}
                 </select>
-                ${a?W`
-                  <span class="mono text-xs" style="color:var(--text-muted);min-width:90px;text-align:right">${r}</span>
-                  <button class="btn btn--icon btn--ghost btn--sm" @click=${()=>this._updateSensorOverride(i.key,"")} title="Rimuovi override">
-                    ${me("close",12)}
+                ${a?U`
+                  <span class="mono text-xs" style="color:var(--text-muted);min-width:90px;text-align:right">${n}</span>
+                  <button class="btn btn--icon btn--ghost btn--sm" @click=${()=>this._updateSensorOverride(i.key,"")} title="${De("common.remove")}">
+                    ${be("close",12)}
                   </button>
-                `:F}
+                `:G}
               </div>
             `})}
         </div>
       </div>
-    `}_groupSensorsByDeviceClass(e){const t={};for(const i of e){const e=i.device_class||"other";(t[e]=t[e]||[]).push(i)}return t}_renderSensorOptions(e,t,i){const s=this._matchingDeviceClass(t.key),a=s&&e[s]?[s,...Object.keys(e).filter(e=>e!==s).sort()]:Object.keys(e).sort();return a.map(t=>W`
-      <optgroup label="${"other"===t?"Altri sensori":t}${t===s?" · suggeriti":""}">
-        ${e[t].map(e=>W`
+    `}_groupSensorsByDeviceClass(e){const t={};for(const i of e){const e=i.device_class||"other";(t[e]=t[e]||[]).push(i)}return t}_renderSensorOptions(e,t,i){const s=this._matchingDeviceClass(t.key),a=s&&e[s]?[s,...Object.keys(e).filter(e=>e!==s).sort()]:Object.keys(e).sort();return a.map(t=>U`
+      <optgroup label="${"other"===t?De("settings.weather.overrides.others"):t}${t===s?" · "+De("settings.weather.overrides.suggested"):""}">
+        ${e[t].map(e=>U`
           <option value="${e.entity_id}" ?selected=${i===e.entity_id}>
             ${e.entity_id}${e.unit_of_measurement?` (${e.unit_of_measurement})`:""} — ${e.friendly_name}
           </option>
         `)}
       </optgroup>
-    `)}_matchingDeviceClass(e){return{temperature:"temperature",humidity:"humidity",wind_speed:"wind_speed",wind_bearing:"wind_direction",pressure:"atmospheric_pressure",uv_index:"uv_index"}[e]||null}_updateSensorOverride(e,t){const i={...this.card._settings?.weather_sensor_map||{}};t?i[e]=t:delete i[e],this._updateSetting("weather_sensor_map",i)}_updateSetting(e,t){this.card.doUpdateSettings({[e]:t})}};pt.styles=be,e([ve({attribute:!1,hasChanged:()=>!0})],pt.prototype,"card",void 0),e([ve({type:Number})],pt.prototype,"nowHour",void 0),pt=e([pe("chronos-settings-screen")],pt);const ht={overview:["Panoramica","chronos / overview"],editor:["Editor schedulazione","chronos / schedule / edit"],weatherRule:["Regola meteo","chronos / schedule / weather"],device:["Dispositivo","chronos / device"],week:["Vista settimanale","chronos / week"],live:["Stato live","chronos / live"],wizard:["Wizard","chronos / wizard"],devices:["Gestisci dispositivi","chronos / devices"],settings:["Impostazioni","chronos / settings"]};let ut=class extends de{constructor(){super(...arguments),this._screen="overview",this._selectedId="",this._deviceDetailId="",this._schedules=[],this._savedSchedules=[],this._devices=[],this._settings=null,this._timelineVariant="linear",this._pendingNav=null,this._loading=!0,this._actionsMap={},this._weatherAttributes=[],this._forecast=[],this._availableEntities=[],this._weatherEntities=[],this._sensorEntities=[],this._mobile=!1,this._drawerOpen=!1,this._dark=!1}setConfig(e){this.config=e}static getStubConfig(){return{type:"custom:chronos-card"}}connectedCallback(){super.connectedCallback(),this._resizeObserver=new ResizeObserver(e=>{for(const t of e)this._mobile=t.contentRect.width<700}),this._resizeObserver.observe(this)}disconnectedCallback(){super.disconnectedCallback(),this._resizeObserver?.disconnect()}async firstUpdated(){await this._loadAll()}updated(e){if(e.has("hass")&&this.hass){const e=this.hass.themes?.darkMode??!1;e!==this._dark&&(this._dark=e)}e.has("_dark")&&(this._dark?this.setAttribute("dark",""):this.removeAttribute("dark")),e.has("_settings")&&this._settings?.density&&this.setAttribute("density",this._settings.density)}async _loadAll(){if(this.hass){this._loading=!0;try{const[e,t,i,s,a,o,r,n,l]=await Promise.all([Be(this.hass),Ie(this.hass),Ne(this.hass),Re(this.hass),je(this.hass),Oe(this.hass),De(this.hass),He(this.hass),Te(this.hass)]);this._devices=e,this._schedules=t,this._savedSchedules=JSON.parse(JSON.stringify(t)),this._settings=i,this._actionsMap=s,this._weatherAttributes=a,this._forecast=o,this._availableEntities=r,this._weatherEntities=n,this._sensorEntities=l,Se=s,i?.default_timeline_variant&&(this._timelineVariant=i.default_timeline_variant),t.length&&!this._selectedId&&(this._selectedId=t[0].id),e.length&&!this._deviceDetailId&&(this._deviceDetailId=e[0].id)}catch(e){console.error("Chronos: failed to load data",e)}this._loading=!1}}navigate(e){JSON.stringify(this._schedules)!==JSON.stringify(this._savedSchedules)&&"editor"===this._screen&&"editor"!==e?this._pendingNav=e:this._screen=e,this._drawerOpen=!1}selectSchedule(e,t){this._selectedId=e,t&&(this._screen=t)}selectDevice(e){this._deviceDetailId=e}get isDirty(){return JSON.stringify(this._schedules)!==JSON.stringify(this._savedSchedules)}async saveCurrentSchedule(){const e=this._schedules.find(e=>e.id===this._selectedId);if(!e)return;const t=await Pe(this.hass,e),i=this._schedules.findIndex(e=>e.id===t.id);i>=0&&(this._schedules=[...this._schedules.slice(0,i),t,...this._schedules.slice(i+1)]),this._savedSchedules=JSON.parse(JSON.stringify(this._schedules))}updateScheduleLocal(e,t){this._schedules=this._schedules.map(i=>i.id===e?{...i,...t}:i)}updateBlocksLocal(e,t){this._schedules=this._schedules.map(i=>i.id===e?{...i,blocks:[...t].sort((e,t)=>e.start-t.start)}:i)}async doToggleSchedule(e,t){try{await async function(e,t,i){await e.callWS({type:"chronos/schedules/toggle",id:t,enabled:i})}(this.hass,e,t),this._schedules=this._schedules.map(i=>i.id===e?{...i,enabled:t}:i),this._savedSchedules=JSON.parse(JSON.stringify(this._schedules))}catch(e){console.error("Chronos: toggleSchedule failed",e),await this._reloadAfterError()}}async doAddDevice(e,t){try{await async function(e,t,i,s){return e.callWS({type:"chronos/devices/add",entity_id:t,alias:i,area:s})}(this.hass,e,t)}catch(e){console.error("Chronos: addDevice failed",e)}this._devices=await Be(this.hass),this._availableEntities=await De(this.hass)}async doUpdateDevice(e,t){try{await async function(e,t,i){return e.callWS({type:"chronos/devices/update",id:t,patch:i})}(this.hass,e,t)}catch(e){console.error("Chronos: updateDevice failed",e)}this._devices=await Be(this.hass)}async doRemoveDevice(e){try{await async function(e,t){await e.callWS({type:"chronos/devices/remove",id:t})}(this.hass,e)}catch(e){console.error("Chronos: removeDevice failed",e)}this._devices=await Be(this.hass),this._schedules=await Ie(this.hass),this._savedSchedules=JSON.parse(JSON.stringify(this._schedules)),this._availableEntities=await De(this.hass)}async doRemoveSchedule(e){try{await async function(e,t){await e.callWS({type:"chronos/schedules/remove",id:t})}(this.hass,e)}catch(e){console.error("Chronos: removeSchedule failed",e)}this._schedules=await Ie(this.hass),this._savedSchedules=JSON.parse(JSON.stringify(this._schedules)),this._selectedId===e&&this._schedules.length?this._selectedId=this._schedules[0].id:this._schedules.length||(this._selectedId="")}async doAddSchedule(e){try{const t=await Pe(this.hass,e);this._schedules=await Ie(this.hass),this._savedSchedules=JSON.parse(JSON.stringify(this._schedules)),this._selectedId=t.id,this._screen="editor"}catch(e){console.error("Chronos: addSchedule failed",e)}}async doUpdateSettings(e){try{const t=await async function(e,t){return e.callWS({type:"chronos/settings/update",patch:t})}(this.hass,e);this._settings=t}catch(e){console.error("Chronos: updateSettings failed",e),this._settings=await Ne(this.hass)}}async _reloadAfterError(){try{this._devices=await Be(this.hass),this._schedules=await Ie(this.hass),this._savedSchedules=JSON.parse(JSON.stringify(this._schedules)),this._settings=await Ne(this.hass)}catch{}}setTimelineVariant(e){this._timelineVariant=e}render(){if(this._loading)return W`<div style="padding:40px;text-align:center;color:var(--text-muted)">Caricamento Chronos…</div>`;const[e,t]=ht[this._screen]||ht.overview,i=new Date,s=i.getHours()+i.getMinutes()/60,a=this._mobile&&this._drawerOpen,o=this._mobile?a?"drawer":"mini":"full";return W`
-      <div class="app" data-mobile="${this._mobile}" data-drawer="${a}">
-        ${this._renderSidebar(o)}
-        ${a?W`<div class="sidebar-backdrop" @click=${()=>{this._drawerOpen=!1}}></div>`:F}
+    `)}_matchingDeviceClass(e){return{temperature:"temperature",humidity:"humidity",wind_speed:"wind_speed",wind_bearing:"wind_direction",pressure:"atmospheric_pressure",uv_index:"uv_index"}[e]||null}_updateSensorOverride(e,t){const i={...this.card._settings?.weather_sensor_map||{}};t?i[e]=t:delete i[e],this._updateSetting("weather_sensor_map",i)}_updateSetting(e,t){this.card.doUpdateSettings({[e]:t})}};gt.styles=fe,e([ve({attribute:!1,hasChanged:()=>!0})],gt.prototype,"card",void 0),e([ve({type:Number})],gt.prototype,"nowHour",void 0),gt=e([pe("chronos-settings-screen")],gt);const mt={overview:["screen.overview.title","chronos / overview"],editor:["screen.editor.title","chronos / schedule / edit"],weatherRule:["screen.weather_rule.title","chronos / schedule / weather"],device:["screen.device.title","chronos / device"],week:["screen.week.title","chronos / week"],live:["screen.live.title","chronos / live"],wizard:["screen.wizard.title","chronos / wizard"],devices:["screen.devices.title","chronos / devices"],settings:["screen.settings.title","chronos / settings"]};let ft=class extends de{constructor(){super(...arguments),this._screen="overview",this._selectedId="",this._deviceDetailId="",this._schedules=[],this._savedSchedules=[],this._devices=[],this._settings=null,this._timelineVariant="linear",this._pendingNav=null,this._loading=!0,this._actionsMap={},this._weatherAttributes=[],this._forecast=[],this._availableEntities=[],this._weatherEntities=[],this._sensorEntities=[],this._mobile=!1,this._drawerOpen=!1,this._dark=!1}setConfig(e){this.config=e}static getStubConfig(){return{type:"custom:chronos-card"}}connectedCallback(){super.connectedCallback(),this._resizeObserver=new ResizeObserver(e=>{for(const t of e)this._mobile=t.contentRect.width<700}),this._resizeObserver.observe(this)}disconnectedCallback(){super.disconnectedCallback(),this._resizeObserver?.disconnect()}async firstUpdated(){await this._loadAll()}updated(e){if(e.has("hass")&&this.hass){const e=this.hass.themes?.darkMode??!1;e!==this._dark&&(this._dark=e)}e.has("_dark")&&(this._dark?this.setAttribute("dark",""):this.removeAttribute("dark")),e.has("_settings")&&this._settings&&(this._settings.density&&this.setAttribute("density",this._settings.density),this._applyLanguage())}_applyLanguage(){const e=this._settings?.language;!function(e){const t=(e||"").toLowerCase().split("-")[0];Ne=Be.includes(t)?t:"it"}(e&&"auto"!==e?e:this.hass?.language),this.requestUpdate()}async _loadAll(){if(this.hass){this._loading=!0;try{const[e,t,i,s,a,r,n,o,l]=await Promise.all([Te(this.hass),Ie(this.hass),Re(this.hass),Ve(this.hass),Ue(this.hass),We(this.hass),Oe(this.hass),Le(this.hass),je(this.hass)]);this._devices=e,this._schedules=t,this._savedSchedules=JSON.parse(JSON.stringify(t)),this._settings=i,this._actionsMap=s,this._weatherAttributes=a,this._forecast=r,this._availableEntities=n,this._weatherEntities=o,this._sensorEntities=l,Se=s,i?.default_timeline_variant&&(this._timelineVariant=i.default_timeline_variant),t.length&&!this._selectedId&&(this._selectedId=t[0].id),e.length&&!this._deviceDetailId&&(this._deviceDetailId=e[0].id)}catch(e){console.error("Chronos: failed to load data",e)}this._loading=!1}}navigate(e){JSON.stringify(this._schedules)!==JSON.stringify(this._savedSchedules)&&"editor"===this._screen&&"editor"!==e?this._pendingNav=e:this._screen=e,this._drawerOpen=!1}selectSchedule(e,t){this._selectedId=e,t&&(this._screen=t)}selectDevice(e){this._deviceDetailId=e}get isDirty(){return JSON.stringify(this._schedules)!==JSON.stringify(this._savedSchedules)}async saveCurrentSchedule(){const e=this._schedules.find(e=>e.id===this._selectedId);if(!e)return;const t=await Pe(this.hass,e),i=this._schedules.findIndex(e=>e.id===t.id);i>=0&&(this._schedules=[...this._schedules.slice(0,i),t,...this._schedules.slice(i+1)]),this._savedSchedules=JSON.parse(JSON.stringify(this._schedules))}updateScheduleLocal(e,t){this._schedules=this._schedules.map(i=>i.id===e?{...i,...t}:i)}updateBlocksLocal(e,t){this._schedules=this._schedules.map(i=>i.id===e?{...i,blocks:[...t].sort((e,t)=>e.start-t.start)}:i)}async doToggleSchedule(e,t){try{await async function(e,t,i){await e.callWS({type:"chronos/schedules/toggle",id:t,enabled:i})}(this.hass,e,t),this._schedules=this._schedules.map(i=>i.id===e?{...i,enabled:t}:i),this._savedSchedules=JSON.parse(JSON.stringify(this._schedules))}catch(e){console.error("Chronos: toggleSchedule failed",e),await this._reloadAfterError()}}async doAddDevice(e,t){try{await async function(e,t,i,s){return e.callWS({type:"chronos/devices/add",entity_id:t,alias:i,area:s})}(this.hass,e,t)}catch(e){console.error("Chronos: addDevice failed",e)}this._devices=await Te(this.hass),this._availableEntities=await Oe(this.hass)}async doUpdateDevice(e,t){try{await async function(e,t,i){return e.callWS({type:"chronos/devices/update",id:t,patch:i})}(this.hass,e,t)}catch(e){console.error("Chronos: updateDevice failed",e)}this._devices=await Te(this.hass)}async doRemoveDevice(e){try{await async function(e,t){await e.callWS({type:"chronos/devices/remove",id:t})}(this.hass,e)}catch(e){console.error("Chronos: removeDevice failed",e)}this._devices=await Te(this.hass),this._schedules=await Ie(this.hass),this._savedSchedules=JSON.parse(JSON.stringify(this._schedules)),this._availableEntities=await Oe(this.hass)}async doRemoveSchedule(e){try{await async function(e,t){await e.callWS({type:"chronos/schedules/remove",id:t})}(this.hass,e)}catch(e){console.error("Chronos: removeSchedule failed",e)}this._schedules=await Ie(this.hass),this._savedSchedules=JSON.parse(JSON.stringify(this._schedules)),this._selectedId===e&&this._schedules.length?this._selectedId=this._schedules[0].id:this._schedules.length||(this._selectedId="")}async doAddSchedule(e){try{const t=await Pe(this.hass,e);this._schedules=await Ie(this.hass),this._savedSchedules=JSON.parse(JSON.stringify(this._schedules)),this._selectedId=t.id,this._screen="editor"}catch(e){console.error("Chronos: addSchedule failed",e)}}async doUpdateSettings(e){try{const t=await async function(e,t){return e.callWS({type:"chronos/settings/update",patch:t})}(this.hass,e);this._settings=t}catch(e){console.error("Chronos: updateSettings failed",e),this._settings=await Re(this.hass)}}async _reloadAfterError(){try{this._devices=await Te(this.hass),this._schedules=await Ie(this.hass),this._savedSchedules=JSON.parse(JSON.stringify(this._schedules)),this._settings=await Re(this.hass)}catch{}}setTimelineVariant(e){this._timelineVariant=e}render(){if(this._loading)return U`<div style="padding:40px;text-align:center;color:var(--text-muted)">${De("common.loading")}</div>`;const[e,t]=mt[this._screen]||mt.overview,i=De(e),s=new Date,a=s.getHours()+s.getMinutes()/60,r=this._mobile&&this._drawerOpen,n=this._mobile?r?"drawer":"mini":"full";return U`
+      <div class="app" data-mobile="${this._mobile}" data-drawer="${r}">
+        ${this._renderSidebar(n)}
+        ${r?U`<div class="sidebar-backdrop" @click=${()=>{this._drawerOpen=!1}}></div>`:G}
         <main class="content">
-          ${this._renderTopbar(e,t,s)}
+          ${this._renderTopbar(i,t,a)}
           <div class="content__inner">
-            ${this._renderScreen(s)}
+            ${this._renderScreen(a)}
           </div>
         </main>
-        ${this._pendingNav?this._renderDirtyModal():F}
+        ${this._pendingNav?this._renderDirtyModal():G}
       </div>
-    `}_renderSidebar(e){const t="mini"===e,i=this._mobile;return W`
+    `}_renderSidebar(e){const t=[{key:"overview",label:De("nav.overview"),iconName:"dashboard"},{key:"editor",label:De("nav.editor"),iconName:"clock"},{key:"week",label:De("nav.week"),iconName:"calendar"},{key:"weatherRule",label:De("nav.weather_rules"),iconName:"cloud"},{key:"device",label:De("nav.devices"),iconName:"device"},{key:"live",label:De("nav.live"),iconName:"live"}],i=[{key:"wizard",label:De("nav.new_schedule"),iconName:"wand"},{key:"devices",label:De("nav.manage_devices"),iconName:"device"}],s="mini"===e,a=this._mobile;return U`
       <aside class="sidebar" data-mode="${e}">
-        ${i?W`
-              <button class="sidebar__hamburger" title="${t?"Apri menu":"Chiudi menu"}"
+        ${a?U`
+              <button class="sidebar__hamburger" title="${De(s?"nav.menu_open":"nav.menu_close")}"
                 @click=${()=>{this._drawerOpen=!this._drawerOpen}}>
-                ${me(t?"menu":"close",18)}
+                ${be(s?"menu":"close",18)}
               </button>
-            `:F}
+            `:G}
         <div class="sidebar__brand">
           <div class="sidebar__brand-mark">C</div>
-          ${t?F:W`<div>
+          ${s?G:U`<div>
                 <div class="sidebar__brand-name">Chronos</div>
-                <div class="sidebar__brand-sub">v1.0 · HACS</div>
+                <div class="sidebar__brand-sub">v1.2 · HACS</div>
               </div>`}
         </div>
-        ${t?F:W`<div class="nav-section">Principale</div>`}
-        ${[{key:"overview",label:"Panoramica",iconName:"dashboard"},{key:"editor",label:"Editor",iconName:"clock"},{key:"week",label:"Settimana",iconName:"calendar"},{key:"weatherRule",label:"Regole meteo",iconName:"cloud"},{key:"device",label:"Dispositivi",iconName:"device"},{key:"live",label:"Stato live",iconName:"live"}].map(e=>W`
+        ${s?G:U`<div class="nav-section">${De("nav.section.main")}</div>`}
+        ${t.map(e=>U`
             <button class="nav-item" data-active="${this._screen===e.key}"
-              title="${t?e.label:""}" @click=${()=>this.navigate(e.key)}>
-              ${me(e.iconName,16)} ${t?F:W`<span>${e.label}</span>`}
+              title="${s?e.label:""}" @click=${()=>this.navigate(e.key)}>
+              ${be(e.iconName,16)} ${s?G:U`<span>${e.label}</span>`}
             </button>
           `)}
-        ${t?F:W`<div class="nav-section">Azioni</div>`}
-        ${[{key:"wizard",label:"Nuova schedulazione",iconName:"wand"},{key:"devices",label:"Gestisci dispositivi",iconName:"device"}].map(e=>W`
+        ${s?G:U`<div class="nav-section">${De("nav.section.actions")}</div>`}
+        ${i.map(e=>U`
             <button class="nav-item" data-active="${this._screen===e.key}"
-              title="${t?e.label:""}" @click=${()=>this.navigate(e.key)}>
-              ${me(e.iconName,16)} ${t?F:W`<span>${e.label}</span>`}
+              title="${s?e.label:""}" @click=${()=>this.navigate(e.key)}>
+              ${be(e.iconName,16)} ${s?G:U`<span>${e.label}</span>`}
             </button>
           `)}
         <div class="sidebar__footer">
           <button class="nav-item" data-active="${"settings"===this._screen}"
-            title="${t?"Impostazioni":""}" @click=${()=>this.navigate("settings")}>
-            ${me("settings",16)} ${t?F:W`<span>Impostazioni</span>`}
+            title="${s?De("nav.settings"):""}" @click=${()=>this.navigate("settings")}>
+            ${be("settings",16)} ${s?G:U`<span>${De("nav.settings")}</span>`}
           </button>
         </div>
       </aside>
-    `}_renderTopbar(e,t,i){return W`
+    `}_renderTopbar(e,t,i){return U`
       <div class="topbar">
         <div>
           <div class="topbar__title">${e}</div>
@@ -1783,22 +1772,22 @@ function e(e,t,i,s){var a,o=arguments.length,r=o<3?t:null===s?s=Object.getOwnPro
         <div class="topbar__spacer"></div>
         <div class="topbar__time">
           <span class="time-dot"></span>
-          <span>${Le(i)}</span>
+          <span>${qe(i)}</span>
         </div>
         <button class="btn btn--icon btn--ghost" @click=${()=>{this._dark=!this._dark}}>
-          ${me(this._dark?"sun":"moon",16)}
+          ${be(this._dark?"sun":"moon",16)}
         </button>
       </div>
-    `}_renderScreen(e){switch(this._screen){case"overview":default:return W`<chronos-overview .card=${this} .nowHour=${e}></chronos-overview>`;case"editor":return W`<chronos-editor .card=${this} .nowHour=${e}></chronos-editor>`;case"weatherRule":return W`<chronos-weather-rule .card=${this} .nowHour=${e}></chronos-weather-rule>`;case"device":return W`<chronos-device-screen .card=${this} .nowHour=${e}></chronos-device-screen>`;case"week":return W`<chronos-week .card=${this} .nowHour=${e}></chronos-week>`;case"live":return W`<chronos-live .card=${this} .nowHour=${e}></chronos-live>`;case"wizard":return W`<chronos-wizard .card=${this} .nowHour=${e}></chronos-wizard>`;case"devices":return W`<chronos-devices-screen .card=${this} .nowHour=${e}></chronos-devices-screen>`;case"settings":return W`<chronos-settings-screen .card=${this} .nowHour=${e}></chronos-settings-screen>`}}_renderDirtyModal(){return W`
+    `}_renderScreen(e){switch(this._screen){case"overview":default:return U`<chronos-overview .card=${this} .nowHour=${e}></chronos-overview>`;case"editor":return U`<chronos-editor .card=${this} .nowHour=${e}></chronos-editor>`;case"weatherRule":return U`<chronos-weather-rule .card=${this} .nowHour=${e}></chronos-weather-rule>`;case"device":return U`<chronos-device-screen .card=${this} .nowHour=${e}></chronos-device-screen>`;case"week":return U`<chronos-week .card=${this} .nowHour=${e}></chronos-week>`;case"live":return U`<chronos-live .card=${this} .nowHour=${e}></chronos-live>`;case"wizard":return U`<chronos-wizard .card=${this} .nowHour=${e}></chronos-wizard>`;case"devices":return U`<chronos-devices-screen .card=${this} .nowHour=${e}></chronos-devices-screen>`;case"settings":return U`<chronos-settings-screen .card=${this} .nowHour=${e}></chronos-settings-screen>`}}_renderDirtyModal(){return U`
       <div class="modal-overlay">
         <div class="card" style="width:min(440px,100%)">
-          <h3 style="margin:0 0 6px">Modifiche non salvate</h3>
-          <p class="text-mute text-sm" style="margin:0 0 16px">Hai modifiche in sospeso su questa schedulazione. Vuoi davvero uscire e perderle?</p>
+          <h3 style="margin:0 0 6px">${De("modal.unsaved.title")}</h3>
+          <p class="text-mute text-sm" style="margin:0 0 16px">${De("modal.unsaved.body")}</p>
           <div class="row" style="justify-content:flex-end;gap:8px">
-            <button class="btn btn--ghost" @click=${()=>{this._pendingNav=null}}>Resta qui</button>
-            <button class="btn" @click=${()=>{this._schedules=JSON.parse(JSON.stringify(this._savedSchedules)),this._screen=this._pendingNav,this._pendingNav=null}}>Scarta modifiche</button>
-            <button class="btn btn--primary" @click=${async()=>{await this.saveCurrentSchedule(),this._screen=this._pendingNav,this._pendingNav=null}}>${me("check",14)} Salva ed esci</button>
+            <button class="btn btn--ghost" @click=${()=>{this._pendingNav=null}}>${De("modal.unsaved.stay")}</button>
+            <button class="btn" @click=${()=>{this._schedules=JSON.parse(JSON.stringify(this._savedSchedules)),this._screen=this._pendingNav,this._pendingNav=null}}>${De("modal.unsaved.discard")}</button>
+            <button class="btn btn--primary" @click=${async()=>{await this.saveCurrentSchedule(),this._screen=this._pendingNav,this._pendingNav=null}}>${be("check",14)} ${De("modal.unsaved.save")}</button>
           </div>
         </div>
       </div>
-    `}};ut.styles=[_e,be],e([ve({attribute:!1})],ut.prototype,"hass",void 0),e([ve({attribute:!1})],ut.prototype,"config",void 0),e([ge()],ut.prototype,"_screen",void 0),e([ge()],ut.prototype,"_selectedId",void 0),e([ge()],ut.prototype,"_deviceDetailId",void 0),e([ge()],ut.prototype,"_schedules",void 0),e([ge()],ut.prototype,"_savedSchedules",void 0),e([ge()],ut.prototype,"_devices",void 0),e([ge()],ut.prototype,"_settings",void 0),e([ge()],ut.prototype,"_timelineVariant",void 0),e([ge()],ut.prototype,"_pendingNav",void 0),e([ge()],ut.prototype,"_loading",void 0),e([ge()],ut.prototype,"_actionsMap",void 0),e([ge()],ut.prototype,"_weatherAttributes",void 0),e([ge()],ut.prototype,"_forecast",void 0),e([ge()],ut.prototype,"_availableEntities",void 0),e([ge()],ut.prototype,"_weatherEntities",void 0),e([ge()],ut.prototype,"_sensorEntities",void 0),e([ge()],ut.prototype,"_mobile",void 0),e([ge()],ut.prototype,"_drawerOpen",void 0),e([ge()],ut.prototype,"_dark",void 0),ut=e([pe("chronos-card")],ut),window.customCards=window.customCards||[],window.customCards.push({type:"chronos-card",name:"Chronos Scheduler",description:"Advanced scheduler for Home Assistant with weather-based rules"});export{ut as ChronosCard};
+    `}};ft.styles=[me,fe],e([ve({attribute:!1})],ft.prototype,"hass",void 0),e([ve({attribute:!1})],ft.prototype,"config",void 0),e([ge()],ft.prototype,"_screen",void 0),e([ge()],ft.prototype,"_selectedId",void 0),e([ge()],ft.prototype,"_deviceDetailId",void 0),e([ge()],ft.prototype,"_schedules",void 0),e([ge()],ft.prototype,"_savedSchedules",void 0),e([ge()],ft.prototype,"_devices",void 0),e([ge()],ft.prototype,"_settings",void 0),e([ge()],ft.prototype,"_timelineVariant",void 0),e([ge()],ft.prototype,"_pendingNav",void 0),e([ge()],ft.prototype,"_loading",void 0),e([ge()],ft.prototype,"_actionsMap",void 0),e([ge()],ft.prototype,"_weatherAttributes",void 0),e([ge()],ft.prototype,"_forecast",void 0),e([ge()],ft.prototype,"_availableEntities",void 0),e([ge()],ft.prototype,"_weatherEntities",void 0),e([ge()],ft.prototype,"_sensorEntities",void 0),e([ge()],ft.prototype,"_mobile",void 0),e([ge()],ft.prototype,"_drawerOpen",void 0),e([ge()],ft.prototype,"_dark",void 0),ft=e([pe("chronos-card")],ft),window.customCards=window.customCards||[],window.customCards.push({type:"chronos-card",name:"Chronos Scheduler",description:"Advanced scheduler for Home Assistant with weather-based rules"});export{ft as ChronosCard};

@@ -1,0 +1,19 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Chronos Scheduler einrichten",
+        "description": "Wähle die Wetterentität, die für die wetterabhängigen Regeln verwendet werden soll.",
+        "data": {
+          "weather_entity": "Wetterentität"
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Bereits konfiguriert. Nur eine Instanz erlaubt."
+    },
+    "error": {
+      "invalid_weather_entity": "Die ausgewählte Wetterentität ist nicht verfügbar."
+    }
+  }
+}

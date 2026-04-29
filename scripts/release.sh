@@ -49,6 +49,12 @@ with open(p, 'w') as f: json.dump(m, f, indent=2); f.write('\n')
 echo "==> Rebuild card frontend"
 (cd chronos-card && npm run build)
 
+# Sincronizza l'icona dal repo root verso custom_components (HA la cerca lì)
+if [ -f icon.png ]; then
+  cp icon.png custom_components/chronos/icon.png
+  echo "==> Icon copiata in custom_components/chronos/icon.png"
+fi
+
 echo "==> Commit"
 git add -A
 git commit -m "Release v$VERSION
