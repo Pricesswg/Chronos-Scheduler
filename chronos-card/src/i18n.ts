@@ -324,4 +324,24 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "timeline.linear": { it: "Lineare", en: "Linear", fr: "Linéaire", de: "Linear" },
   "timeline.radial": { it: "Radiale", en: "Radial", fr: "Radial", de: "Radial" },
   "timeline.list": { it: "Lista", en: "List", fr: "Liste", de: "Liste" },
+
+  // Weather attributes (override + rule builder)
+  "weather.attr.temperature": { it: "Temperatura attuale", en: "Current temperature", fr: "Température actuelle", de: "Aktuelle Temperatur" },
+  "weather.attr.humidity": { it: "Umidità", en: "Humidity", fr: "Humidité", de: "Luftfeuchtigkeit" },
+  "weather.attr.wind_speed": { it: "Velocità vento", en: "Wind speed", fr: "Vitesse du vent", de: "Windgeschwindigkeit" },
+  "weather.attr.wind_bearing": { it: "Direzione vento", en: "Wind bearing", fr: "Direction du vent", de: "Windrichtung" },
+  "weather.attr.pressure": { it: "Pressione atmosferica", en: "Atmospheric pressure", fr: "Pression atmosphérique", de: "Luftdruck" },
+  "weather.attr.uv_index": { it: "Indice UV", en: "UV index", fr: "Indice UV", de: "UV-Index" },
+  "weather.attr.condition": { it: "Condizione attuale", en: "Current condition", fr: "Condition actuelle", de: "Aktuelle Bedingung" },
+  "weather.attr.forecast.temp_max_today": { it: "Temp. max oggi (forecast)", en: "Today max temp (forecast)", fr: "Temp. max aujourd'hui (prévision)", de: "Heute Höchsttemperatur (Vorhersage)" },
+  "weather.attr.forecast.temp_min_today": { it: "Temp. min oggi (forecast)", en: "Today min temp (forecast)", fr: "Temp. min aujourd'hui (prévision)", de: "Heute Tiefsttemperatur (Vorhersage)" },
+  "weather.attr.forecast.rain_6h": { it: "Pioggia prossime 6h", en: "Rain next 6h", fr: "Pluie 6 prochaines h", de: "Regen nächste 6 h" },
+  "weather.attr.forecast.condition_6h": { it: "Condizione +6h", en: "Condition +6h", fr: "Condition +6 h", de: "Bedingung +6 h" },
 };
+
+/** Etichetta tradotta per un weather attribute key, con fallback al label backend. */
+export function attrLabel(key: string, fallback?: string): string {
+  const tk = `weather.attr.${key}`;
+  const v = t(tk);
+  return v === tk ? (fallback || key) : v;
+}

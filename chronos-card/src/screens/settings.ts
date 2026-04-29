@@ -2,7 +2,7 @@ import { LitElement, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { chronosStyles } from "../styles";
 import { icon } from "../icons";
-import { t } from "../i18n";
+import { t, attrLabel } from "../i18n";
 import {
   DEFAULT_TEMP_STOPS_CLIMATE,
   DEFAULT_TEMP_STOPS_BOILER,
@@ -338,7 +338,7 @@ export class ChronosSettingsScreen extends LitElement {
               <div class="col" style="gap:4px;padding:8px 10px;background:var(--bg-sunken);border-radius:var(--r-md)">
                 <div class="row" style="gap:10px;align-items:center;flex-wrap:wrap">
                   <div style="min-width:160px">
-                    <div class="fw-600 text-sm">${attr.label}</div>
+                    <div class="fw-600 text-sm">${attrLabel(attr.key, attr.label)}</div>
                     <div class="text-xs text-mute mono">${attr.key}${attr.unit ? ` · ${attr.unit}` : ""}</div>
                   </div>
                   <select class="select mono" style="flex:1;min-width:240px"

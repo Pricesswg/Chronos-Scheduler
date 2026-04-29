@@ -1,4 +1,5 @@
-import type { ActionDef, BlockAction, DeviceType } from "./types";
+import type { ActionDef, BlockAction, DeviceType, Settings } from "./types";
+import { getStops, getPresetColors } from "./device-colors";
 
 export const KIND_COLORS: Record<string, string> = {
   on: "var(--mode-comfort)",
@@ -7,6 +8,20 @@ export const KIND_COLORS: Record<string, string> = {
   preset: "var(--mode-night)",
   cmd: "var(--mode-boost)",
 };
+
+let _currentSettings: Settings | null = null;
+
+export function setColorSettings(s: Settings | null) {
+  _currentSettings = s;
+}
+
+function colorForTemp(temp: number, stops: { max: number; color: string }[]): string {
+  const sorted = [...stops].sort((a, b) => a.max - b.max);
+  for (const stop of sorted) {
+    if (temp <= stop.max) return stop.color;
+  }
+  return sorted[sorted.length - 1]?.color || "var(--mode-comfort)";
+}
 
 const FALLBACK_ACTIONS: Record<string, ActionDef[]> = {
   thermostat: [
@@ -79,6 +94,24 @@ export function actionLabel(type: DeviceType, action?: BlockAction): string {
 export function actionColor(type: DeviceType, action?: BlockAction): string {
   if (!action) return "var(--mode-off)";
   const def = getActionDef(type, action.id);
+
+  // Per termostati e boiler: usa i colori configurati in Impostazioni
+  // se l'azione è set_temperature (gradiente) o set_preset (palette preset).
+  if (type === "thermostat" || type === "boiler") {
+    if (action.id === "set_preset" || action.id === "set_operation") {
+      const presets = getPresetColors(_currentSettings);
+      const key = String(action.value ?? "");
+      if (key && presets[key]) return presets[key];
+    }
+    if (action.id === "set_temperature") {
+      const v = typeof action.value === "number" ? action.value : parseFloat(String(action.value));
+      if (!isNaN(v)) {
+        const stops = getStops(_currentSettings, type);
+        return colorForTemp(v, stops);
+      }
+    }
+  }
+
   return KIND_COLORS[def?.kind || "on"] || "var(--mode-comfort)";
 }
 

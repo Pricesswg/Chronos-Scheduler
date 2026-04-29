@@ -12,7 +12,7 @@ import type {
   ActionDef,
   WeatherAttribute,
 } from "./types";
-import { setActionsMap } from "./actions";
+import { setActionsMap, setColorSettings } from "./actions";
 import { setLang, t } from "./i18n";
 import {
   fetchDevices,
@@ -181,6 +181,7 @@ export class ChronosCard extends LitElement {
       this._weatherEntities = weatherEnt;
       this._sensorEntities = sensorEnt;
       setActionsMap(actionsMap);
+      setColorSettings(settings);
       if (settings?.default_timeline_variant) {
         this._timelineVariant = settings.default_timeline_variant;
       }
@@ -319,6 +320,7 @@ export class ChronosCard extends LitElement {
       console.error("Chronos: updateSettings failed", e);
       this._settings = await fetchSettings(this.hass);
     }
+    setColorSettings(this._settings);
   }
 
   private async _reloadAfterError() {

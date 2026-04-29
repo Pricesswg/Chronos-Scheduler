@@ -4,7 +4,7 @@ import { chronosStyles } from "../styles";
 import { icon } from "../icons";
 import { getActionsForType } from "../actions";
 import { DEVICE_TYPES } from "../utils";
-import { t } from "../i18n";
+import { t, attrLabel } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
 import "../timeline";
 
@@ -62,7 +62,7 @@ export class ChronosWeatherRule extends LitElement {
           <div class="rule-block" style="background:var(--surface);border:2px dashed var(--border)">
             <span class="rule-block__label rule-block__label--if">IF</span>
             <span class="rule-token mono text-xs">${weatherEntity || "—"}.</span>
-            <span class="rule-token rule-token--weather">${icon(varDef?.icon || "cloud", 11)} ${varDef?.label || this._variable}</span>
+            <span class="rule-token rule-token--weather">${icon(varDef?.icon || "cloud", 11)} ${attrLabel(this._variable, varDef?.label)}</span>
             <span class="rule-token mono">${this._op}</span>
             <span class="rule-token rule-token--weather mono">${this._value}${varDef?.unit || ""}</span>
             <span class="rule-block__label rule-block__label--then">THEN</span>
@@ -80,7 +80,7 @@ export class ChronosWeatherRule extends LitElement {
                     <div class="row" style="gap:8px">
                       <div class="tile-pick__icon" style="width:28px;height:28px">${icon(v.icon, 14)}</div>
                       <div style="min-width:0;flex:1">
-                        <div class="tile-pick__name" style="font-size:12.5px">${v.label}</div>
+                        <div class="tile-pick__name" style="font-size:12.5px">${attrLabel(v.key, v.label)}</div>
                         <div class="tile-pick__desc mono" style="font-size:10.5px">${v.key}${v.unit ? ` · ${v.unit}` : ""}</div>
                       </div>
                     </div>
