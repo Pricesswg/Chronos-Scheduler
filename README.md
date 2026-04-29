@@ -8,13 +8,13 @@
 
 Una sola card Lovelace ti dà:
 
-- 📊 **Panoramica** schedulazioni con KPI live
-- 🎨 **Editor timeline** lineare / radiale / lista, drag-and-drop con snap 15 min
-- 🌦️ **Regole meteo** IF/THEN (temperatura, pioggia, vento, UV, …) per saltare, traslare o forzare l'esecuzione
-- 📅 **Vista settimanale** con mini-timeline per giorno
-- 🔴 **Stato live** con meteo e dispositivi in tempo reale
-- 🧙 **Wizard** guidato per creare schedulazioni in 6 step
-- ⚙️ Gestione dispositivi e impostazioni globali
+- Panoramica schedulazioni con KPI live
+- Editor timeline lineare / radiale / lista, drag-and-drop con snap 15 min
+- Regole meteo IF/THEN (temperatura, pioggia, vento, UV, …) per saltare, traslare o forzare l'esecuzione
+- Vista settimanale con mini-timeline per giorno
+- Stato live con meteo e dispositivi in tempo reale
+- Wizard guidato per creare schedulazioni in 6 step
+- Gestione dispositivi e impostazioni globali
 
 Tutto persistito da Home Assistant, accessibile via WebSocket API, e auto-registrato come custom card.
 
@@ -58,37 +58,6 @@ Al primo avvio l'integration ti chiede di selezionare un'entità `weather.*` (es
 | `lawn_mower.*`   | Tosaerba        | start_mowing, dock, pause                  |
 | `water_heater.*` | Boiler          | set_temperature, set_operation_mode        |
 | `valve.*`        | Irrigazione     | open_valve, close_valve                    |
-
-## Sviluppo
-
-### Build della card
-
-```bash
-cd chronos-card
-npm install
-npm run build      # build minified → custom_components/chronos/www/chronos-card.js
-npm run watch      # rebuild on save
-```
-
-### Struttura del repo
-
-```
-chronos-scheduler/
-├── custom_components/chronos/
-│   ├── __init__.py          # entry, WS commands, auto-registrazione card
-│   ├── scheduler.py         # tick 1-min, weather rule evaluator
-│   ├── store.py             # persistenza HA Store API
-│   ├── config_flow.py       # setup UI
-│   ├── const.py             # device types, actions, weather attrs
-│   └── www/chronos-card.js  # bundle frontend (committed)
-├── chronos-card/            # sorgenti TypeScript/Lit
-│   └── src/
-│       ├── chronos-card.ts  # main custom element
-│       ├── timeline.ts      # linear / radial / list
-│       └── screens/         # 9 schermate
-├── hacs.json
-└── README.md
-```
 
 ## Licenza
 
