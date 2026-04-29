@@ -2,10 +2,10 @@
   "domain": "chronos",
   "name": "Chronos Scheduler",
   "version": "1.0.0",
-  "documentation": "https://github.com/chronos-scheduler/chronos",
-  "issue_tracker": "https://github.com/chronos-scheduler/chronos/issues",
+  "documentation": "https://github.com/Pricesswg/Chronos-Scheduler",
+  "issue_tracker": "https://github.com/Pricesswg/Chronos-Scheduler/issues",
   "dependencies": [],
-  "codeowners": [],
+  "codeowners": ["@Pricesswg"],
   "requirements": [],
   "iot_class": "local_push",
   "config_flow": true

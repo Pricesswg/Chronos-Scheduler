@@ -23,7 +23,7 @@ Tutto persistito da Home Assistant, accessibile via WebSocket API, e auto-regist
 ### Tramite HACS (consigliato)
 
 1. In HACS → **Integrations** → menu in alto a destra → **Custom repositories**
-2. Aggiungi `https://github.com/<owner>/chronos-scheduler` come **Integration**
+2. Aggiungi `https://github.com/Pricesswg/Chronos-Scheduler` come **Integration**
 3. Cerca "Chronos Scheduler" in HACS, click **Download**
 4. Riavvia Home Assistant
 5. **Settings → Devices & Services → Add Integration → Chronos Scheduler**
