@@ -102,8 +102,9 @@ export const chronosStyles = css`
     border-radius: var(--r-lg);
     overflow: hidden;
     border: 1px solid var(--border);
+    position: relative;
   }
-  .app[data-mobile="true"] { grid-template-columns: 1fr; }
+  .app[data-mobile="true"] { grid-template-columns: 64px 1fr; }
 
   .sidebar {
     background: var(--bg-soft);
@@ -114,12 +115,56 @@ export const chronosStyles = css`
     gap: 4px;
     min-height: 0;
     overflow-y: auto;
+    position: relative;
+    z-index: 30;
   }
+  .sidebar[data-mode="mini"] {
+    padding: 10px 8px;
+    align-items: center;
+  }
+  .sidebar[data-mode="drawer"] {
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 244px;
+    box-shadow: 0 0 30px rgba(0,0,0,0.18);
+  }
+  .sidebar-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.32);
+    z-index: 25;
+    backdrop-filter: blur(2px);
+  }
+  .sidebar__hamburger {
+    display: flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; margin-bottom: 6px;
+    border-radius: var(--r-md);
+    color: var(--text-soft);
+    transition: background 120ms, color 120ms;
+  }
+  .sidebar__hamburger:hover { background: var(--bg-sunken); color: var(--text); }
+  .sidebar[data-mode="mini"] .sidebar__hamburger { align-self: center; }
+
   .sidebar__brand {
     display: flex; align-items: center; gap: 10px;
     padding: 6px 8px 18px;
     border-bottom: 1px solid var(--border-soft);
     margin-bottom: 10px;
+  }
+  .sidebar[data-mode="mini"] .sidebar__brand {
+    padding: 6px 0 14px;
+    border-bottom: 1px solid var(--border-soft);
+    margin-bottom: 8px;
+    width: 100%; justify-content: center;
+  }
+  .sidebar[data-mode="mini"] .nav-item {
+    width: 40px; height: 40px;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+  }
+  .sidebar[data-mode="mini"] .sidebar__footer {
+    padding-top: 10px; align-items: center;
   }
   .sidebar__brand-mark {
     width: 30px; height: 30px; border-radius: 9px;
@@ -516,7 +561,7 @@ export const chronosStyles = css`
 
   @media (max-width: 900px) {
     .grid-2, .grid-3 { grid-template-columns: 1fr; }
-    .app { grid-template-columns: 1fr; }
-    .sidebar { display: none; }
+    .content__inner { padding: 18px 16px 40px; }
+    .topbar { padding: 12px 16px; }
   }
 `;

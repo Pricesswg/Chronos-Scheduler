@@ -77,6 +77,7 @@ export class ChronosCard extends LitElement {
   @state() _availableEntities: any[] = [];
   @state() _weatherEntities: any[] = [];
   @state() _mobile = false;
+  @state() _drawerOpen = false;
   @state() _dark = false;
 
   private _resizeObserver?: ResizeObserver;
@@ -168,6 +169,7 @@ export class ChronosCard extends LitElement {
     } else {
       this._screen = screen;
     }
+    this._drawerOpen = false;
   }
 
   selectSchedule(id: string, screen?: Screen) {
@@ -268,9 +270,15 @@ export class ChronosCard extends LitElement {
     const now = new Date();
     const nowHour = now.getHours() + now.getMinutes() / 60;
 
+    const drawerOpen = this._mobile && this._drawerOpen;
+    const sidebarMode = !this._mobile ? "full" : drawerOpen ? "drawer" : "mini";
+
     return html`
-      <div class="app" data-mobile="${this._mobile}">
-        ${this._mobile ? nothing : this._renderSidebar()}
+      <div class="app" data-mobile="${this._mobile}" data-drawer="${drawerOpen}">
+        ${this._renderSidebar(sidebarMode)}
+        ${drawerOpen
+          ? html`<div class="sidebar-backdrop" @click=${() => { this._drawerOpen = false; }}></div>`
+          : nothing}
         <main class="content">
           ${this._renderTopbar(title, crumbs, nowHour)}
           <div class="content__inner">
@@ -282,7 +290,7 @@ export class ChronosCard extends LitElement {
     `;
   }
 
-  private _renderSidebar() {
+  private _renderSidebar(mode: "full" | "mini" | "drawer") {
     const nav = [
       { key: "overview" as Screen, label: "Panoramica", iconName: "dashboard" },
       { key: "editor" as Screen, label: "Editor", iconName: "clock" },
@@ -296,34 +304,50 @@ export class ChronosCard extends LitElement {
       { key: "devices" as Screen, label: "Gestisci dispositivi", iconName: "device" },
     ];
 
+    const isMini = mode === "mini";
+    const showHamburger = this._mobile;
+
     return html`
-      <aside class="sidebar">
+      <aside class="sidebar" data-mode="${mode}">
+        ${showHamburger
+          ? html`
+              <button class="sidebar__hamburger" title="${isMini ? "Apri menu" : "Chiudi menu"}"
+                @click=${() => { this._drawerOpen = !this._drawerOpen; }}>
+                ${icon(isMini ? "menu" : "close", 18)}
+              </button>
+            `
+          : nothing}
         <div class="sidebar__brand">
           <div class="sidebar__brand-mark">C</div>
-          <div>
-            <div class="sidebar__brand-name">Chronos</div>
-            <div class="sidebar__brand-sub">v1.0 · HACS</div>
-          </div>
+          ${!isMini
+            ? html`<div>
+                <div class="sidebar__brand-name">Chronos</div>
+                <div class="sidebar__brand-sub">v1.0 · HACS</div>
+              </div>`
+            : nothing}
         </div>
-        <div class="nav-section">Principale</div>
+        ${!isMini ? html`<div class="nav-section">Principale</div>` : nothing}
         ${nav.map(
           (n) => html`
-            <button class="nav-item" data-active="${this._screen === n.key}" @click=${() => this.navigate(n.key)}>
-              ${icon(n.iconName, 16)} <span>${n.label}</span>
+            <button class="nav-item" data-active="${this._screen === n.key}"
+              title="${isMini ? n.label : ""}" @click=${() => this.navigate(n.key)}>
+              ${icon(n.iconName, 16)} ${isMini ? nothing : html`<span>${n.label}</span>`}
             </button>
           `
         )}
-        <div class="nav-section">Azioni</div>
+        ${!isMini ? html`<div class="nav-section">Azioni</div>` : nothing}
         ${actions.map(
           (n) => html`
-            <button class="nav-item" data-active="${this._screen === n.key}" @click=${() => this.navigate(n.key)}>
-              ${icon(n.iconName, 16)} <span>${n.label}</span>
+            <button class="nav-item" data-active="${this._screen === n.key}"
+              title="${isMini ? n.label : ""}" @click=${() => this.navigate(n.key)}>
+              ${icon(n.iconName, 16)} ${isMini ? nothing : html`<span>${n.label}</span>`}
             </button>
           `
         )}
         <div class="sidebar__footer">
-          <button class="nav-item" data-active="${this._screen === "settings"}" @click=${() => this.navigate("settings")}>
-            ${icon("settings", 16)} <span>Impostazioni</span>
+          <button class="nav-item" data-active="${this._screen === "settings"}"
+            title="${isMini ? "Impostazioni" : ""}" @click=${() => this.navigate("settings")}>
+            ${icon("settings", 16)} ${isMini ? nothing : html`<span>Impostazioni</span>`}
           </button>
         </div>
       </aside>
