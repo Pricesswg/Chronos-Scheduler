@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -51,24 +52,125 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def _register_frontend_card(hass: HomeAssistant) -> None:
-    if hass.data.get(_CARD_REGISTERED_FLAG):
-        return
+    """Sincronizza il bundle in /config/www/ e registra il custom card.
 
-    js_path = Path(__file__).parent / "www" / "chronos-card.js"
-    if not js_path.exists():
-        _LOGGER.warning(
-            "Chronos card bundle not found at %s — frontend card will not be loaded",
-            js_path,
+    Tre layer di affidabilità:
+      1. Copia il bundle in /config/www/chronos-card.js (servito da HA come /local/...)
+         Se HACS aggiorna il bundle in custom_components/, viene riallineato
+         automaticamente al prossimo restart.
+      2. Auto-registra la Lovelace resource su /local/chronos-card.js?v=VERSION.
+         Funziona in storage mode (UI dashboard); in YAML mode richiede
+         resource manuale (vedi README).
+      3. Fallback add_extra_js_url + static path su /chronos_static/...
+         Se il path /local/ ha problemi (raro), questo fallback rende ancora
+         disponibile la card.
+    """
+    src = Path(__file__).parent / "www" / "chronos-card.js"
+    if not src.exists():
+        _LOGGER.error(
+            "Chronos card bundle NOT FOUND at %s. "
+            "Probabile sync HACS incompleta. "
+            "Scarica manualmente: https://raw.githubusercontent.com/Pricesswg/Chronos-Scheduler/v%s/custom_components/chronos/www/chronos-card.js",
+            src, VERSION,
         )
         return
 
-    await hass.http.async_register_static_paths([
-        StaticPathConfig(CARD_URL, str(js_path), cache_headers=False)
-    ])
-    add_extra_js_url(hass, f"{CARD_URL}?v={VERSION}")
+    # --- 1. Copia in /config/www/ ---
+    local_url = f"/local/chronos-card.js?v={VERSION}"
+    dst_dir = Path(hass.config.path("www"))
+    dst = dst_dir / "chronos-card.js"
 
-    hass.data[_CARD_REGISTERED_FLAG] = True
-    _LOGGER.debug("Chronos card registered at %s", CARD_URL)
+    def _sync_bundle() -> bool:
+        dst_dir.mkdir(parents=True, exist_ok=True)
+        if dst.exists() and dst.stat().st_size == src.stat().st_size:
+            if dst.read_bytes() == src.read_bytes():
+                return False
+        shutil.copy2(src, dst)
+        return True
+
+    try:
+        copied = await hass.async_add_executor_job(_sync_bundle)
+        if copied:
+            _LOGGER.info("Chronos: bundle sincronizzato in %s", dst)
+        else:
+            _LOGGER.debug("Chronos: bundle in %s già aggiornato", dst)
+    except Exception:
+        _LOGGER.exception("Chronos: errore copiando il bundle in /config/www/")
+        # Continuiamo comunque, il fallback static path potrebbe funzionare
+
+    # --- 2. Lovelace resource auto-register (storage mode) ---
+    try:
+        await _upsert_lovelace_resource(hass, local_url)
+    except Exception:
+        _LOGGER.warning(
+            "Chronos: impossibile auto-registrare la Lovelace resource "
+            "(probabilmente sei in YAML mode). Aggiungi a mano: %s",
+            local_url,
+            exc_info=True,
+        )
+
+    # --- 3. Fallback: static path /chronos_static/ + add_extra_js_url ---
+    if not hass.data.get(_CARD_REGISTERED_FLAG):
+        try:
+            await hass.http.async_register_static_paths([
+                StaticPathConfig(CARD_URL, str(src), False)
+            ])
+            add_extra_js_url(hass, f"{CARD_URL}?v={VERSION}")
+            _LOGGER.info("Chronos: fallback static path attivo su %s?v=%s", CARD_URL, VERSION)
+        except Exception:
+            _LOGGER.warning("Chronos: fallback static path non disponibile", exc_info=True)
+        hass.data[_CARD_REGISTERED_FLAG] = True
+
+
+async def _upsert_lovelace_resource(hass: HomeAssistant, url: str) -> None:
+    """Crea o aggiorna la Lovelace resource per chronos-card.js.
+
+    Cerca qualsiasi resource esistente che punti a chronos-card.js (anche da
+    setup precedenti, manuali o automatici) e ne aggiorna l'URL. Se non
+    esiste la crea. Rimuove eventuali duplicati."""
+    lovelace = hass.data.get("lovelace")
+    if lovelace is None:
+        _LOGGER.debug("Chronos: lovelace data non disponibile")
+        return
+
+    # Compatibilità: in HA recenti hass.data["lovelace"] è un oggetto con
+    # attributo .resources; in versioni precedenti è un dict.
+    resources = getattr(lovelace, "resources", None)
+    if resources is None and isinstance(lovelace, dict):
+        resources = lovelace.get("resources")
+
+    if resources is None:
+        _LOGGER.debug("Chronos: Lovelace resources collection non trovata")
+        return
+
+    # Carica se non già caricato
+    loaded = getattr(resources, "loaded", None)
+    if loaded is False:
+        await resources.async_load()
+        try:
+            resources.loaded = True
+        except Exception:
+            pass
+
+    items = list(resources.async_items())
+    matching = [
+        r for r in items
+        if "chronos-card.js" in str(r.get("url") or "")
+    ]
+
+    if matching:
+        first = matching[0]
+        if str(first.get("url")) != url:
+            await resources.async_update_item(
+                first["id"], {"res_type": "module", "url": url}
+            )
+            _LOGGER.info("Chronos: aggiornata Lovelace resource → %s", url)
+        for dup in matching[1:]:
+            await resources.async_delete_item(dup["id"])
+            _LOGGER.info("Chronos: rimossa Lovelace resource duplicata id=%s", dup.get("id"))
+    else:
+        await resources.async_create_item({"res_type": "module", "url": url})
+        _LOGGER.info("Chronos: creata Lovelace resource → %s", url)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

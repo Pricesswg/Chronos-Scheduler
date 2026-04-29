@@ -32,7 +32,17 @@ Tutto persistito da Home Assistant, accessibile via WebSocket API, e auto-regist
    type: custom:chronos-card
    ```
 
-> La card frontend viene **registrata automaticamente** dall'integration — non devi aggiungerla manualmente come Lovelace resource.
+> La card frontend viene **registrata automaticamente** dall'integration. Ad ogni avvio l'integration:
+> 1. Copia il bundle aggiornato in `<config>/www/chronos-card.js`
+> 2. Crea/aggiorna la Lovelace resource su `/local/chronos-card.js?v=<versione>` (UI dashboard mode)
+> 3. In fallback registra anche `/chronos_static/chronos-card.js` via `add_extra_js_url`
+>
+> In caso di Lovelace YAML mode, aggiungi a mano la resource:
+> ```yaml
+> resources:
+>   - url: /local/chronos-card.js?v=1.3.3
+>     type: module
+> ```
 
 ### Installazione manuale
 
