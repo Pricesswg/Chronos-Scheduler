@@ -27,20 +27,6 @@ export function getDays(): string[] {
   ];
 }
 
-// Mantiene compatibilità per i vecchi import; ora ritorna le label tradotte.
-export const DAYS = new Proxy([] as string[], {
-  get(_t, key) {
-    if (key === "length") return 7;
-    if (key === Symbol.iterator) return getDays()[Symbol.iterator].bind(getDays());
-    if (key === "map" || key === "forEach" || key === "filter" || key === "every" || key === "some") {
-      return (...args: any[]) => (getDays() as any)[key](...args);
-    }
-    const idx = typeof key === "string" ? parseInt(key, 10) : NaN;
-    if (!isNaN(idx)) return getDays()[idx];
-    return undefined;
-  },
-});
-
 export const DEVICE_TYPES: Record<string, { label: string; domain: string; capabilities: string[] }> = {
   thermostat: { label: "Termostato", domain: "climate", capabilities: ["set_temperature", "hvac_mode", "preset_mode"] },
   light: { label: "Luce", domain: "light", capabilities: ["turn_on", "turn_off", "brightness", "color_temp"] },

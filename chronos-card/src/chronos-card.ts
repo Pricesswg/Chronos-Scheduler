@@ -73,6 +73,7 @@ export class ChronosCard extends LitElement {
   @state() _timelineVariant: "linear" | "radial" | "list" = "linear";
   @state() _pendingNav: Screen | null = null;
   @state() _loading = true;
+  @state() _loadError: string | null = null;
   @state() _actionsMap: Record<string, ActionDef[]> = {};
   @state() _weatherAttributes: WeatherAttribute[] = [];
   @state() _forecast: any[] = [];
@@ -132,25 +133,42 @@ export class ChronosCard extends LitElement {
   private _applyLanguage() {
     const lang = (this._settings as any)?.language;
     const target = !lang || lang === "auto" ? this.hass?.language : lang;
-    setLang(target);
-    this.requestUpdate();
+    const newLang = setLang(target);
+    if (this._appliedLang !== newLang) {
+      this._appliedLang = newLang;
+      this.requestUpdate();
+    }
   }
+  private _appliedLang: string = "";
 
   private async _loadAll() {
     if (!this.hass) return;
     this._loading = true;
+    this._loadError = null;
+    // Carico ogni risorsa indipendentemente: se una WS fallisce non blocca le altre.
+    const safe = async <T>(fn: () => Promise<T>, fallback: T, name: string): Promise<T> => {
+      try {
+        return await fn();
+      } catch (e: any) {
+        console.error(`Chronos: ${name} failed`, e);
+        const msg = e?.message || String(e);
+        this._loadError = (this._loadError ? this._loadError + " · " : "") + `${name}: ${msg}`;
+        return fallback;
+      }
+    };
+
     try {
       const [devices, schedules, settings, actionsMap, weatherAttrs, forecast, available, weatherEnt, sensorEnt] =
         await Promise.all([
-          fetchDevices(this.hass),
-          fetchSchedules(this.hass),
-          fetchSettings(this.hass),
-          fetchActions(this.hass),
-          fetchWeatherAttributes(this.hass),
-          fetchForecast(this.hass),
-          fetchAvailableEntities(this.hass),
-          fetchWeatherEntities(this.hass),
-          fetchSensorEntities(this.hass),
+          safe(() => fetchDevices(this.hass), [], "devices/list"),
+          safe(() => fetchSchedules(this.hass), [], "schedules/list"),
+          safe(() => fetchSettings(this.hass), null as any, "settings/get"),
+          safe(() => fetchActions(this.hass), {}, "actions"),
+          safe(() => fetchWeatherAttributes(this.hass), [], "weather/attributes"),
+          safe(() => fetchForecast(this.hass), [], "preview/forecast"),
+          safe(() => fetchAvailableEntities(this.hass), [], "entities/available"),
+          safe(() => fetchWeatherEntities(this.hass), [], "weather/entities"),
+          safe(() => fetchSensorEntities(this.hass), [], "sensor/entities"),
         ]);
       this._devices = devices;
       this._schedules = schedules;
@@ -323,6 +341,12 @@ export class ChronosCard extends LitElement {
       return html`<div style="padding:40px;text-align:center;color:var(--text-muted)">${t("common.loading")}</div>`;
     }
 
+    const errorBanner = this._loadError
+      ? html`<div style="margin:10px;padding:10px 14px;background:#fef2f2;color:#991b1b;border-left:3px solid #ef4444;border-radius:4px;font-size:12.5px;font-family:ui-monospace,monospace">
+          Chronos load errors: ${this._loadError}
+        </div>`
+      : nothing;
+
     const [titleKey, crumbs] = TITLE_KEYS[this._screen] || TITLE_KEYS.overview;
     const title = t(titleKey);
     const now = new Date();
@@ -332,6 +356,7 @@ export class ChronosCard extends LitElement {
     const sidebarMode = !this._mobile ? "full" : drawerOpen ? "drawer" : "mini";
 
     return html`
+      ${errorBanner}
       <div class="app" data-mobile="${this._mobile}" data-drawer="${drawerOpen}">
         ${this._renderSidebar(sidebarMode)}
         ${drawerOpen
