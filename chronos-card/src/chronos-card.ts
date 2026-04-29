@@ -22,6 +22,7 @@ import {
   fetchForecast,
   fetchAvailableEntities,
   fetchWeatherEntities,
+  fetchSensorEntities,
   saveSchedule as wsSaveSchedule,
   toggleSchedule as wsToggleSchedule,
   addDevice as wsAddDevice,
@@ -76,6 +77,7 @@ export class ChronosCard extends LitElement {
   @state() _forecast: any[] = [];
   @state() _availableEntities: any[] = [];
   @state() _weatherEntities: any[] = [];
+  @state() _sensorEntities: any[] = [];
   @state() _mobile = false;
   @state() _drawerOpen = false;
   @state() _dark = false;
@@ -129,7 +131,7 @@ export class ChronosCard extends LitElement {
     if (!this.hass) return;
     this._loading = true;
     try {
-      const [devices, schedules, settings, actionsMap, weatherAttrs, forecast, available, weatherEnt] =
+      const [devices, schedules, settings, actionsMap, weatherAttrs, forecast, available, weatherEnt, sensorEnt] =
         await Promise.all([
           fetchDevices(this.hass),
           fetchSchedules(this.hass),
@@ -139,6 +141,7 @@ export class ChronosCard extends LitElement {
           fetchForecast(this.hass),
           fetchAvailableEntities(this.hass),
           fetchWeatherEntities(this.hass),
+          fetchSensorEntities(this.hass),
         ]);
       this._devices = devices;
       this._schedules = schedules;
@@ -149,6 +152,7 @@ export class ChronosCard extends LitElement {
       this._forecast = forecast;
       this._availableEntities = available;
       this._weatherEntities = weatherEnt;
+      this._sensorEntities = sensorEnt;
       setActionsMap(actionsMap);
       if (settings?.default_timeline_variant) {
         this._timelineVariant = settings.default_timeline_variant;

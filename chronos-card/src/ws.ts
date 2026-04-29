@@ -78,6 +78,10 @@ export async function fetchWeatherEntities(hass: HomeAssistant): Promise<any[]> 
   return hass.callWS({ type: "chronos/weather/entities" });
 }
 
+export async function fetchSensorEntities(hass: HomeAssistant): Promise<any[]> {
+  return hass.callWS({ type: "chronos/sensor/entities" });
+}
+
 export async function fetchActions(
   hass: HomeAssistant
 ): Promise<Record<string, ActionDef[]>> {

@@ -193,10 +193,6 @@ class ChronosScheduler:
                     )
 
     async def _evaluate_rule(self, rule: dict) -> bool:
-        weather_entity = self._store.settings.get("weather_entity", "")
-        if not weather_entity:
-            return False
-
         parsed = _parse_expression(rule.get("if", ""))
         if parsed is None:
             _LOGGER.warning("Cannot parse rule expression: %s", rule.get("if"))
@@ -207,17 +203,13 @@ class ChronosScheduler:
         if op_fn is None:
             return False
 
-        weather_state = self._hass.states.get(weather_entity)
-        if weather_state is None:
-            return False
-
         if key.startswith("forecast."):
+            weather_entity = self._store.settings.get("weather_entity", "")
+            if not weather_entity:
+                return False
             actual = await self._get_forecast_value(weather_entity, key)
-        elif key == "condition":
-            actual = weather_state.state
-            return op_fn(str(actual), threshold_str)
         else:
-            actual = weather_state.attributes.get(key)
+            actual = self._read_attribute(key)
 
         if actual is None:
             return False
@@ -226,6 +218,30 @@ class ChronosScheduler:
             return op_fn(float(actual), float(threshold_str))
         except (ValueError, TypeError):
             return op_fn(str(actual), threshold_str)
+
+    def _read_attribute(self, key: str) -> Any:
+        """Legge un attributo meteo. Se l'utente ha mappato il key a un'entità
+        sensor specifica (override), legge da quella; altrimenti dal weather.*
+        principale."""
+        overrides = self._store.settings.get("weather_sensor_map") or {}
+        sensor_id = overrides.get(key)
+        if sensor_id:
+            state = self._hass.states.get(sensor_id)
+            if state is None:
+                return None
+            if state.state in (None, "unknown", "unavailable"):
+                return None
+            return state.state
+
+        weather_entity = self._store.settings.get("weather_entity", "")
+        if not weather_entity:
+            return None
+        weather_state = self._hass.states.get(weather_entity)
+        if weather_state is None:
+            return None
+        if key == "condition":
+            return weather_state.state
+        return weather_state.attributes.get(key)
 
     async def _get_forecast_value(self, weather_entity: str, key: str) -> float | str | None:
         try:

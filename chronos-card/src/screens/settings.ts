@@ -32,7 +32,7 @@ export class ChronosSettingsScreen extends LitElement {
         </div>
 
         <div class="card">
-          <div class="card__header"><div style="flex:1"><h3 class="card__title">Sorgente meteo</h3><p class="card__sub">Entità HA usata per valutare le regole meteo</p></div></div>
+          <div class="card__header"><div style="flex:1"><h3 class="card__title">Sorgente meteo</h3><p class="card__sub">Entità HA usata per valutare le regole meteo · puoi anche puntare attributi specifici a sensori puntuali (stazione meteo locale, Ecowitt, …)</p></div></div>
           <div class="col" style="gap:14px">
             <div class="field">
               <label class="field__label">Entità meteo principale</label>
@@ -43,7 +43,10 @@ export class ChronosSettingsScreen extends LitElement {
                   <option value="${w.entity_id}" ?selected=${s.weather_entity === w.entity_id}>${w.entity_id} — ${w.friendly_name}</option>
                 `)}
               </select>
+              <span class="field__hint">Usata per le forecast.* e come fallback se nessun override è impostato qui sotto</span>
             </div>
+
+            ${this._renderSensorOverrides()}
           </div>
         </div>
 
@@ -287,6 +290,101 @@ export class ChronosSettingsScreen extends LitElement {
   private _updatePresetColor(name: string, color: string) {
     const cur = getPresetColors(this.card._settings);
     this._updateSetting("color_presets", { ...cur, [name]: color });
+  }
+
+  private _renderSensorOverrides() {
+    const s = this.card._settings!;
+    const map: Record<string, string> = (s as any).weather_sensor_map || {};
+    const sensors = this.card._sensorEntities || [];
+
+    // Solo gli attributi numerici/condition (le forecast.* richiedono il provider weather)
+    const overrideable = (this.card._weatherAttributes || []).filter(
+      (a) => !a.key.startsWith("forecast.")
+    );
+
+    if (!overrideable.length) return nothing;
+
+    const groupedSensors = this._groupSensorsByDeviceClass(sensors);
+
+    return html`
+      <div class="field" style="margin-top:8px">
+        <label class="field__label">Override su sensori puntuali</label>
+        <span class="field__hint" style="margin-bottom:10px;display:block">
+          Per ogni attributo puoi specificare un'entità <span class="mono">sensor.*</span> da cui leggere il valore.
+          Se vuoto, viene letto dall'entità weather principale.
+        </span>
+        <div class="col" style="gap:6px">
+          ${overrideable.map((attr) => {
+            const current = map[attr.key] || "";
+            const sensor = sensors.find((sen: any) => sen.entity_id === current);
+            const stateStr = sensor ? `${sensor.state}${sensor.unit_of_measurement ? " " + sensor.unit_of_measurement : ""}` : "";
+            return html`
+              <div class="row" style="gap:10px;padding:8px 10px;background:var(--bg-sunken);border-radius:var(--r-md);align-items:center;flex-wrap:wrap">
+                <div style="min-width:160px">
+                  <div class="fw-600 text-sm">${attr.label}</div>
+                  <div class="text-xs text-mute mono">${attr.key}${attr.unit ? ` · ${attr.unit}` : ""}</div>
+                </div>
+                <select class="select mono" style="flex:1;min-width:240px"
+                  @change=${(e: Event) => this._updateSensorOverride(attr.key, (e.target as HTMLSelectElement).value)}>
+                  <option value="" ?selected=${!current}>— usa entità weather —</option>
+                  ${this._renderSensorOptions(groupedSensors, attr, current)}
+                </select>
+                ${current ? html`
+                  <span class="mono text-xs" style="color:var(--text-muted);min-width:90px;text-align:right">${stateStr}</span>
+                  <button class="btn btn--icon btn--ghost btn--sm" @click=${() => this._updateSensorOverride(attr.key, "")} title="Rimuovi override">
+                    ${icon("close", 12)}
+                  </button>
+                ` : nothing}
+              </div>
+            `;
+          })}
+        </div>
+      </div>
+    `;
+  }
+
+  private _groupSensorsByDeviceClass(sensors: any[]): Record<string, any[]> {
+    const groups: Record<string, any[]> = {};
+    for (const s of sensors) {
+      const key = s.device_class || "other";
+      (groups[key] = groups[key] || []).push(s);
+    }
+    return groups;
+  }
+
+  private _renderSensorOptions(groups: Record<string, any[]>, attr: any, current: string) {
+    // Prima i sensori con device_class affine all'attributo (hint), poi tutti
+    const hint = this._matchingDeviceClass(attr.key);
+    const order = hint && groups[hint] ? [hint, ...Object.keys(groups).filter((k) => k !== hint).sort()] : Object.keys(groups).sort();
+
+    return order.map((dc) => html`
+      <optgroup label="${dc === "other" ? "Altri sensori" : dc}${dc === hint ? " · suggeriti" : ""}">
+        ${groups[dc].map((sen: any) => html`
+          <option value="${sen.entity_id}" ?selected=${current === sen.entity_id}>
+            ${sen.entity_id}${sen.unit_of_measurement ? ` (${sen.unit_of_measurement})` : ""} — ${sen.friendly_name}
+          </option>
+        `)}
+      </optgroup>
+    `);
+  }
+
+  private _matchingDeviceClass(key: string): string | null {
+    const map: Record<string, string> = {
+      temperature: "temperature",
+      humidity: "humidity",
+      wind_speed: "wind_speed",
+      wind_bearing: "wind_direction",
+      pressure: "atmospheric_pressure",
+      uv_index: "uv_index",
+    };
+    return map[key] || null;
+  }
+
+  private _updateSensorOverride(attrKey: string, sensorId: string) {
+    const cur: Record<string, string> = { ...((this.card._settings as any)?.weather_sensor_map || {}) };
+    if (sensorId) cur[attrKey] = sensorId;
+    else delete cur[attrKey];
+    this._updateSetting("weather_sensor_map", cur);
   }
 
   private _updateSetting(key: string, value: any) {

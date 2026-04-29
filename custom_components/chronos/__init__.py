@@ -278,6 +278,23 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
             })
         connection.send_result(msg["id"], entities)
 
+    @websocket_api.websocket_command({vol.Required("type"): "chronos/sensor/entities"})
+    @websocket_api.async_response
+    async def ws_sensor_entities(
+        hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+    ) -> None:
+        entities = []
+        for state in hass.states.async_all("sensor", "binary_sensor"):
+            attrs = state.attributes
+            entities.append({
+                "entity_id": state.entity_id,
+                "friendly_name": attrs.get("friendly_name", state.entity_id),
+                "unit_of_measurement": attrs.get("unit_of_measurement", ""),
+                "device_class": attrs.get("device_class", ""),
+                "state": state.state,
+            })
+        connection.send_result(msg["id"], entities)
+
     @websocket_api.websocket_command({vol.Required("type"): "chronos/actions"})
     @websocket_api.async_response
     async def ws_actions(
@@ -306,5 +323,6 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_preview_forecast)
     websocket_api.async_register_command(hass, ws_entities_available)
     websocket_api.async_register_command(hass, ws_weather_entities)
+    websocket_api.async_register_command(hass, ws_sensor_entities)
     websocket_api.async_register_command(hass, ws_actions)
     websocket_api.async_register_command(hass, ws_weather_attributes)

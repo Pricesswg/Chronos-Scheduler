@@ -1,5 +1,5 @@
 DOMAIN = "chronos"
-VERSION = "1.0.3"
+VERSION = "1.1.0"
 STORAGE_VERSION = 1
 STORAGE_KEY_DEVICES = f"{DOMAIN}.devices"
 STORAGE_KEY_SCHEDULES = f"{DOMAIN}.schedules"
@@ -149,6 +149,7 @@ WEATHER_ATTRIBUTES = [
 
 DEFAULT_SETTINGS = {
     "weather_entity": "",
+    "weather_sensor_map": {},
     "polling_minutes": 15,
     "snap_minutes": 15,
     "notify_rule_triggered": True,

@@ -59,6 +59,7 @@ export interface Settings {
   color_stops_climate?: { max: number; color: string }[];
   color_stops_boiler?: { max: number; color: string }[];
   color_presets?: Record<string, string>;
+  weather_sensor_map?: Record<string, string>;
 }
 
 export interface ActionValueSpec {
