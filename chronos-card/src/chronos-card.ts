@@ -14,6 +14,7 @@ import type {
 } from "./types";
 import { setActionsMap, setColorSettings } from "./actions";
 import { setLang, t } from "./i18n";
+import { CARD_VERSION } from "./version";
 import {
   fetchDevices,
   fetchSchedules,
@@ -407,7 +408,7 @@ export class ChronosCard extends LitElement {
           ${!isMini
             ? html`<div>
                 <div class="sidebar__brand-name">Chronos</div>
-                <div class="sidebar__brand-sub">v1.2 · HACS</div>
+                <div class="sidebar__brand-sub">v${CARD_VERSION} · HACS</div>
               </div>`
             : nothing}
         </div>

@@ -46,6 +46,11 @@ m['version'] = '$VERSION'
 with open(p, 'w') as f: json.dump(m, f, indent=2); f.write('\n')
 "
 
+# version.ts (visualizzato nella sidebar della card)
+sed -i.bak -E "s/^export const CARD_VERSION = \"[^\"]+\";/export const CARD_VERSION = \"$VERSION\";/" \
+  chronos-card/src/version.ts
+rm chronos-card/src/version.ts.bak
+
 echo "==> Rebuild card frontend"
 (cd chronos-card && npm run build)
 
