@@ -87,17 +87,25 @@ export class ChronosWeatherRule extends LitElement {
               <div class="grid-2">
                 <div class="field">
                   <label class="field__label">Operatore</label>
-                  <select class="select mono" .value=${this._op} @change=${(e: Event) => { this._op = (e.target as HTMLSelectElement).value; }}>
+                  <select class="select mono" @change=${(e: Event) => { this._op = (e.target as HTMLSelectElement).value; }}>
                     ${varDef?.type === "enum"
-                      ? html`<option value="==">uguale a (==)</option><option value="!=">diverso da (!=)</option>`
-                      : html`<option value=">">maggiore di (&gt;)</option><option value=">=">maggiore o uguale</option><option value="<">minore di (&lt;)</option><option value="<=">minore o uguale</option><option value="==">uguale a (==)</option><option value="!=">diverso da (!=)</option>`}
+                      ? html`
+                          <option value="==" ?selected=${this._op === "=="}>uguale a (==)</option>
+                          <option value="!=" ?selected=${this._op === "!="}>diverso da (!=)</option>`
+                      : html`
+                          <option value=">" ?selected=${this._op === ">"}>maggiore di (&gt;)</option>
+                          <option value=">=" ?selected=${this._op === ">="}>maggiore o uguale</option>
+                          <option value="<" ?selected=${this._op === "<"}>minore di (&lt;)</option>
+                          <option value="<=" ?selected=${this._op === "<="}>minore o uguale</option>
+                          <option value="==" ?selected=${this._op === "=="}>uguale a (==)</option>
+                          <option value="!=" ?selected=${this._op === "!="}>diverso da (!=)</option>`}
                   </select>
                 </div>
                 <div class="field">
                   <label class="field__label">Soglia</label>
                   ${varDef?.type === "enum"
-                    ? html`<select class="select" .value=${this._value} @change=${(e: Event) => { this._value = (e.target as HTMLSelectElement).value; }}>
-                        ${(varDef.options || []).map((o) => html`<option value="${o}">${o}</option>`)}
+                    ? html`<select class="select" @change=${(e: Event) => { this._value = (e.target as HTMLSelectElement).value; }}>
+                        ${(varDef.options || []).map((o) => html`<option value="${o}" ?selected=${this._value === o}>${o}</option>`)}
                       </select>`
                     : html`<input class="input mono" .value=${this._value} @input=${(e: InputEvent) => { this._value = (e.target as HTMLInputElement).value; }}/>`}
                 </div>
@@ -120,8 +128,8 @@ export class ChronosWeatherRule extends LitElement {
                 <div class="field">
                   <label class="field__label">${this._action === "force" ? "Azione da forzare" : "Valore"}</label>
                   ${this._action === "force"
-                    ? html`<select class="select" .value=${this._actionValue} @change=${(e: Event) => { this._actionValue = (e.target as HTMLSelectElement).value; }}>
-                        ${typeActions.map((a) => html`<option value="${a.id}">${a.label}</option>`)}
+                    ? html`<select class="select" @change=${(e: Event) => { this._actionValue = (e.target as HTMLSelectElement).value; }}>
+                        ${typeActions.map((a) => html`<option value="${a.id}" ?selected=${this._actionValue === a.id}>${a.label}</option>`)}
                       </select>`
                     : html`<input class="input mono" .value=${this._actionValue} @input=${(e: InputEvent) => { this._actionValue = (e.target as HTMLInputElement).value; }}
                         placeholder="${this._action === "shift" ? "-1, +2, …" : "+30, -15, …"}"/>`}

@@ -209,9 +209,12 @@ export class ChronosEditor extends LitElement {
                           <span class="mono" style="min-width:60px;text-align:right;font-weight:600">${block.action?.value ?? currentActionDef.value.default}${currentActionDef.value.unit}</span>
                         </div>
                       ` : currentActionDef.value.type === "enum" ? html`
-                        <select class="input" .value=${String(block.action?.value ?? currentActionDef.value.default)}
+                        <select class="input"
                           @change=${(e: Event) => this._setBlockValue(schedule.id, (e.target as HTMLSelectElement).value)}>
-                          ${(currentActionDef.value.options || []).map((o) => html`<option value="${o}">${o}</option>`)}
+                          ${(currentActionDef.value.options || []).map((o) => {
+                            const cur = String(block.action?.value ?? currentActionDef.value!.default);
+                            return html`<option value="${o}" ?selected=${cur === o}>${o}</option>`;
+                          })}
                         </select>
                       ` : nothing}
                     </div>

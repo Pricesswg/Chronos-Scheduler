@@ -212,52 +212,91 @@ export class ChronosCard extends LitElement {
   }
 
   async doToggleSchedule(id: string, enabled: boolean) {
-    await wsToggleSchedule(this.hass, id, enabled);
-    this._schedules = this._schedules.map((s) => (s.id === id ? { ...s, enabled } : s));
-    this._savedSchedules = JSON.parse(JSON.stringify(this._schedules));
+    try {
+      await wsToggleSchedule(this.hass, id, enabled);
+      this._schedules = this._schedules.map((s) => (s.id === id ? { ...s, enabled } : s));
+      this._savedSchedules = JSON.parse(JSON.stringify(this._schedules));
+    } catch (e) {
+      console.error("Chronos: toggleSchedule failed", e);
+      await this._reloadAfterError();
+    }
   }
 
   async doAddDevice(entity_id: string, alias?: string) {
-    const dev = await wsAddDevice(this.hass, entity_id, alias);
-    this._devices = [...this._devices, dev];
-    this._availableEntities = this._availableEntities.filter((e) => e.entity_id !== entity_id);
+    try {
+      await wsAddDevice(this.hass, entity_id, alias);
+    } catch (e) {
+      console.error("Chronos: addDevice failed", e);
+    }
+    this._devices = await fetchDevices(this.hass);
+    this._availableEntities = await fetchAvailableEntities(this.hass);
   }
 
   async doUpdateDevice(id: string, patch: any) {
-    const dev = await wsUpdateDevice(this.hass, id, patch);
-    this._devices = this._devices.map((d) => (d.id === id ? dev : d));
+    try {
+      await wsUpdateDevice(this.hass, id, patch);
+    } catch (e) {
+      console.error("Chronos: updateDevice failed", e);
+    }
+    this._devices = await fetchDevices(this.hass);
   }
 
   async doRemoveDevice(id: string) {
-    await wsRemoveDevice(this.hass, id);
-    this._devices = this._devices.filter((d) => d.id !== id);
-    this._schedules = this._schedules.map((s) => ({
-      ...s,
-      device_ids: s.device_ids.filter((did) => did !== id),
-    }));
+    try {
+      await wsRemoveDevice(this.hass, id);
+    } catch (e) {
+      console.error("Chronos: removeDevice failed", e);
+    }
+    this._devices = await fetchDevices(this.hass);
+    this._schedules = await fetchSchedules(this.hass);
     this._savedSchedules = JSON.parse(JSON.stringify(this._schedules));
+    this._availableEntities = await fetchAvailableEntities(this.hass);
   }
 
   async doRemoveSchedule(id: string) {
-    await wsRemoveSchedule(this.hass, id);
-    this._schedules = this._schedules.filter((s) => s.id !== id);
+    try {
+      await wsRemoveSchedule(this.hass, id);
+    } catch (e) {
+      console.error("Chronos: removeSchedule failed", e);
+    }
+    this._schedules = await fetchSchedules(this.hass);
     this._savedSchedules = JSON.parse(JSON.stringify(this._schedules));
     if (this._selectedId === id && this._schedules.length) {
       this._selectedId = this._schedules[0].id;
+    } else if (!this._schedules.length) {
+      this._selectedId = "";
     }
   }
 
   async doAddSchedule(schedule: Schedule) {
-    const saved = await wsSaveSchedule(this.hass, schedule);
-    this._schedules = [...this._schedules, saved];
-    this._savedSchedules = JSON.parse(JSON.stringify(this._schedules));
-    this._selectedId = saved.id;
-    this._screen = "editor";
+    try {
+      const saved = await wsSaveSchedule(this.hass, schedule);
+      this._schedules = await fetchSchedules(this.hass);
+      this._savedSchedules = JSON.parse(JSON.stringify(this._schedules));
+      this._selectedId = saved.id;
+      this._screen = "editor";
+    } catch (e) {
+      console.error("Chronos: addSchedule failed", e);
+    }
   }
 
   async doUpdateSettings(patch: Partial<Settings>) {
-    const settings = await wsUpdateSettings(this.hass, patch);
-    this._settings = settings;
+    try {
+      const settings = await wsUpdateSettings(this.hass, patch);
+      this._settings = settings;
+    } catch (e) {
+      console.error("Chronos: updateSettings failed", e);
+      this._settings = await fetchSettings(this.hass);
+    }
+  }
+
+  private async _reloadAfterError() {
+    try {
+      this._devices = await fetchDevices(this.hass);
+      this._schedules = await fetchSchedules(this.hass);
+      this._savedSchedules = JSON.parse(JSON.stringify(this._schedules));
+      this._settings = await fetchSettings(this.hass);
+    } catch {}
   }
 
   setTimelineVariant(v: "linear" | "radial" | "list") {

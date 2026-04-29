@@ -41,9 +41,9 @@ export class ChronosDeviceScreen extends LitElement {
             <h1 class="page-title" style="margin-bottom:2px">${device.alias}</h1>
             <p class="page-sub mono" style="margin-bottom:0">${device.entity_id} · ${device.area}</p>
           </div>
-          <select class="select" style="width:240px" .value=${device.id}
+          <select class="select" style="width:240px"
             @change=${(e: Event) => this.card.selectDevice((e.target as HTMLSelectElement).value)}>
-            ${this.card._devices.map((d) => html`<option value="${d.id}">${d.alias}</option>`)}
+            ${this.card._devices.map((d) => html`<option value="${d.id}" ?selected=${d.id === device.id}>${d.alias}</option>`)}
           </select>
         </div>
 

@@ -27,11 +27,11 @@ export class ChronosSettingsScreen extends LitElement {
           <div class="col" style="gap:14px">
             <div class="field">
               <label class="field__label">Entità meteo principale</label>
-              <select class="select mono" .value=${s.weather_entity || ""}
+              <select class="select mono"
                 @change=${(e: Event) => this._updateSetting("weather_entity", (e.target as HTMLSelectElement).value)}>
-                <option value="">Nessuna</option>
+                <option value="" ?selected=${!s.weather_entity}>Nessuna</option>
                 ${this.card._weatherEntities.map((w) => html`
-                  <option value="${w.entity_id}">${w.entity_id} — ${w.friendly_name}</option>
+                  <option value="${w.entity_id}" ?selected=${s.weather_entity === w.entity_id}>${w.entity_id} — ${w.friendly_name}</option>
                 `)}
               </select>
             </div>

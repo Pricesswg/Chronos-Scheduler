@@ -2,11 +2,13 @@ import { LitElement, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { chronosStyles } from "../styles";
 import { icon, deviceIcon } from "../icons";
-import { defaultAction } from "../actions";
+import { defaultAction, getActionsForType, getActionDef, actionColor } from "../actions";
 import { DAYS, DEVICE_TYPES, computeRepeat } from "../utils";
 import type { ChronosCard } from "../chronos-card";
-import type { DeviceType, Schedule } from "../types";
+import type { Block, DeviceType, Schedule } from "../types";
 import "../timeline";
+
+type Variant = "linear" | "radial" | "list";
 
 @customElement("chronos-wizard")
 export class ChronosWizard extends LitElement {
@@ -20,6 +22,10 @@ export class ChronosWizard extends LitElement {
   @state() private _pickedDevices: string[] = [];
   @state() private _days = [1, 1, 1, 1, 1, 1, 1];
   @state() private _weatherEnabled = true;
+  @state() private _blocks: Block[] = [];
+  @state() private _blocksDeviceType: DeviceType | "" = "";
+  @state() private _selectedBlockIdx = -1;
+  @state() private _variant: Variant = "linear";
 
   private _steps = [
     { key: "name", label: "Nome" },
@@ -112,12 +118,89 @@ export class ChronosWizard extends LitElement {
         `;
       case 2: {
         const deviceType = this._inferDeviceType();
+        this._ensureBlocksFor(deviceType);
+        const block = this._selectedBlockIdx >= 0 ? this._blocks[this._selectedBlockIdx] : undefined;
+        const def = block?.action ? getActionDef(deviceType, block.action.id) : undefined;
+        const actions = getActionsForType(deviceType);
+
         return html`
           <div class="col" style="gap:14px">
-            <h3 style="margin:0">Imposta una programmazione iniziale</h3>
-            <p class="text-mute text-sm" style="margin:0">Useremo un preset come punto di partenza.</p>
-            <chronos-timeline variant="linear" .deviceType=${deviceType} .interactive=${false}
-              .blocks=${this._defaultBlocks(deviceType)}></chronos-timeline>
+            <h3 style="margin:0">Imposta le fasce orarie</h3>
+            <p class="text-mute text-sm" style="margin:0">Clicca su una zona vuota della barra per aggiungere una fascia. Trascina i bordi per modificarne durata e posizione.</p>
+
+            <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">
+              <span class="text-xs text-mute">Visualizzazione:</span>
+              <div class="segmented">
+                ${(["linear", "radial", "list"] as Variant[]).map((v) => html`
+                  <button data-active="${this._variant === v}" @click=${() => { this._variant = v; }}>
+                    ${ { linear: "Lineare", radial: "Radiale", list: "Lista" }[v] }
+                  </button>
+                `)}
+              </div>
+              <div style="flex:1"></div>
+              <button class="btn btn--sm" @click=${() => this._resetBlocks(deviceType)}>
+                ${icon("repeat", 12)} Reset preset
+              </button>
+            </div>
+
+            <chronos-timeline
+              variant="${this._variant}"
+              .deviceType=${deviceType}
+              .interactive=${true}
+              .blocks=${this._blocks}
+              .selectedIdx=${this._selectedBlockIdx}
+              @blocks-changed=${(e: CustomEvent) => { this._blocks = e.detail.blocks; }}
+              @block-select=${(e: CustomEvent) => { this._selectedBlockIdx = e.detail.index; }}
+            ></chronos-timeline>
+
+            ${block ? html`
+              <div class="card card--ghost" style="padding:14px">
+                <div class="sp-between" style="margin-bottom:10px">
+                  <div>
+                    <div class="text-xs text-mute mono">Fascia selezionata</div>
+                    <div class="fw-600 mono">${this._fmtBlockRange(block)}</div>
+                  </div>
+                  <button class="btn btn--sm" style="color:var(--danger)" @click=${() => this._removeSelected()}>
+                    ${icon("trash", 12)} Rimuovi fascia
+                  </button>
+                </div>
+                <div class="field">
+                  <label class="field__label">Azione</label>
+                  <div class="row" style="gap:6px;flex-wrap:wrap">
+                    ${actions.map((a) => html`
+                      <button class="chip" data-active="${block.action?.id === a.id}"
+                        style="background:${block.action?.id === a.id ? actionColor(deviceType, { id: a.id }) : "var(--bg-sunken)"};color:${block.action?.id === a.id ? "white" : "var(--text-soft)"};border:1px solid ${block.action?.id === a.id ? "transparent" : "var(--border-soft)"};cursor:pointer"
+                        @click=${() => this._setAction(a.id)}>${a.label}</button>
+                    `)}
+                  </div>
+                </div>
+                ${def?.value ? html`
+                  <div class="field" style="margin-top:10px">
+                    <label class="field__label">${def.value.label || "Valore"} ${def.value.unit ? html`<span class="text-mute">(${def.value.unit})</span>` : nothing}</label>
+                    ${def.value.type === "number" ? html`
+                      <div class="row" style="gap:10px;align-items:center">
+                        <input type="range" min="${def.value.min}" max="${def.value.max}" step="${def.value.step}"
+                          .value=${String(block.action?.value ?? def.value.default)}
+                          @input=${(e: InputEvent) => this._setActionValue(parseFloat((e.target as HTMLInputElement).value))}
+                          style="flex:1"/>
+                        <span class="mono" style="min-width:60px;text-align:right;font-weight:600">${block.action?.value ?? def.value.default}${def.value.unit || ""}</span>
+                      </div>
+                    ` : def.value.type === "enum" ? html`
+                      <select class="input" @change=${(e: Event) => this._setActionValue((e.target as HTMLSelectElement).value)}>
+                        ${(def.value.options || []).map((o) => {
+                          const cur = String(block.action?.value ?? def.value!.default);
+                          return html`<option value="${o}" ?selected=${cur === o}>${o}</option>`;
+                        })}
+                      </select>
+                    ` : nothing}
+                  </div>
+                ` : nothing}
+              </div>
+            ` : html`
+              <p class="text-xs text-mute" style="margin:0">Nessuna fascia selezionata. Clicca su una fascia esistente per modificarla, oppure su una zona libera per aggiungerne una nuova.</p>
+            `}
+
+            <p class="text-xs text-mute" style="margin:0">${this._blocks.length} fasce · totale coperto ${this._totalCoverage()}h / 24h</p>
           </div>
         `;
       }
@@ -174,7 +257,7 @@ export class ChronosWizard extends LitElement {
                 <div class="sp-between"><span class="text-mute text-sm">Dispositivi</span><strong>${this._pickedDevices.length} selezionati</strong></div>
                 <div class="sp-between"><span class="text-mute text-sm">Giorni</span><strong>${this._days.filter(Boolean).length}/7</strong></div>
                 <div class="sp-between"><span class="text-mute text-sm">Logica meteo</span><strong>${this._weatherEnabled ? "Abilitata" : "Disabilitata"}</strong></div>
-                <div class="sp-between"><span class="text-mute text-sm">Fasce orarie</span><strong>3 (preset)</strong></div>
+                <div class="sp-between"><span class="text-mute text-sm">Fasce orarie</span><strong>${this._blocks.length}</strong></div>
               </div>
             </div>
             <p class="text-xs text-mute" style="margin:0">Potrai modificare ogni dettaglio dall'editor dopo la creazione.</p>
@@ -199,7 +282,7 @@ export class ChronosWizard extends LitElement {
     return (first?.type as DeviceType) || "thermostat";
   }
 
-  private _defaultBlocks(deviceType: DeviceType) {
+  private _defaultBlocks(deviceType: DeviceType): Block[] {
     const da = defaultAction(deviceType);
     return [
       { start: 0, end: 7, action: { ...da } },
@@ -208,8 +291,64 @@ export class ChronosWizard extends LitElement {
     ];
   }
 
+  private _ensureBlocksFor(deviceType: DeviceType) {
+    if (this._blocksDeviceType !== deviceType) {
+      this._blocks = this._defaultBlocks(deviceType);
+      this._blocksDeviceType = deviceType;
+      this._selectedBlockIdx = -1;
+    }
+  }
+
+  private _resetBlocks(deviceType: DeviceType) {
+    this._blocks = this._defaultBlocks(deviceType);
+    this._selectedBlockIdx = -1;
+  }
+
+  private _removeSelected() {
+    if (this._selectedBlockIdx < 0) return;
+    this._blocks = this._blocks.filter((_, i) => i !== this._selectedBlockIdx);
+    this._selectedBlockIdx = -1;
+  }
+
+  private _setAction(actionId: string) {
+    if (this._selectedBlockIdx < 0) return;
+    const def = getActionDef(this._inferDeviceType(), actionId);
+    const newBlocks = [...this._blocks];
+    newBlocks[this._selectedBlockIdx] = {
+      ...newBlocks[this._selectedBlockIdx],
+      action: { id: actionId, value: def?.value ? def.value.default : undefined },
+    };
+    this._blocks = newBlocks;
+  }
+
+  private _setActionValue(value: number | string) {
+    if (this._selectedBlockIdx < 0) return;
+    const newBlocks = [...this._blocks];
+    const cur = newBlocks[this._selectedBlockIdx];
+    newBlocks[this._selectedBlockIdx] = {
+      ...cur,
+      action: { ...(cur.action || { id: "" }), value } as any,
+    };
+    this._blocks = newBlocks;
+  }
+
+  private _fmtBlockRange(b: Block): string {
+    const fmt = (h: number) => {
+      const hh = Math.floor(h);
+      const mm = Math.round((h - hh) * 60);
+      return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+    };
+    return `${fmt(b.start)} → ${fmt(b.end)}`;
+  }
+
+  private _totalCoverage(): string {
+    const sum = this._blocks.reduce((acc, b) => acc + (b.end - b.start), 0);
+    return sum.toFixed(1).replace(/\.0$/, "");
+  }
+
   private async _finish() {
     const deviceType = this._inferDeviceType();
+    this._ensureBlocksFor(deviceType);
     const schedule: Schedule = {
       id: "",
       name: this._name,
@@ -217,7 +356,7 @@ export class ChronosWizard extends LitElement {
       device_ids: this._pickedDevices,
       days: this._days,
       enabled: true,
-      blocks: this._defaultBlocks(deviceType),
+      blocks: [...this._blocks].sort((a, b) => a.start - b.start),
       weather_rules: this._weatherEnabled
         ? [{ if: "temperature > 22°C", then: "Salta esecuzione", active: true }]
         : [],
