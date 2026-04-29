@@ -1,0 +1,19 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Chronos Scheduler Setup",
+        "description": "Select the weather entity to use for weather-based rules.",
+        "data": {
+          "weather_entity": "Weather entity"
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Already configured. Only a single instance is allowed."
+    },
+    "error": {
+      "invalid_weather_entity": "The selected weather entity is not available."
+    }
+  }
+}

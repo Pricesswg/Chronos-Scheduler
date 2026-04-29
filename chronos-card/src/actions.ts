@@ -1,0 +1,93 @@
+import type { ActionDef, BlockAction, DeviceType } from "./types";
+
+export const KIND_COLORS: Record<string, string> = {
+  on: "var(--mode-comfort)",
+  off: "var(--mode-off)",
+  set: "var(--mode-eco)",
+  preset: "var(--mode-night)",
+  cmd: "var(--mode-boost)",
+};
+
+const FALLBACK_ACTIONS: Record<string, ActionDef[]> = {
+  thermostat: [
+    { id: "set_temperature", label: "Imposta temperatura", kind: "set", service: "climate.set_temperature", value: { type: "number", unit: "°C", min: 5, max: 35, step: 0.5, default: 21 } },
+    { id: "set_preset", label: "Preset", kind: "preset", service: "climate.set_preset_mode", value: { type: "enum", options: ["none", "eco", "comfort", "sleep", "away", "boost", "home"], default: "comfort" } },
+    { id: "turn_off", label: "Spegni", kind: "off", service: "climate.turn_off" },
+  ],
+  boiler: [
+    { id: "set_temperature", label: "Imposta temperatura", kind: "set", service: "water_heater.set_temperature", value: { type: "number", unit: "°C", min: 30, max: 75, step: 1, default: 55 } },
+    { id: "set_operation", label: "Operation mode", kind: "preset", service: "water_heater.set_operation_mode", value: { type: "enum", options: ["off", "eco", "electric", "gas", "heat_pump", "high_demand", "performance"], default: "eco" } },
+    { id: "turn_off", label: "Spegni", kind: "off", service: "water_heater.turn_off" },
+  ],
+  light: [
+    { id: "turn_on", label: "Accendi", kind: "on", service: "light.turn_on", value: { type: "number", unit: "%", min: 1, max: 100, step: 1, default: 80, label: "Luminosità" } },
+    { id: "turn_off", label: "Spegni", kind: "off", service: "light.turn_off" },
+  ],
+  blind: [
+    { id: "set_position", label: "Posiziona", kind: "set", service: "cover.set_cover_position", value: { type: "number", unit: "%", min: 0, max: 100, step: 5, default: 100, label: "Apertura" } },
+    { id: "open_cover", label: "Apri", kind: "on", service: "cover.open_cover" },
+    { id: "close_cover", label: "Chiudi", kind: "off", service: "cover.close_cover" },
+  ],
+  irrigation: [
+    { id: "turn_on", label: "Avvia", kind: "on", service: "valve.open_valve", value: { type: "number", unit: "min", min: 1, max: 240, step: 1, default: 30, label: "Durata" } },
+    { id: "turn_off", label: "Stop", kind: "off", service: "valve.close_valve" },
+  ],
+  plug: [
+    { id: "turn_on", label: "Accendi", kind: "on", service: "switch.turn_on" },
+    { id: "turn_off", label: "Spegni", kind: "off", service: "switch.turn_off" },
+  ],
+  fan: [
+    { id: "turn_on", label: "Accendi", kind: "on", service: "fan.turn_on", value: { type: "number", unit: "%", min: 10, max: 100, step: 10, default: 50, label: "Velocità" } },
+    { id: "turn_off", label: "Spegni", kind: "off", service: "fan.turn_off" },
+  ],
+  mower: [
+    { id: "start_mowing", label: "Avvia taglio", kind: "on", service: "lawn_mower.start_mowing" },
+    { id: "pause", label: "Pausa", kind: "cmd", service: "lawn_mower.pause" },
+    { id: "dock", label: "Torna in base", kind: "off", service: "lawn_mower.dock" },
+  ],
+  vacuum: [
+    { id: "start", label: "Avvia pulizia", kind: "on", service: "vacuum.start" },
+    { id: "pause", label: "Pausa", kind: "cmd", service: "vacuum.pause" },
+    { id: "return_to_base", label: "Torna in base", kind: "off", service: "vacuum.return_to_base" },
+  ],
+};
+
+let _serverActions: Record<string, ActionDef[]> = {};
+
+export function setActionsMap(map: Record<string, ActionDef[]>): void {
+  _serverActions = map;
+}
+
+export function getActionsForType(type: DeviceType): ActionDef[] {
+  return _serverActions[type] || FALLBACK_ACTIONS[type] || [];
+}
+
+export function getActionDef(type: DeviceType, actionId: string): ActionDef | undefined {
+  return getActionsForType(type).find((a) => a.id === actionId);
+}
+
+export function actionLabel(type: DeviceType, action?: BlockAction): string {
+  if (!action) return "—";
+  const def = getActionDef(type, action.id);
+  if (!def) return action.id;
+  if (def.value && action.value !== undefined && action.value !== null && action.value !== "") {
+    return `${action.value}${def.value.unit || ""}`;
+  }
+  return def.label;
+}
+
+export function actionColor(type: DeviceType, action?: BlockAction): string {
+  if (!action) return "var(--mode-off)";
+  const def = getActionDef(type, action.id);
+  return KIND_COLORS[def?.kind || "on"] || "var(--mode-comfort)";
+}
+
+export function defaultAction(type: DeviceType): BlockAction {
+  const actions = getActionsForType(type);
+  const first = actions[0];
+  if (!first) return { id: "turn_on" };
+  return {
+    id: first.id,
+    value: first.value ? first.value.default : undefined,
+  };
+}

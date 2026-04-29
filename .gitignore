@@ -1,0 +1,21 @@
+# Node / build
+node_modules/
+*.log
+.DS_Store
+
+# TypeScript
+*.tsbuildinfo
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Old build location (now lives in custom_components/chronos/www/)
+/dist/

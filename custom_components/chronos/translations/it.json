@@ -1,0 +1,19 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configurazione Chronos Scheduler",
+        "description": "Seleziona l'entità meteo da usare per le regole basate sul tempo atmosferico.",
+        "data": {
+          "weather_entity": "Entità meteo"
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Già configurato. È consentita una sola istanza."
+    },
+    "error": {
+      "invalid_weather_entity": "L'entità meteo selezionata non è disponibile."
+    }
+  }
+}
