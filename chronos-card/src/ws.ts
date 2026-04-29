@@ -29,7 +29,7 @@ export async function updateDevice(
 }
 
 export async function removeDevice(hass: HomeAssistant, id: string): Promise<void> {
-  await hass.callWS({ type: "chronos/devices/remove", id });
+  await hass.callWS({ type: "chronos/devices/remove", id: String(id) });
 }
 
 export async function fetchSchedules(hass: HomeAssistant): Promise<Schedule[]> {

@@ -114,7 +114,7 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
 
     @websocket_api.websocket_command({
         vol.Required("type"): "chronos/devices/update",
-        vol.Required("id"): str,
+        vol.Required("id"): vol.Coerce(str),
         vol.Required("patch"): dict,
     })
     @websocket_api.async_response
@@ -130,7 +130,7 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
 
     @websocket_api.websocket_command({
         vol.Required("type"): "chronos/devices/remove",
-        vol.Required("id"): str,
+        vol.Required("id"): vol.Coerce(str),
     })
     @websocket_api.async_response
     async def ws_devices_remove(
@@ -164,7 +164,7 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
 
     @websocket_api.websocket_command({
         vol.Required("type"): "chronos/schedules/remove",
-        vol.Required("id"): str,
+        vol.Required("id"): vol.Coerce(str),
     })
     @websocket_api.async_response
     async def ws_schedules_remove(
@@ -176,7 +176,7 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
 
     @websocket_api.websocket_command({
         vol.Required("type"): "chronos/schedules/toggle",
-        vol.Required("id"): str,
+        vol.Required("id"): vol.Coerce(str),
         vol.Required("enabled"): bool,
     })
     @websocket_api.async_response

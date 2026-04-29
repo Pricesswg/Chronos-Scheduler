@@ -33,6 +33,27 @@ class ChronosStore:
         stored_settings = (await self._store_settings.async_load()) or {}
         self.settings = {**DEFAULT_SETTINGS, **stored_settings}
 
+        # Normalizza gli id a stringa: in passato alcuni potrebbero essere stati
+        # salvati come int (171, 42, …), oggi le WS richiedono str.
+        dirty_devices = False
+        for d in self.devices:
+            if not isinstance(d.get("id"), str):
+                d["id"] = str(d.get("id", ""))
+                dirty_devices = True
+        dirty_schedules = False
+        for s in self.schedules:
+            if not isinstance(s.get("id"), str):
+                s["id"] = str(s.get("id", ""))
+                dirty_schedules = True
+            ids = s.get("device_ids") or []
+            if any(not isinstance(x, str) for x in ids):
+                s["device_ids"] = [str(x) for x in ids]
+                dirty_schedules = True
+        if dirty_devices:
+            await self._save_devices()
+        if dirty_schedules:
+            await self._save_schedules()
+
     async def _save_devices(self) -> None:
         await self._store_devices.async_save(self.devices)
 
