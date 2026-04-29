@@ -2,6 +2,7 @@ import { LitElement, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { chronosStyles } from "../styles";
 import { icon, deviceIcon } from "../icons";
+import { getDeviceColor } from "../device-colors";
 import { actionColor } from "../actions";
 import { fmtHour } from "../utils";
 import type { ChronosCard } from "../chronos-card";
@@ -92,9 +93,10 @@ export class ChronosOverview extends LitElement {
 
                 <div class="sched-card__footer">
                   <div class="sched-card__devices">
-                    ${devs.slice(0, 5).map((d: any) => html`
-                      <div class="device-icon-pill" title="${d.alias}">${deviceIcon(d.type, 14)}</div>
-                    `)}
+                    ${devs.slice(0, 5).map((d: any) => {
+                      const c = getDeviceColor(d, this.card.hass?.states?.[d.entity_id], this.card._settings);
+                      return html`<div class="device-icon-pill" title="${d.alias}" style="background:${c.soft};color:${c.accent}">${deviceIcon(d.type, 14)}</div>`;
+                    })}
                     ${devs.length > 5 ? html`<div class="device-icon-pill mono" style="font-size:10px">+${devs.length - 5}</div>` : nothing}
                   </div>
                   <div style="flex:1"></div>

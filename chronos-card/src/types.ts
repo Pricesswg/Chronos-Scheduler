@@ -55,6 +55,10 @@ export interface Settings {
   theme: "light" | "dark" | "auto";
   density: "comfortable" | "compact";
   default_timeline_variant: "linear" | "radial" | "list";
+  color_light_use_state?: boolean;
+  color_stops_climate?: { max: number; color: string }[];
+  color_stops_boiler?: { max: number; color: string }[];
+  color_presets?: Record<string, string>;
 }
 
 export interface ActionValueSpec {

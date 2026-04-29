@@ -2,6 +2,7 @@ import { LitElement, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { chronosStyles } from "../styles";
 import { icon, deviceIcon, weatherIcon } from "../icons";
+import { getDeviceColor } from "../device-colors";
 import { actionLabel } from "../actions";
 import { fmtHour } from "../utils";
 import type { ChronosCard } from "../chronos-card";
@@ -104,15 +105,17 @@ export class ChronosLive extends LitElement {
             ${devices.map((d) => {
               const state = this.card.hass?.states?.[d.entity_id];
               const stateStr = state?.state || "—";
+              const color = getDeviceColor(d, state, this.card._settings);
+              const barPct = this._computeBarPercent(d, state);
               return html`
                 <div class="live-device">
-                  <div class="device-row__icon" style="width:36px;height:36px">${deviceIcon(d.type, 17)}</div>
+                  <div class="device-row__icon" style="width:36px;height:36px;background:${color.soft};color:${color.accent}">${deviceIcon(d.type, 17)}</div>
                   <div class="device-row__main">
                     <div class="device-row__name">${d.alias}</div>
                     <div class="device-row__meta">${d.area}</div>
                   </div>
-                  <div class="live-device__bar"><div style="width:0%"></div></div>
-                  <span class="mono text-sm" style="width:64px;text-align:right">${stateStr}</span>
+                  <div class="live-device__bar"><div style="width:${barPct}%;background:${color.accent}"></div></div>
+                  <span class="mono text-sm" style="width:64px;text-align:right;color:${color.live ? color.accent : "var(--text-muted)"};font-weight:600">${this._formatState(d, state)}</span>
                 </div>
               `;
             })}
@@ -120,6 +123,38 @@ export class ChronosLive extends LitElement {
         </div>
       </div>
     `;
+  }
+
+  private _computeBarPercent(d: any, state: any): number {
+    if (!state) return 0;
+    const a = state.attributes || {};
+    if (d.type === "light") {
+      const b = a.brightness;
+      if (typeof b === "number") return Math.round((b / 255) * 100);
+      return state.state === "on" ? 100 : 0;
+    }
+    if (d.type === "fan") return typeof a.percentage === "number" ? a.percentage : 0;
+    if (d.type === "blind") return typeof a.current_position === "number" ? a.current_position : 0;
+    if (d.type === "thermostat" || d.type === "boiler") {
+      const t = a.current_temperature ?? a.temperature;
+      if (typeof t === "number") return Math.min(100, Math.max(0, ((t - 5) / 30) * 100));
+    }
+    return state.state === "on" || state.state === "open" ? 100 : 0;
+  }
+
+  private _formatState(d: any, state: any): string {
+    if (!state) return "—";
+    const a = state.attributes || {};
+    if (d.type === "thermostat" || d.type === "boiler") {
+      const t = a.current_temperature ?? a.temperature;
+      if (typeof t === "number") return `${t.toFixed(1)}°`;
+    }
+    if (d.type === "fan" && typeof a.percentage === "number") return `${a.percentage}%`;
+    if (d.type === "blind" && typeof a.current_position === "number") return `${a.current_position}%`;
+    if (d.type === "light" && state.state === "on" && typeof a.brightness === "number") {
+      return `${Math.round((a.brightness / 255) * 100)}%`;
+    }
+    return state.state;
   }
 
   private _conditionLabel(condition: string): string {

@@ -3,6 +3,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { chronosStyles } from "../styles";
 import { icon, deviceIcon } from "../icons";
 import { DEVICE_TYPES } from "../utils";
+import { getDeviceColor } from "../device-colors";
 import type { ChronosCard } from "../chronos-card";
 
 @customElement("chronos-devices-screen")
@@ -37,9 +38,10 @@ export class ChronosDevicesScreen extends LitElement {
               const def = DEVICE_TYPES[d.type] || { label: d.type, capabilities: [] };
               const state = this.card.hass?.states?.[d.entity_id];
               const stateStr = state?.state || "—";
+              const color = getDeviceColor(d, state, this.card._settings);
               return html`
                 <div class="device-row" style="border-bottom:1px solid var(--border-soft);border-radius:0;padding:14px 10px;align-items:center">
-                  <div class="device-row__icon" style="background:var(--accent-soft);color:var(--accent-ink);flex:0 0 auto">
+                  <div class="device-row__icon" style="background:${color.soft};color:${color.accent};flex:0 0 auto;border:1px solid ${color.soft}">
                     ${deviceIcon(d.type, 17)}
                   </div>
                   <div class="device-row__main" style="min-width:0">
