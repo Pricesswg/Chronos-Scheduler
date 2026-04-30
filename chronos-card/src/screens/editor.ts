@@ -17,6 +17,7 @@ export class ChronosEditor extends LitElement {
   @property({ type: Number }) nowHour = 0;
 
   @state() private _selectedBlockIdx = 0;
+  @state() private _confirmDelete = false;
 
   render() {
     const schedule = this.card._schedules.find((s) => s.id === this.card._selectedId) || this.card._schedules[0];
@@ -56,7 +57,7 @@ export class ChronosEditor extends LitElement {
               <span class="switch__track"></span>
               <span class="switch__thumb"></span>
             </label>
-            <button class="btn" @click=${() => this.card.doRemoveSchedule(schedule.id)}>${icon("trash", 14)}</button>
+            <button class="btn" style="color:var(--danger)" @click=${() => { this._confirmDelete = true; }} title="${t("common.delete")}">${icon("trash", 14)}</button>
             <button class="btn btn--primary" ?disabled=${!isDirty}
               style="opacity:${isDirty ? 1 : 0.5};cursor:${isDirty ? "pointer" : "not-allowed"}"
               @click=${() => this.card.saveCurrentSchedule()}>
@@ -261,6 +262,7 @@ export class ChronosEditor extends LitElement {
             </div>
           </div>
         </div>
+        ${this._confirmDelete ? this._renderDeleteModal(schedule) : nothing}
       </div>
     `;
   }
@@ -286,6 +288,37 @@ export class ChronosEditor extends LitElement {
       action: { ...block.action, value },
     };
     this.card.updateBlocksLocal(schedId, newBlocks);
+  }
+
+  private _renderDeleteModal(schedule: Schedule) {
+    return html`
+      <div class="modal-overlay" @click=${() => { this._confirmDelete = false; }}>
+        <div class="card" style="width:min(440px,100%);padding:22px" @click=${(e: Event) => e.stopPropagation()}>
+          <h3 style="margin:0 0 8px">${t("common.delete")}?</h3>
+          <p class="text-sm" style="margin:0 0 16px;color:var(--text-soft)">
+            <strong>${schedule.name}</strong>
+            <span class="text-xs text-mute" style="display:block;margin-top:4px">
+              ${schedule.blocks.length} fasce · ${(schedule.device_ids || []).length} dispositivi · ${(schedule.weather_rules || []).length} regole meteo
+            </span>
+          </p>
+          <p class="text-xs text-mute" style="margin:0 0 16px">
+            ${t("editor.delete.warn") !== "editor.delete.warn"
+              ? t("editor.delete.warn")
+              : "Operazione non reversibile. La schedulazione, i blocchi e le regole meteo associate verranno eliminati."}
+          </p>
+          <div class="row" style="justify-content:flex-end;gap:8px">
+            <button class="btn" @click=${() => { this._confirmDelete = false; }}>${t("common.cancel")}</button>
+            <button class="btn btn--primary" style="background:#ef4444"
+              @click=${async () => {
+                this._confirmDelete = false;
+                await this.card.doRemoveSchedule(schedule.id);
+              }}>
+              ${icon("trash", 12)} ${t("common.confirm")}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   private _removeBlock(schedId: string) {

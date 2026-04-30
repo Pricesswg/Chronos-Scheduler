@@ -393,8 +393,8 @@ export const chronosStyles = css`
 
   /* Radial */
   .radial { width: 100%; aspect-ratio: 1; max-width: 520px; margin: 0 auto; display: block; }
-  .radial text { font-family: var(--font-mono); fill: var(--text-muted); }
-  .radial .radial__label { font-family: var(--font-sans); fill: var(--text); font-weight: 600; }
+  .radial text { font-family: var(--font-mono); fill: var(--text-soft); }
+  .radial .radial__label { font-family: var(--font-sans); fill: var(--text); font-weight: 700; }
 
   /* List timeline */
   .tl-list { display: flex; flex-direction: column; gap: 6px; }
