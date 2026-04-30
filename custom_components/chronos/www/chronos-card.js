@@ -1926,7 +1926,7 @@ function e(e,t,i,s){var r,a=arguments.length,n=a<3?t:null===s?s=Object.getOwnPro
           <div class="sidebar__brand-mark">C</div>
           ${s?G:U`<div>
                 <div class="sidebar__brand-name">Chronos</div>
-                <div class="sidebar__brand-sub">v${"1.4.0"} · HACS</div>
+                <div class="sidebar__brand-sub">v${"1.4.1"} · HACS</div>
               </div>`}
         </div>
         ${s?G:U`<div class="nav-section">${Ue("nav.section.main")}</div>`}

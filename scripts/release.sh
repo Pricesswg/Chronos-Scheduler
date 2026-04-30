@@ -54,10 +54,18 @@ rm chronos-card/src/version.ts.bak
 echo "==> Rebuild card frontend"
 (cd chronos-card && npm run build)
 
-# Sincronizza l'icona dal repo root verso custom_components (HA la cerca lì)
+# Sincronizza l'icona dal repo root verso le posizioni dove HA + HACS la cercano:
+#  - custom_components/chronos/icon.png       (legacy, usata da alcuni tools)
+#  - custom_components/chronos/brand/icon.png (HA 2026.3+ Brands Proxy API)
+#  - custom_components/chronos/brand/icon@2x.png (versione hi-DPI)
 if [ -f icon.png ]; then
   cp icon.png custom_components/chronos/icon.png
-  echo "==> Icon copiata in custom_components/chronos/icon.png"
+  mkdir -p custom_components/chronos/brand
+  cp icon.png custom_components/chronos/brand/icon.png
+  if command -v sips >/dev/null 2>&1; then
+    sips -Z 512 icon.png --out custom_components/chronos/brand/icon@2x.png >/dev/null 2>&1 || true
+  fi
+  echo "==> Icon sincronizzata in custom_components/chronos/{,brand/}"
 fi
 
 echo "==> Commit"
