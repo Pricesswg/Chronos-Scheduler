@@ -44,6 +44,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data[DOMAIN] = {"store": store, "scheduler": scheduler}
 
     _register_websocket_commands(hass)
+    _register_services(hass)
     await _register_frontend_card(hass)
 
     entry.async_on_unload(scheduler.stop)
@@ -182,6 +183,26 @@ async def _upsert_lovelace_resource(hass: HomeAssistant, url: str) -> None:
     else:
         await resources.async_create_item({"res_type": "module", "url": url})
         _LOGGER.info("Chronos: creata Lovelace resource → %s", url)
+
+
+def _register_services(hass: HomeAssistant) -> None:
+    """Registra i servizi HA esposti dall'integration."""
+    if hass.services.has_service(DOMAIN, "fire_block"):
+        return  # già registrato (reload del config entry)
+
+    async def _svc_fire_block(call) -> None:
+        scheduler: ChronosScheduler = hass.data[DOMAIN]["scheduler"]
+        result = await scheduler.fire_now(str(call.data["schedule_id"]))
+        if not result.get("ok"):
+            _LOGGER.warning("Chronos fire_block: %s", result.get("error"))
+
+    hass.services.async_register(
+        DOMAIN,
+        "fire_block",
+        _svc_fire_block,
+        schema=vol.Schema({vol.Required("schedule_id"): str}),
+    )
+    _LOGGER.debug("Chronos: service %s.fire_block registered", DOMAIN)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

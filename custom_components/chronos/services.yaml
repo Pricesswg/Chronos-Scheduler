@@ -1,3 +1,18 @@
 reload:
   name: Reload
   description: Reload Chronos configuration from storage.
+
+fire_block:
+  name: Fire current block now
+  description: >
+    Esegue immediatamente la fascia oraria attiva di una schedulazione,
+    bypassando le regole meteo. Utile per testare manualmente che le
+    automazioni funzionino senza aspettare il prossimo cambio fascia.
+  fields:
+    schedule_id:
+      name: Schedule ID
+      description: ID della schedulazione (visibile nella URL del dashboard o nei log)
+      required: true
+      example: "abc12345"
+      selector:
+        text:

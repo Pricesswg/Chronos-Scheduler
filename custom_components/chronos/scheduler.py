@@ -8,6 +8,7 @@ from typing import Any
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.event import async_track_time_interval
+from homeassistant.util import dt as dt_util
 
 from .const import (
     ACTIONS_BY_TYPE,
@@ -67,7 +68,38 @@ class ChronosScheduler:
         self._unsub_weather = async_track_time_interval(
             self._hass, self._weather_poll, timedelta(minutes=polling)
         )
-        _LOGGER.info("Chronos scheduler started")
+        local_now = dt_util.now()
+        _LOGGER.info(
+            "Chronos scheduler started · tick=1min · weather_poll=%dmin · "
+            "local_time=%s tz=%s · schedules=%d devices=%d",
+            polling,
+            local_now.isoformat(),
+            str(local_now.tzinfo),
+            len(self._store.schedules),
+            len(self._store.devices),
+        )
+        # Esegui un primo tick subito così l'utente non aspetta fino al minuto dopo
+        try:
+            await self._tick(dt_util.utcnow())
+        except Exception:
+            _LOGGER.exception("Chronos: errore al primo tick")
+
+    async def fire_now(self, schedule_id: str) -> dict:
+        """Esegue immediatamente la fascia correntemente attiva di una schedule.
+
+        Usato dal servizio chronos.fire_block per test manuali.
+        """
+        sched = self._store.get_schedule(schedule_id)
+        if sched is None:
+            return {"ok": False, "error": f"schedule {schedule_id} non trovata"}
+        local_now = dt_util.now()
+        current_hour = local_now.hour + local_now.minute / 60
+        block = self._block_at(sched, current_hour)
+        if block is None:
+            return {"ok": False, "error": f"nessuna fascia attiva alle {current_hour:.2f}"}
+        _LOGGER.info("Chronos: fire_now manuale schedule=%s block=%s", sched.get("name"), block)
+        await self._apply_block(sched, block)
+        return {"ok": True, "block": block}
 
     async def stop(self) -> None:
         if self._unsub_tick:
@@ -79,8 +111,19 @@ class ChronosScheduler:
         _LOGGER.info("Chronos scheduler stopped")
 
     async def _tick(self, now) -> None:
-        current_hour = now.hour + now.minute / 60
-        weekday = now.weekday()
+        # async_track_time_interval ci passa un datetime UTC. Le fasce orarie
+        # sono in ora locale (così come l'utente le imposta sulla card),
+        # quindi convertiamo prima di confrontare.
+        local_now = dt_util.as_local(now) if now.tzinfo else now
+        current_hour = local_now.hour + local_now.minute / 60
+        weekday = local_now.weekday()
+        _LOGGER.debug(
+            "Chronos: tick UTC=%s LOCAL=%s hour=%.2f weekday=%d schedules=%d",
+            now.isoformat() if now else "?",
+            local_now.isoformat() if local_now else "?",
+            current_hour, weekday,
+            len(self._store.schedules),
+        )
         for sched in self._store.schedules:
             sched_id = sched.get("id", "?")
             sched_name = sched.get("name", "?")
