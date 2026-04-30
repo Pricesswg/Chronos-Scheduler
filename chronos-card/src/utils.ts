@@ -8,8 +8,13 @@ export function clamp(x: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, x));
 }
 
-export function snapToGrid(h: number, snapMinutes = 15): number {
-  const factor = 60 / snapMinutes;
+let _snapMinutes = 15;
+export function setSnapMinutes(m: number) {
+  _snapMinutes = m && m > 0 ? m : 15;
+}
+export function snapToGrid(h: number, snapMinutes?: number): number {
+  const m = snapMinutes ?? _snapMinutes;
+  const factor = 60 / m;
   return Math.round(h * factor) / factor;
 }
 

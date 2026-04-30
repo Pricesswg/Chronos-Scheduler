@@ -80,22 +80,35 @@ class ChronosScheduler:
 
     async def _tick(self, now) -> None:
         current_hour = now.hour + now.minute / 60
+        weekday = now.weekday()
         for sched in self._store.schedules:
+            sched_id = sched.get("id", "?")
+            sched_name = sched.get("name", "?")
             if not sched.get("enabled"):
                 continue
-            weekday = now.weekday()
             days = sched.get("days", [0] * 7)
             if weekday < len(days) and not days[weekday]:
                 continue
 
             current_block = self._block_at(sched, current_hour)
-            prev_key = sched["id"]
+            prev_key = sched_id
             previous_block = self._last_executed.get(prev_key)
 
             if current_block != previous_block:
                 self._last_executed[prev_key] = current_block
                 if current_block is not None:
+                    _LOGGER.info(
+                        "Chronos: TRANSITION schedule=%s (%s) hour=%.2f → block %s-%s action=%s",
+                        sched_name, sched_id, current_hour,
+                        current_block.get("start"), current_block.get("end"),
+                        current_block.get("action"),
+                    )
                     await self._apply_block(sched, current_block)
+                else:
+                    _LOGGER.debug(
+                        "Chronos: schedule=%s (%s) leaves last block, no current block at hour=%.2f",
+                        sched_name, sched_id, current_hour,
+                    )
 
     def _block_at(self, sched: dict, hour: float) -> dict | None:
         for block in sched.get("blocks", []):
@@ -104,29 +117,38 @@ class ChronosScheduler:
         return None
 
     async def _apply_block(self, sched: dict, block: dict) -> None:
+        sched_name = sched.get("name", "")
         weather_rules = sched.get("weather_rules", [])
         active_rules = [r for r in weather_rules if r.get("active")]
 
         for rule in active_rules:
             matched = await self._evaluate_rule(rule)
+            _LOGGER.debug(
+                "Chronos: rule '%s' on '%s' → matched=%s",
+                rule.get("if"), sched_name, matched,
+            )
             if matched:
                 self._hass.bus.async_fire(EVENT_RULE_TRIGGERED, {
                     "schedule_id": sched["id"],
-                    "schedule_name": sched.get("name", ""),
+                    "schedule_name": sched_name,
                     "rule_if": rule["if"],
                     "rule_then": rule["then"],
                 })
                 if self._store.settings.get("notify_rule_triggered"):
                     await self._notify(
                         f"Regola meteo attivata: {rule['if']} → {rule['then']}",
-                        title=f"Chronos · {sched.get('name', '')}",
+                        title=f"Chronos · {sched_name}",
                     )
                 then_lower = rule.get("then", "").lower()
                 if "salta" in then_lower or "skip" in then_lower:
+                    _LOGGER.info(
+                        "Chronos: SKIPPED schedule=%s by rule %s",
+                        sched_name, rule["if"],
+                    )
                     if self._store.settings.get("notify_sched_skipped"):
                         await self._notify(
                             f"Fascia saltata per regola meteo: {rule['if']}",
-                            title=f"Chronos · {sched.get('name', '')}",
+                            title=f"Chronos · {sched_name}",
                         )
                     return
 
@@ -136,15 +158,35 @@ class ChronosScheduler:
         action_def = _get_action_def(device_type, action_id)
 
         if not action_def:
-            _LOGGER.warning("No action def for %s.%s", device_type, action_id)
+            _LOGGER.warning(
+                "Chronos: NO action def for device_type=%s action_id=%s schedule=%s",
+                device_type, action_id, sched_name,
+            )
             return
 
         service_str = action_def["service"]
         domain, service = service_str.split(".", 1)
 
-        for device_id in sched.get("device_ids", []):
+        device_ids = sched.get("device_ids", [])
+        if not device_ids:
+            _LOGGER.warning(
+                "Chronos: schedule=%s has NO device_ids — fascia non eseguita",
+                sched_name,
+            )
+            return
+
+        executed_count = 0
+        executed_entities: list[str] = []
+
+        for device_id in device_ids:
             device = self._store.get_device(device_id)
             if device is None:
+                _LOGGER.warning(
+                    "Chronos: device_id=%r non trovato nello store (referenced from schedule=%s). "
+                    "Devices in store: %s",
+                    device_id, sched_name,
+                    [d.get("id") for d in self._store.devices],
+                )
                 continue
 
             service_data: dict[str, Any] = {"entity_id": device["entity_id"]}
@@ -165,10 +207,17 @@ class ChronosScheduler:
             elif action_id == "turn_on" and device_type == "irrigation" and value is not None:
                 pass  # duration handled by the valve entity itself
 
+            _LOGGER.info(
+                "Chronos: CALL service %s.%s data=%s (schedule=%s)",
+                domain, service, service_data, sched_name,
+            )
+
             try:
                 await self._hass.services.async_call(
                     domain, service, service_data, blocking=False
                 )
+                executed_count += 1
+                executed_entities.append(device["entity_id"])
                 self._hass.bus.async_fire(EVENT_BLOCK_EXECUTED, {
                     "schedule_id": sched["id"],
                     "device_id": device_id,
@@ -178,7 +227,7 @@ class ChronosScheduler:
                 })
             except Exception:
                 _LOGGER.exception(
-                    "Error calling %s.%s for %s", domain, service, device["entity_id"]
+                    "Chronos: ERROR calling %s.%s for %s", domain, service, device["entity_id"]
                 )
                 self._hass.bus.async_fire(EVENT_COMMAND_ERROR, {
                     "schedule_id": sched["id"],
@@ -191,6 +240,17 @@ class ChronosScheduler:
                         f"Errore comando: {domain}.{service} su {device['entity_id']}",
                         title="Chronos · Errore",
                     )
+
+        # Notifica di esecuzione (default ON, può essere disattivata in Impostazioni)
+        if executed_count and self._store.settings.get("notify_block_executed", True):
+            value = action.get("value")
+            value_str = ""
+            if action_def.get("value") and value not in (None, ""):
+                value_str = f" = {value}{action_def['value'].get('unit', '')}"
+            await self._notify(
+                f"{action_def['label']}{value_str} · {', '.join(executed_entities)}",
+                title=f"Chronos · {sched_name}",
+            )
 
     async def _evaluate_rule(self, rule: dict) -> bool:
         parsed = _parse_expression(rule.get("if", ""))

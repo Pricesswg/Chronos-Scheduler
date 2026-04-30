@@ -77,7 +77,7 @@ export class ChronosSettingsScreen extends LitElement {
             <div class="field">
               <label class="field__label">${t("settings.snap")}</label>
               <div class="segmented">
-                ${[15, 30, 60].map((v) => html`
+                ${[5, 15, 30, 60].map((v) => html`
                   <button data-active="${s.snap_minutes === v}" @click=${() => this._updateSetting("snap_minutes", v)}>${v === 60 ? `1 ${t("common.hour_short")}` : `${v} ${t("common.min")}`}</button>
                 `)}
               </div>
@@ -90,6 +90,7 @@ export class ChronosSettingsScreen extends LitElement {
           <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("settings.notify.title")}</h3><p class="card__sub">${t("settings.notify.subtitle")}</p></div></div>
           <div class="col" style="gap:0">
             ${([
+              ["notify_block_executed", t("settings.notify.block_executed"), t("settings.notify.block_executed.desc")],
               ["notify_rule_triggered", t("settings.notify.rule_triggered"), t("settings.notify.rule_triggered.desc")],
               ["notify_sched_skipped", t("settings.notify.sched_skipped"), t("settings.notify.sched_skipped.desc")],
               ["notify_command_error", t("settings.notify.command_error"), t("settings.notify.command_error.desc")],

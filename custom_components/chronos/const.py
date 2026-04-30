@@ -1,5 +1,5 @@
 DOMAIN = "chronos"
-VERSION = "1.4.1"
+VERSION = "1.5.0"
 STORAGE_VERSION = 1
 STORAGE_KEY_DEVICES = f"{DOMAIN}.devices"
 STORAGE_KEY_SCHEDULES = f"{DOMAIN}.schedules"
@@ -166,6 +166,7 @@ DEFAULT_SETTINGS = {
     "notify_rule_triggered": True,
     "notify_sched_skipped": True,
     "notify_command_error": True,
+    "notify_block_executed": True,
     "theme": "auto",
     "density": "comfortable",
     "default_timeline_variant": "linear",

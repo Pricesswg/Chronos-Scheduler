@@ -33,7 +33,7 @@ import {
   removeSchedule as wsRemoveSchedule,
   updateSettings as wsUpdateSettings,
 } from "./ws";
-import { fmtHour, computeRepeat } from "./utils";
+import { fmtHour, computeRepeat, setSnapMinutes } from "./utils";
 
 import "./screens/overview";
 import "./screens/editor";
@@ -185,6 +185,7 @@ export class ChronosCard extends LitElement {
       this._sensorEntities = sensorEnt;
       setActionsMap(actionsMap);
       setColorSettings(settings);
+      if (settings?.snap_minutes) setSnapMinutes(settings.snap_minutes);
       if (settings?.default_timeline_variant) {
         this._timelineVariant = settings.default_timeline_variant;
       }
@@ -324,6 +325,7 @@ export class ChronosCard extends LitElement {
       this._settings = await fetchSettings(this.hass);
     }
     setColorSettings(this._settings);
+    if (this._settings?.snap_minutes) setSnapMinutes(this._settings.snap_minutes);
   }
 
   async _reloadAllDebug() {

@@ -212,6 +212,8 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "settings.snap.hint": { it: "Granularità nel disegnare le fasce", en: "Granularity when drawing blocks", fr: "Granularité lors du tracé des créneaux", de: "Granularität beim Zeichnen der Blöcke" },
   "settings.notify.title": { it: "Notifiche", en: "Notifications", fr: "Notifications", de: "Benachrichtigungen" },
   "settings.notify.subtitle": { it: "Eventi che vogliono una notifica HA", en: "Events that want an HA notification", fr: "Événements qui déclenchent une notification HA", de: "Ereignisse, die eine HA-Benachrichtigung auslösen" },
+  "settings.notify.block_executed": { it: "Fascia eseguita", en: "Block executed", fr: "Créneau exécuté", de: "Block ausgeführt" },
+  "settings.notify.block_executed.desc": { it: "Quando il sistema avvia un comando per una fascia oraria", en: "When the system fires a command for a time block", fr: "Quand le système déclenche une commande pour un créneau", de: "Wenn das System einen Befehl für einen Zeitblock auslöst" },
   "settings.notify.rule_triggered": { it: "Regola meteo attivata", en: "Weather rule triggered", fr: "Règle météo déclenchée", de: "Wetterregel ausgelöst" },
   "settings.notify.rule_triggered.desc": { it: "Quando una regola override entra in azione", en: "When an override rule kicks in", fr: "Quand une règle de remplacement s'active", de: "Wenn eine Überschreibungsregel greift" },
   "settings.notify.sched_skipped": { it: "Schedulazione saltata", en: "Schedule skipped", fr: "Planification ignorée", de: "Zeitplan übersprungen" },

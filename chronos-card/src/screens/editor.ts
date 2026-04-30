@@ -215,7 +215,15 @@ export class ChronosEditor extends LitElement {
                             .value=${String(block.action?.value ?? currentActionDef.value.default)}
                             @input=${(e: InputEvent) => this._setBlockValue(schedule.id, parseFloat((e.target as HTMLInputElement).value))}
                             style="flex:1"/>
-                          <span class="mono" style="min-width:60px;text-align:right;font-weight:600">${block.action?.value ?? currentActionDef.value.default}${currentActionDef.value.unit}</span>
+                          <input type="number" class="input mono"
+                            min="${currentActionDef.value.min}" max="${currentActionDef.value.max}" step="${currentActionDef.value.step}"
+                            .value=${String(block.action?.value ?? currentActionDef.value.default)}
+                            @input=${(e: InputEvent) => {
+                              const v = parseFloat((e.target as HTMLInputElement).value);
+                              if (!isNaN(v)) this._setBlockValue(schedule.id, v);
+                            }}
+                            style="width:90px;text-align:right;font-weight:600"/>
+                          <span class="mono text-mute" style="min-width:30px">${currentActionDef.value.unit || ""}</span>
                         </div>
                       ` : currentActionDef.value.type === "enum" ? html`
                         <select class="input"
