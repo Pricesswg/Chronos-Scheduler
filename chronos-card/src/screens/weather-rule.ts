@@ -44,9 +44,9 @@ export class ChronosWeatherRule extends LitElement {
     const forcedDef = typeActions.find((a) => a.id === this._actionValue);
     const thenText =
       this._action === "skip" ? t("wr.action.skip")
-        : this._action === "shift" ? `${this._actionValue}${varDef?.unit || ""}`
+        : this._action === "shift" ? `${t("wr.action.shift")} ${this._actionValue || "+1"} ${t("common.hour_short")}`
           : this._action === "force" ? `${t("wr.action.force")}: ${forcedDef?.label || "—"}`
-            : `${this._actionValue || "+30"} ${t("common.min")}`;
+            : `${t("wr.action.duration")} ${this._actionValue || "+30"} ${t("common.min")}`;
 
     return html`
       <div class="col" style="gap:22px;max-width:1100px">
@@ -129,13 +129,17 @@ export class ChronosWeatherRule extends LitElement {
               </div>
               ${this._action !== "skip" ? html`
                 <div class="field">
-                  <label class="field__label">${this._action === "force" ? t("wr.action.force") : t("common.value")}</label>
+                  <label class="field__label">${
+                    this._action === "force" ? t("wr.action.force")
+                    : this._action === "shift" ? `${t("wr.action.shift")} (${t("common.hour_short")})`
+                    : `${t("wr.action.duration")} (${t("common.min")})`
+                  }</label>
                   ${this._action === "force"
                     ? html`<select class="select" @change=${(e: Event) => { this._actionValue = (e.target as HTMLSelectElement).value; }}>
                         ${typeActions.map((a) => html`<option value="${a.id}" ?selected=${this._actionValue === a.id}>${a.label}</option>`)}
                       </select>`
                     : html`<input class="input mono" .value=${this._actionValue} @input=${(e: InputEvent) => { this._actionValue = (e.target as HTMLInputElement).value; }}
-                        placeholder="${this._action === "shift" ? "-1, +2, …" : "+30, -15, …"}"/>`}
+                        placeholder="${this._action === "shift" ? "-1, +2 ore" : "+30, -15 min"}"/>`}
                 </div>
               ` : nothing}
             </div>

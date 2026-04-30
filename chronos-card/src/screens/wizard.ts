@@ -136,6 +136,9 @@ export class ChronosWizard extends LitElement {
                 `)}
               </div>
               <div style="flex:1"></div>
+              <button class="btn btn--sm" @click=${() => this._addBlock(deviceType)}>
+                ${icon("plus", 12)} ${t("common.add")}
+              </button>
               <button class="btn btn--sm" @click=${() => this._resetBlocks(deviceType)}>
                 ${icon("repeat", 12)} ${t("wizard.time.reset_preset")}
               </button>
@@ -300,6 +303,30 @@ export class ChronosWizard extends LitElement {
   private _resetBlocks(deviceType: DeviceType) {
     this._blocks = this._defaultBlocks(deviceType);
     this._selectedBlockIdx = -1;
+  }
+
+  private _addBlock(deviceType: DeviceType) {
+    // Trova un buco libero nella timeline (almeno 1h)
+    const sorted = [...this._blocks].sort((a, b) => a.start - b.start);
+    let start = 0;
+    let end = 24;
+    for (let i = 0; i <= sorted.length; i++) {
+      const prev = i === 0 ? 0 : sorted[i - 1].end;
+      const next = i === sorted.length ? 24 : sorted[i].start;
+      if (next - prev >= 1) {
+        start = prev;
+        end = Math.min(prev + 2, next);
+        break;
+      }
+    }
+    if (end - start < 0.25) {
+      // nessun buco abbastanza grande: appendi 0-1 con step minimo, sovrapporrà
+      start = 12;
+      end = 13;
+    }
+    const newBlocks = [...this._blocks, { start, end, action: defaultAction(deviceType) }];
+    this._blocks = newBlocks.sort((a, b) => a.start - b.start);
+    this._selectedBlockIdx = this._blocks.findIndex((b) => b.start === start && b.end === end);
   }
 
   private _removeSelected() {

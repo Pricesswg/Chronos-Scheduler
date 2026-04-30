@@ -99,6 +99,7 @@ export type Screen =
   | "overview"
   | "editor"
   | "weatherRule"
+  | "weatherRulesList"
   | "device"
   | "week"
   | "live"

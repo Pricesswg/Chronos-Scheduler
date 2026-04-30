@@ -1,7 +1,7 @@
 import { LitElement, html, svg, nothing, PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { chronosStyles } from "./styles";
-import { actionColor, actionLabel } from "./actions";
+import { actionColor, actionLabel, getActionDef } from "./actions";
 import { fmtHour, clamp, snapToGrid } from "./utils";
 import { defaultAction } from "./actions";
 import type { Block, DeviceType } from "./types";
@@ -135,6 +135,29 @@ export class ChronosTimeline extends LitElement {
             @click=${(e: MouseEvent) => { e.stopPropagation(); this._fireSelect(i); }}
           />
         `)}
+        ${this.blocks.map((b) => {
+          // Etichetta sul midpoint dell'arco; solo se l'arco è abbastanza largo (>1.5h)
+          if (b.end - b.start < 1.5) return svg``;
+          const midH = (b.start + b.end) / 2;
+          const a = (midH / 24) * Math.PI * 2 - Math.PI / 2;
+          const rMid = (rOuter + rInner) / 2;
+          const x = cx + rMid * Math.cos(a);
+          const y = cy + rMid * Math.sin(a);
+          const def = getActionDef(this.deviceType, b.action.id);
+          let label = "";
+          if (def?.value && b.action.value !== undefined && b.action.value !== null && b.action.value !== "") {
+            label = `${b.action.value}${def.value.unit || ""}`;
+          } else if (def?.label) {
+            label = def.label.length > 8 ? def.label.slice(0, 7) + "…" : def.label;
+          }
+          if (!label) return svg``;
+          return svg`
+            <text x="${x}" y="${y}" text-anchor="middle" dy="4"
+              font-size="13" font-weight="700" fill="white"
+              stroke="rgba(0,0,0,0.55)" stroke-width="0.5" paint-order="stroke fill"
+              pointer-events="none">${label}</text>
+          `;
+        })}
         ${Array.from({ length: 24 }).map((_, i) => {
           const a = (i / 24) * Math.PI * 2 - Math.PI / 2;
           const r1 = rOuter - 2, r2 = i % 6 === 0 ? rOuter - 14 : rOuter - 8;

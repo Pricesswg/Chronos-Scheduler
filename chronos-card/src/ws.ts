@@ -25,11 +25,11 @@ export async function updateDevice(
   id: string,
   patch: Partial<ChronosDevice>
 ): Promise<ChronosDevice> {
-  return hass.callWS({ type: "chronos/devices/update", id, patch });
+  return hass.callWS({ type: "chronos/devices/update", device_id: String(id), patch });
 }
 
 export async function removeDevice(hass: HomeAssistant, id: string): Promise<void> {
-  await hass.callWS({ type: "chronos/devices/remove", id: String(id) });
+  await hass.callWS({ type: "chronos/devices/remove", device_id: String(id) });
 }
 
 export async function fetchSchedules(hass: HomeAssistant): Promise<Schedule[]> {
@@ -44,7 +44,7 @@ export async function saveSchedule(
 }
 
 export async function removeSchedule(hass: HomeAssistant, id: string): Promise<void> {
-  await hass.callWS({ type: "chronos/schedules/remove", id });
+  await hass.callWS({ type: "chronos/schedules/remove", schedule_id: String(id) });
 }
 
 export async function toggleSchedule(
@@ -52,7 +52,7 @@ export async function toggleSchedule(
   id: string,
   enabled: boolean
 ): Promise<void> {
-  await hass.callWS({ type: "chronos/schedules/toggle", id, enabled });
+  await hass.callWS({ type: "chronos/schedules/toggle", schedule_id: String(id), enabled });
 }
 
 export async function fetchSettings(hass: HomeAssistant): Promise<Settings> {

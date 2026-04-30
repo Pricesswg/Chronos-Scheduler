@@ -222,7 +222,7 @@ class ChronosScheduler:
     def _read_attribute(self, key: str) -> Any:
         """Legge un attributo meteo. Se l'utente ha mappato il key a un'entità
         sensor specifica (override), legge da quella; altrimenti dal weather.*
-        principale."""
+        principale. Per le chiavi sun.* legge dall'entità sun.sun di HA."""
         overrides = self._store.settings.get("weather_sensor_map") or {}
         sensor_id = overrides.get(key)
         if sensor_id:
@@ -233,6 +233,10 @@ class ChronosScheduler:
                 return None
             return state.state
 
+        # Sun attributes vengono dall'entità sun.sun (sempre presente in HA)
+        if key.startswith("sun."):
+            return self._read_sun_attribute(key.split(".", 1)[1])
+
         weather_entity = self._store.settings.get("weather_entity", "")
         if not weather_entity:
             return None
@@ -242,6 +246,40 @@ class ChronosScheduler:
         if key == "condition":
             return weather_state.state
         return weather_state.attributes.get(key)
+
+    def _read_sun_attribute(self, sub: str) -> Any:
+        """Legge attributi dall'entità sun.sun.
+
+        Espone elevation, azimuth, state direttamente, più due derivati
+        comodi: minutes_until_sunrise e minutes_until_sunset.
+        """
+        sun = self._hass.states.get("sun.sun")
+        if sun is None:
+            return None
+        attrs = sun.attributes
+
+        if sub == "state":
+            return sun.state  # "above_horizon" / "below_horizon"
+        if sub == "elevation":
+            return attrs.get("elevation")
+        if sub == "azimuth":
+            return attrs.get("azimuth")
+
+        if sub in ("minutes_until_sunrise", "minutes_until_sunset"):
+            from datetime import datetime, timezone
+            field = "next_rising" if sub == "minutes_until_sunrise" else "next_setting"
+            iso = attrs.get(field)
+            if not iso:
+                return None
+            try:
+                t = datetime.fromisoformat(str(iso).replace("Z", "+00:00"))
+                now = datetime.now(timezone.utc)
+                return max(0, int((t - now).total_seconds() / 60))
+            except Exception:
+                _LOGGER.debug("Cannot parse sun.%s timestamp: %s", field, iso)
+                return None
+
+        return None
 
     async def _get_forecast_value(self, weather_entity: str, key: str) -> float | str | None:
         try:

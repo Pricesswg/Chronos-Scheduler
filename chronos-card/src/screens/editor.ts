@@ -167,6 +167,15 @@ export class ChronosEditor extends LitElement {
                           <span class="switch__track"></span>
                           <span class="switch__thumb"></span>
                         </label>
+                        <button class="btn btn--icon btn--ghost btn--sm" style="color:var(--danger)"
+                          @click=${() => {
+                            if (!confirm(`${t("common.remove")}: ${r.if} → ${r.then}?`)) return;
+                            const newRules = (schedule.weather_rules || []).filter((_, j) => j !== i);
+                            this.card.updateScheduleLocal(schedule.id, { weather_rules: newRules });
+                          }}
+                          title="${t("common.remove")}">
+                          ${icon("trash", 12)}
+                        </button>
                       </div>
                     `)}
                   </div>`}

@@ -38,6 +38,7 @@ import { fmtHour, computeRepeat } from "./utils";
 import "./screens/overview";
 import "./screens/editor";
 import "./screens/weather-rule";
+import "./screens/weather-rules-list";
 import "./screens/device";
 import "./screens/week";
 import "./screens/live";
@@ -49,6 +50,7 @@ const TITLE_KEYS: Record<Screen, [string, string]> = {
   overview: ["screen.overview.title", "chronos / overview"],
   editor: ["screen.editor.title", "chronos / schedule / edit"],
   weatherRule: ["screen.weather_rule.title", "chronos / schedule / weather"],
+  weatherRulesList: ["nav.weather_rules", "chronos / weather"],
   device: ["screen.device.title", "chronos / device"],
   week: ["screen.week.title", "chronos / week"],
   live: ["screen.live.title", "chronos / live"],
@@ -385,7 +387,7 @@ export class ChronosCard extends LitElement {
       { key: "overview" as Screen, label: t("nav.overview"), iconName: "dashboard" },
       { key: "editor" as Screen, label: t("nav.editor"), iconName: "clock" },
       { key: "week" as Screen, label: t("nav.week"), iconName: "calendar" },
-      { key: "weatherRule" as Screen, label: t("nav.weather_rules"), iconName: "cloud" },
+      { key: "weatherRulesList" as Screen, label: t("nav.weather_rules"), iconName: "cloud" },
       { key: "device" as Screen, label: t("nav.devices"), iconName: "device" },
       { key: "live" as Screen, label: t("nav.live"), iconName: "live" },
     ];
@@ -471,6 +473,8 @@ export class ChronosCard extends LitElement {
         return html`<chronos-editor .card=${this} .nowHour=${nowHour}></chronos-editor>`;
       case "weatherRule":
         return html`<chronos-weather-rule .card=${this} .nowHour=${nowHour}></chronos-weather-rule>`;
+      case "weatherRulesList":
+        return html`<chronos-weather-rules-list .card=${this} .nowHour=${nowHour}></chronos-weather-rules-list>`;
       case "device":
         return html`<chronos-device-screen .card=${this} .nowHour=${nowHour}></chronos-device-screen>`;
       case "week":

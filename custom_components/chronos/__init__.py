@@ -216,7 +216,7 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
 
     @websocket_api.websocket_command({
         vol.Required("type"): "chronos/devices/update",
-        vol.Required("id"): vol.Coerce(str),
+        vol.Required("device_id"): vol.Coerce(str),
         vol.Required("patch"): dict,
     })
     @websocket_api.async_response
@@ -225,21 +225,22 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
     ) -> None:
         store: ChronosStore = hass.data[DOMAIN]["store"]
         try:
-            device = await store.async_update_device(msg["id"], msg["patch"])
+            device = await store.async_update_device(msg["device_id"], msg["patch"])
             connection.send_result(msg["id"], device)
         except ValueError as err:
             connection.send_error(msg["id"], "not_found", str(err))
 
     @websocket_api.websocket_command({
         vol.Required("type"): "chronos/devices/remove",
-        vol.Required("id"): vol.Coerce(str),
+        vol.Required("device_id"): vol.Coerce(str),
     })
     @websocket_api.async_response
     async def ws_devices_remove(
         hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
     ) -> None:
         store: ChronosStore = hass.data[DOMAIN]["store"]
-        await store.async_remove_device(msg["id"])
+        _LOGGER.info("Chronos: removing device device_id=%r", msg.get("device_id"))
+        await store.async_remove_device(msg["device_id"])
         connection.send_result(msg["id"], {"success": True})
 
     # --- Schedules ---
@@ -266,19 +267,19 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
 
     @websocket_api.websocket_command({
         vol.Required("type"): "chronos/schedules/remove",
-        vol.Required("id"): vol.Coerce(str),
+        vol.Required("schedule_id"): vol.Coerce(str),
     })
     @websocket_api.async_response
     async def ws_schedules_remove(
         hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
     ) -> None:
         store: ChronosStore = hass.data[DOMAIN]["store"]
-        await store.async_remove_schedule(msg["id"])
+        await store.async_remove_schedule(msg["schedule_id"])
         connection.send_result(msg["id"], {"success": True})
 
     @websocket_api.websocket_command({
         vol.Required("type"): "chronos/schedules/toggle",
-        vol.Required("id"): vol.Coerce(str),
+        vol.Required("schedule_id"): vol.Coerce(str),
         vol.Required("enabled"): bool,
     })
     @websocket_api.async_response
@@ -287,7 +288,7 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
     ) -> None:
         store: ChronosStore = hass.data[DOMAIN]["store"]
         try:
-            await store.async_toggle_schedule(msg["id"], msg["enabled"])
+            await store.async_toggle_schedule(msg["schedule_id"], msg["enabled"])
             connection.send_result(msg["id"], {"success": True})
         except ValueError as err:
             connection.send_error(msg["id"], "not_found", str(err))

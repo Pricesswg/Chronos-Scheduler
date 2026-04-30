@@ -1,5 +1,5 @@
 DOMAIN = "chronos"
-VERSION = "1.3.5"
+VERSION = "1.4.0"
 STORAGE_VERSION = 1
 STORAGE_KEY_DEVICES = f"{DOMAIN}.devices"
 STORAGE_KEY_SCHEDULES = f"{DOMAIN}.schedules"
@@ -126,6 +126,17 @@ WEATHER_ATTRIBUTES = [
     {"key": "wind_bearing", "label": "Direzione vento", "unit": "°", "icon": "wind", "type": "number"},
     {"key": "pressure", "label": "Pressione atmosferica", "unit": "hPa", "icon": "cloud", "type": "number"},
     {"key": "uv_index", "label": "Indice UV", "unit": "", "icon": "sun", "type": "number"},
+    {"key": "sun.elevation", "label": "Elevazione sole", "unit": "°", "icon": "sun", "type": "number"},
+    {"key": "sun.minutes_until_sunrise", "label": "Minuti all'alba", "unit": "min", "icon": "sun", "type": "number"},
+    {"key": "sun.minutes_until_sunset", "label": "Minuti al tramonto", "unit": "min", "icon": "sun", "type": "number"},
+    {
+        "key": "sun.state",
+        "label": "Sole sopra orizzonte",
+        "unit": "",
+        "icon": "sun",
+        "type": "enum",
+        "options": ["above_horizon", "below_horizon"],
+    },
     {
         "key": "condition",
         "label": "Condizione attuale",

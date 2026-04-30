@@ -1,7 +1,7 @@
 {
   "domain": "chronos",
   "name": "Chronos Scheduler",
-  "version": "1.3.5",
+  "version": "1.4.0",
   "documentation": "https://github.com/Pricesswg/Chronos-Scheduler",
   "issue_tracker": "https://github.com/Pricesswg/Chronos-Scheduler/issues",
   "dependencies": [],
