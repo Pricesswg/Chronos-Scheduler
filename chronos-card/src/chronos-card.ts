@@ -412,7 +412,11 @@ export class ChronosCard extends LitElement {
             `
           : nothing}
         <div class="sidebar__brand">
-          <div class="sidebar__brand-mark">C</div>
+          <div class="sidebar__brand-mark" style="background:transparent;box-shadow:none;padding:0;overflow:hidden">
+            <img src="/local/chronos-icon.png?v=${CARD_VERSION}" alt="Chronos"
+              style="width:100%;height:100%;object-fit:contain;display:block"
+              @error=${(e: Event) => { (e.target as HTMLImageElement).style.display = "none"; (e.target as HTMLElement).parentElement!.textContent = "C"; (e.target as HTMLElement).parentElement!.style.background = "linear-gradient(135deg, var(--accent), var(--weather))"; (e.target as HTMLElement).parentElement!.style.color = "white"; }}/>
+          </div>
           ${!isMini
             ? html`<div>
                 <div class="sidebar__brand-name">Chronos</div>

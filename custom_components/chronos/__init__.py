@@ -79,23 +79,34 @@ async def _register_frontend_card(hass: HomeAssistant) -> None:
     local_url = f"/local/chronos-card.js?v={VERSION}"
     dst_dir = Path(hass.config.path("www"))
     dst = dst_dir / "chronos-card.js"
+    # Icon: anche lei la mettiamo in /config/www/ così la card può puntarci
+    icon_src = Path(__file__).parent / "brand" / "icon.png"
+    if not icon_src.exists():
+        icon_src = Path(__file__).parent / "icon.png"  # fallback legacy
+    icon_dst = dst_dir / "chronos-icon.png"
 
-    def _sync_bundle() -> bool:
+    def _sync_files() -> dict:
         dst_dir.mkdir(parents=True, exist_ok=True)
-        if dst.exists() and dst.stat().st_size == src.stat().st_size:
-            if dst.read_bytes() == src.read_bytes():
-                return False
-        shutil.copy2(src, dst)
-        return True
+        out = {"bundle": False, "icon": False}
+        # Bundle JS
+        if not (dst.exists() and dst.stat().st_size == src.stat().st_size and dst.read_bytes() == src.read_bytes()):
+            shutil.copy2(src, dst)
+            out["bundle"] = True
+        # Icon
+        if icon_src.exists():
+            if not (icon_dst.exists() and icon_dst.stat().st_size == icon_src.stat().st_size and icon_dst.read_bytes() == icon_src.read_bytes()):
+                shutil.copy2(icon_src, icon_dst)
+                out["icon"] = True
+        return out
 
     try:
-        copied = await hass.async_add_executor_job(_sync_bundle)
-        if copied:
+        result = await hass.async_add_executor_job(_sync_files)
+        if result.get("bundle"):
             _LOGGER.info("Chronos: bundle sincronizzato in %s", dst)
-        else:
-            _LOGGER.debug("Chronos: bundle in %s già aggiornato", dst)
+        if result.get("icon"):
+            _LOGGER.info("Chronos: icona sincronizzata in %s", icon_dst)
     except Exception:
-        _LOGGER.exception("Chronos: errore copiando il bundle in /config/www/")
+        _LOGGER.exception("Chronos: errore copiando file in /config/www/")
         # Continuiamo comunque, il fallback static path potrebbe funzionare
 
     # --- 2. Lovelace resource auto-register (storage mode) ---
