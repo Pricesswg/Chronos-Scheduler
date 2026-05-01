@@ -163,8 +163,8 @@ export class ChronosTimeline extends LitElement {
           if (!label) return svg``;
           return svg`
             <text x="${x}" y="${y}" text-anchor="middle" dy="4"
-              font-size="13" font-weight="700" fill="#0f172a"
-              stroke="rgba(255,255,255,0.85)" stroke-width="2.5" paint-order="stroke fill"
+              font-size="13" font-weight="700"
+              style="fill:#0f172a;stroke:rgba(255,255,255,0.9);stroke-width:2.5;paint-order:stroke fill"
               pointer-events="none">${label}</text>
           `;
         })}

@@ -15,16 +15,19 @@ export const chronosTokens = css`
     --font-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
 
-    /* Chrome — follow HA theme. Fallback to our oklch when not set. */
-    --bg: var(--primary-background-color, oklch(0.985 0.004 85));
+    /* Chrome — follow HA theme. Fallback to our oklch when not set.
+     * --bg is the card shell. Use --card-background-color so the Chronos card
+     * looks like an HA card and stays distinct from the dashboard background.
+     * --bg-soft / --bg-sunken are nested surfaces inside the card. */
+    --bg: var(--card-background-color, var(--ha-card-background, oklch(0.985 0.004 85)));
     --bg-soft: var(--secondary-background-color, oklch(0.965 0.005 85));
-    --bg-sunken: var(--ha-card-background, var(--secondary-background-color, oklch(0.945 0.006 85)));
+    --bg-sunken: var(--primary-background-color, oklch(0.945 0.006 85));
     --surface: var(--card-background-color, #ffffff);
     --border: var(--divider-color, oklch(0.90 0.006 85));
     --border-soft: var(--divider-color, oklch(0.93 0.005 85));
     --text: var(--primary-text-color, oklch(0.22 0.012 85));
     --text-soft: var(--secondary-text-color, oklch(0.42 0.012 85));
-    --text-muted: var(--disabled-text-color, oklch(0.60 0.010 85));
+    --text-muted: var(--disabled-text-color, var(--secondary-text-color, oklch(0.60 0.010 85)));
 
     /* Accent — Chronos identity. Stay our oklch (with HA accent as soft override
      * for users who want their theme accent to influence Chronos too). */
