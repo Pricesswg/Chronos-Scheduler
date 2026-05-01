@@ -59,6 +59,9 @@ class ChronosScheduler:
         self._unsub_tick = None
         self._unsub_weather = None
         self._last_executed: dict[str, Any] = {}
+        # Per-rule edge-trigger state: key = f"{schedule_id}:{rule_idx}"
+        # value = {"last_eval": bool, "last_fire": datetime|None}
+        self._rule_state: dict[str, dict] = {}
 
     async def start(self) -> None:
         self._unsub_tick = async_track_time_interval(
@@ -111,9 +114,6 @@ class ChronosScheduler:
         _LOGGER.info("Chronos scheduler stopped")
 
     async def _tick(self, now) -> None:
-        # async_track_time_interval ci passa un datetime UTC. Le fasce orarie
-        # sono in ora locale (così come l'utente le imposta sulla card),
-        # quindi convertiamo prima di confrontare.
         local_now = dt_util.as_local(now) if now.tzinfo else now
         current_hour = local_now.hour + local_now.minute / 60
         weekday = local_now.weekday()
@@ -137,69 +137,207 @@ class ChronosScheduler:
             prev_key = sched_id
             previous_block = self._last_executed.get(prev_key)
 
+            # Block transition handling
             if current_block != previous_block:
                 self._last_executed[prev_key] = current_block
                 if current_block is not None:
                     _LOGGER.info(
-                        "Chronos: TRANSITION schedule=%s (%s) hour=%.2f → block %s-%s action=%s",
-                        sched_name, sched_id, current_hour,
-                        current_block.get("start"), current_block.get("end"),
+                        "Chronos: TRANSITION schedule=%s hour=%.2f → block resolved=%.2f-%.2f action=%s",
+                        sched_name, current_hour,
+                        self._resolve_block_time(current_block, "start"),
+                        self._resolve_block_time(current_block, "end"),
                         current_block.get("action"),
                     )
                     await self._apply_block(sched, current_block)
-                else:
-                    _LOGGER.debug(
-                        "Chronos: schedule=%s (%s) leaves last block, no current block at hour=%.2f",
-                        sched_name, sched_id, current_hour,
-                    )
+
+            # Weather-trigger evaluation: every tick, every active rule that
+            # has a trigger_action. Edge-triggered + rate-limited per fire_mode.
+            await self._evaluate_triggers(sched, local_now)
 
     def _block_at(self, sched: dict, hour: float) -> dict | None:
         for block in sched.get("blocks", []):
-            if block["start"] <= hour < block["end"]:
+            start = self._resolve_block_time(block, "start")
+            end = self._resolve_block_time(block, "end")
+            if start <= hour < end:
                 return block
         return None
 
-    async def _apply_block(self, sched: dict, block: dict) -> None:
+    def _resolve_block_time(self, block: dict, edge: str) -> float:
+        """Resolve block start/end into an hour-of-day float.
+
+        If the block has an anchor field (start_anchor / end_anchor) set to
+        "sunrise" or "sunset", read sun.sun and apply the offset (minutes).
+        Otherwise return the numeric start/end value as-is.
+        """
+        anchor = block.get(f"{edge}_anchor")
+        offset_min = block.get(f"{edge}_offset", 0) or 0
+        if anchor in ("sunrise", "sunset"):
+            sun = self._hass.states.get("sun.sun")
+            if sun is not None:
+                attr = "next_rising" if anchor == "sunrise" else "next_setting"
+                iso = sun.attributes.get(attr)
+                if iso:
+                    try:
+                        t = dt_util.parse_datetime(str(iso))
+                        if t is not None:
+                            local = dt_util.as_local(t)
+                            base = local.hour + local.minute / 60 + local.second / 3600
+                            return max(0.0, min(24.0, base + offset_min / 60))
+                    except Exception:
+                        _LOGGER.debug("Cannot parse sun.%s = %r", attr, iso)
+        # Fallback to numeric value
+        v = block.get(edge, 0)
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return 0.0
+
+    async def _evaluate_triggers(self, sched: dict, local_now) -> None:
+        """Evaluate all active weather rules on this schedule with a
+        trigger_action attached. Fire on edge transitions if the fire_mode
+        window allows.
+        """
+        sched_id = str(sched.get("id", ""))
         sched_name = sched.get("name", "")
-        weather_rules = sched.get("weather_rules", [])
-        active_rules = [r for r in weather_rules if r.get("active")]
+        rules = sched.get("weather_rules", []) or []
+        for idx, rule in enumerate(rules):
+            if not rule.get("active"):
+                continue
+            trigger = rule.get("trigger_action")
+            if not trigger:
+                continue  # legacy: handled at block transition
+            key = f"{sched_id}:{idx}"
+            state = self._rule_state.setdefault(key, {"last_eval": False, "last_fire": None})
+            try:
+                current = await self._evaluate_rule(rule)
+            except Exception:
+                _LOGGER.exception("Chronos: trigger eval crashed schedule=%s rule=%s", sched_name, rule.get("if"))
+                continue
+            was = state["last_eval"]
+            state["last_eval"] = current
 
-        for rule in active_rules:
-            matched = await self._evaluate_rule(rule)
-            _LOGGER.debug(
-                "Chronos: rule '%s' on '%s' → matched=%s",
-                rule.get("if"), sched_name, matched,
+            if not current:
+                continue
+            if was:
+                continue  # already true on previous tick, edge already fired
+
+            # Rule just transitioned from False to True. Check rate limit.
+            fire_mode = rule.get("fire_mode", "every")
+            if not self._is_armed(fire_mode, state.get("last_fire"), local_now):
+                _LOGGER.debug(
+                    "Chronos: trigger ARMED-OFF schedule=%s rule=%s mode=%s last_fire=%s",
+                    sched_name, rule.get("if"), fire_mode, state.get("last_fire"),
+                )
+                continue
+
+            _LOGGER.info(
+                "Chronos: TRIGGER schedule=%s rule=%s → action=%s mode=%s",
+                sched_name, rule.get("if"), trigger, fire_mode,
             )
-            if matched:
-                self._hass.bus.async_fire(EVENT_RULE_TRIGGERED, {
-                    "schedule_id": sched["id"],
-                    "schedule_name": sched_name,
-                    "rule_if": rule["if"],
-                    "rule_then": rule["then"],
-                })
-                if self._store.settings.get("notify_rule_triggered"):
-                    await self._notify(
-                        f"Regola meteo attivata: {rule['if']} → {rule['then']}",
-                        title=f"Chronos · {sched_name}",
-                    )
-                then_lower = rule.get("then", "").lower()
-                if "salta" in then_lower or "skip" in then_lower:
-                    _LOGGER.info(
-                        "Chronos: SKIPPED schedule=%s by rule %s",
-                        sched_name, rule["if"],
-                    )
-                    if self._store.settings.get("notify_sched_skipped"):
-                        await self._notify(
-                            f"Fascia saltata per regola meteo: {rule['if']}",
-                            title=f"Chronos · {sched_name}",
-                        )
-                    return
+            await self._execute_trigger(sched, trigger)
+            state["last_fire"] = local_now
 
+    def _is_armed(self, fire_mode: str, last_fire, local_now) -> bool:
+        """Return True if the rule is allowed to fire now, given its mode and
+        the timestamp of its previous firing."""
+        if last_fire is None:
+            # Has never fired. Daytime/nighttime modes still need to gate by
+            # current sun state.
+            if fire_mode == "once_per_daytime":
+                return self._is_daytime()
+            if fire_mode == "once_per_nighttime":
+                return not self._is_daytime()
+            return True
+
+        if fire_mode == "every":
+            return True
+        if fire_mode == "once_per_day":
+            return last_fire.date() != local_now.date()
+
+        # daytime / nighttime: must be in correct window AND last fire was
+        # before the start of the current window.
+        if fire_mode == "once_per_daytime":
+            if not self._is_daytime():
+                return False
+            window_start = self._current_daytime_start(local_now)
+            return window_start is None or last_fire < window_start
+        if fire_mode == "once_per_nighttime":
+            if self._is_daytime():
+                return False
+            window_start = self._current_nighttime_start(local_now)
+            return window_start is None or last_fire < window_start
+        return True
+
+    def _is_daytime(self) -> bool:
+        sun = self._hass.states.get("sun.sun")
+        return bool(sun and sun.state == "above_horizon")
+
+    def _current_daytime_start(self, local_now):
+        """Datetime of the most recent sunrise (or None if unknown)."""
+        sun = self._hass.states.get("sun.sun")
+        if sun is None or sun.state != "above_horizon":
+            return None
+        iso = sun.attributes.get("next_rising")
+        if not iso:
+            return None
+        try:
+            t = dt_util.parse_datetime(str(iso))
+            if t is None:
+                return None
+            return dt_util.as_local(t - timedelta(days=1))
+        except Exception:
+            return None
+
+    def _current_nighttime_start(self, local_now):
+        """Datetime of the most recent sunset (or None if unknown)."""
+        sun = self._hass.states.get("sun.sun")
+        if sun is None or sun.state != "below_horizon":
+            return None
+        iso = sun.attributes.get("next_setting")
+        if not iso:
+            return None
+        try:
+            t = dt_util.parse_datetime(str(iso))
+            if t is None:
+                return None
+            return dt_util.as_local(t - timedelta(days=1))
+        except Exception:
+            return None
+
+    async def _execute_trigger(self, sched: dict, trigger: dict) -> None:
+        """Execute a structured trigger action on all devices of the schedule.
+
+        trigger schema: { "action_id": str, "value"?: number|str }
+        """
+        device_type = sched.get("device_type", "")
+        action_id = trigger.get("action_id", "")
+        value = trigger.get("value")
+        action_def = _get_action_def(device_type, action_id)
+        if not action_def:
+            _LOGGER.warning(
+                "Chronos: TRIGGER skipped — no action def for %s.%s",
+                device_type, action_id,
+            )
+            return
+        # Reuse _apply_block by synthesising a fake block. Simpler than
+        # duplicating the service-call dispatcher.
+        synthetic_block = {"start": 0, "end": 0, "action": {"id": action_id, "value": value}}
+        # _apply_block re-evaluates weather rules including 'salta' override.
+        # For trigger actions we want to skip that re-evaluation, so we go
+        # straight to the device dispatch path:
+        await self._dispatch_action(sched, synthetic_block, suppress_block_rules=True)
+
+    async def _dispatch_action(self, sched: dict, block: dict, suppress_block_rules: bool = False) -> None:
+        """Internal: execute the block's action on all schedule devices.
+
+        Refactored out of _apply_block so that triggers can reuse it without
+        re-running the block's own weather rules.
+        """
+        sched_name = sched.get("name", "")
         device_type = sched.get("device_type", "")
         action = block.get("action", {})
         action_id = action.get("id", "")
         action_def = _get_action_def(device_type, action_id)
-
         if not action_def:
             _LOGGER.warning(
                 "Chronos: NO action def for device_type=%s action_id=%s schedule=%s",
@@ -210,10 +348,10 @@ class ChronosScheduler:
         service_str = action_def["service"]
         domain, service = service_str.split(".", 1)
 
-        device_ids = sched.get("device_ids", [])
+        device_ids = sched.get("device_ids", []) or []
         if not device_ids:
             _LOGGER.warning(
-                "Chronos: schedule=%s has NO device_ids — fascia non eseguita",
+                "Chronos: schedule=%s has NO device_ids — action skipped",
                 sched_name,
             )
             return
@@ -225,16 +363,13 @@ class ChronosScheduler:
             device = self._store.get_device(device_id)
             if device is None:
                 _LOGGER.warning(
-                    "Chronos: device_id=%r non trovato nello store (referenced from schedule=%s). "
-                    "Devices in store: %s",
+                    "Chronos: device_id=%r not found in store (schedule=%s)",
                     device_id, sched_name,
-                    [d.get("id") for d in self._store.devices],
                 )
                 continue
 
             service_data: dict[str, Any] = {"entity_id": device["entity_id"]}
             value = action.get("value")
-
             if action_id == "set_temperature" and value is not None:
                 service_data["temperature"] = float(value)
             elif action_id == "set_preset" and value is not None:
@@ -247,14 +382,11 @@ class ChronosScheduler:
                 service_data["percentage"] = int(value)
             elif action_id == "set_position" and value is not None:
                 service_data["position"] = int(value)
-            elif action_id == "turn_on" and device_type == "irrigation" and value is not None:
-                pass  # duration handled by the valve entity itself
 
             _LOGGER.info(
-                "Chronos: CALL service %s.%s data=%s (schedule=%s)",
+                "Chronos: CALL service %s.%s data=%s schedule=%s",
                 domain, service, service_data, sched_name,
             )
-
             try:
                 await self._hass.services.async_call(
                     domain, service, service_data, blocking=False
@@ -284,7 +416,6 @@ class ChronosScheduler:
                         title="Chronos · Errore",
                     )
 
-        # Notifica di esecuzione (default ON, può essere disattivata in Impostazioni)
         if executed_count and self._store.settings.get("notify_block_executed", True):
             value = action.get("value")
             value_str = ""
@@ -294,6 +425,46 @@ class ChronosScheduler:
                 f"{action_def['label']}{value_str} · {', '.join(executed_entities)}",
                 title=f"Chronos · {sched_name}",
             )
+
+    async def _apply_block(self, sched: dict, block: dict) -> None:
+        """Apply a block transition. Evaluates legacy 'skip'-style weather rules
+        before dispatching the action. Trigger-style rules (with trigger_action)
+        are handled separately by _evaluate_triggers each tick."""
+        sched_name = sched.get("name", "")
+        weather_rules = sched.get("weather_rules", []) or []
+
+        # Only legacy rules without trigger_action gate block execution.
+        legacy_rules = [r for r in weather_rules if r.get("active") and not r.get("trigger_action")]
+
+        for rule in legacy_rules:
+            matched = await self._evaluate_rule(rule)
+            if not matched:
+                continue
+            self._hass.bus.async_fire(EVENT_RULE_TRIGGERED, {
+                "schedule_id": sched["id"],
+                "schedule_name": sched_name,
+                "rule_if": rule["if"],
+                "rule_then": rule["then"],
+            })
+            if self._store.settings.get("notify_rule_triggered"):
+                await self._notify(
+                    f"Regola meteo attivata: {rule['if']} → {rule['then']}",
+                    title=f"Chronos · {sched_name}",
+                )
+            then_lower = rule.get("then", "").lower()
+            if "salta" in then_lower or "skip" in then_lower:
+                _LOGGER.info(
+                    "Chronos: SKIPPED schedule=%s by rule %s",
+                    sched_name, rule["if"],
+                )
+                if self._store.settings.get("notify_sched_skipped"):
+                    await self._notify(
+                        f"Fascia saltata per regola meteo: {rule['if']}",
+                        title=f"Chronos · {sched_name}",
+                    )
+                return
+
+        await self._dispatch_action(sched, block)
 
     async def _evaluate_rule(self, rule: dict) -> bool:
         parsed = _parse_expression(rule.get("if", ""))

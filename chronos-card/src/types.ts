@@ -22,16 +22,35 @@ export interface BlockAction {
   value?: number | string;
 }
 
+export type TimeAnchor = "sunrise" | "sunset";
+
 export interface Block {
   start: number;
   end: number;
+  /** Optional anchor for start time. If set, `start` is the resolved fallback. */
+  start_anchor?: TimeAnchor;
+  start_offset?: number; // minutes, can be negative
+  end_anchor?: TimeAnchor;
+  end_offset?: number;
   action: BlockAction;
+}
+
+export type FireMode = "every" | "once_per_day" | "once_per_daytime" | "once_per_nighttime";
+
+export interface TriggerAction {
+  action_id: string;
+  value?: number | string;
 }
 
 export interface WeatherRule {
   if: string;
   then: string;
   active: boolean;
+  /** When set, the rule is a real trigger: scheduler edge-fires this action
+   * whenever the IF condition becomes true (rate-limited by fire_mode).
+   * When unset, the rule is legacy skip-style: it only modifies block execution. */
+  trigger_action?: TriggerAction;
+  fire_mode?: FireMode;
 }
 
 export interface Schedule {
@@ -127,6 +146,12 @@ export interface ChronosState {
 
 export interface HomeAssistant {
   callWS: <T>(msg: Record<string, any>) => Promise<T>;
+  callService: (
+    domain: string,
+    service: string,
+    serviceData?: Record<string, any>,
+    target?: Record<string, any>
+  ) => Promise<unknown>;
   connection: {
     subscribeEvents: (
       callback: (ev: any) => void,

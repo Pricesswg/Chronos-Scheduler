@@ -4,71 +4,134 @@
 ![hass](https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue.svg)
 ![license](https://img.shields.io/badge/license-MIT-green.svg)
 
-**Chronos** è uno scheduler avanzato per Home Assistant che gestisce termostati, luci, tapparelle, irrigazione, prese, ventilatori, boiler, tosaerba e aspirapolvere attraverso fasce orarie giornaliere con **regole condizionali basate sul meteo locale**.
+**Chronos** is an advanced scheduler for Home Assistant. It manages thermostats, lights, blinds, irrigation, switches, fans, water heaters, mowers and vacuums through daily time slots with **conditional weather rules**.
 
-Una sola card Lovelace ti dà:
+A single Lovelace card provides:
 
-- Panoramica schedulazioni con KPI live
-- Editor timeline lineare / radiale / lista, drag-and-drop con snap 15 min
-- Regole meteo IF/THEN (temperatura, pioggia, vento, UV, …) per saltare, traslare o forzare l'esecuzione
-- Vista settimanale con mini-timeline per giorno
-- Stato live con meteo e dispositivi in tempo reale
-- Wizard guidato per creare schedulazioni in 6 step
-- Gestione dispositivi e impostazioni globali
+- Schedule overview with live KPIs
+- Linear / radial / list timeline editor with drag-and-drop and 5/15/30/60-minute snap
+- IF/THEN weather rules (temperature, rain, wind, UV, sun position, …) to skip, shift, force, or change duration of the active block
+- 7-day week view with per-schedule filtering
+- Live status with weather and device readings
+- 6-step wizard for guided schedule creation
+- Per-device and global settings (theme follows Home Assistant, color customisation, sensor-level weather overrides)
 
-Tutto persistito da Home Assistant, accessibile via WebSocket API, e auto-registrato come custom card.
+All persisted by Home Assistant, accessible via WebSocket API, and auto-registered as a custom card.
 
-## Installazione
+## Installation
 
-### Tramite HACS (consigliato)
+### Through HACS (recommended)
 
-1. In HACS → **Integrations** → menu in alto a destra → **Custom repositories**
-2. Aggiungi `https://github.com/Pricesswg/Chronos-Scheduler` come **Integration**
-3. Cerca "Chronos Scheduler" in HACS, click **Download**
-4. Riavvia Home Assistant
-5. **Settings → Devices & Services → Add Integration → Chronos Scheduler**
-6. Aggiungi la card in qualsiasi dashboard:
+1. HACS → Integrations → top-right menu → Custom repositories
+2. Add `https://github.com/Pricesswg/Chronos-Scheduler` as Integration
+3. Search for "Chronos Scheduler" in HACS, click Download
+4. Restart Home Assistant
+5. Settings → Devices & Services → Add Integration → Chronos Scheduler
+6. Add the card to any dashboard:
    ```yaml
    type: custom:chronos-card
    ```
 
-> La card frontend viene **registrata automaticamente** dall'integration. Ad ogni avvio l'integration:
-> 1. Copia il bundle aggiornato in `<config>/www/chronos-card.js`
-> 2. Crea/aggiorna la Lovelace resource su `/local/chronos-card.js?v=<versione>` (UI dashboard mode)
-> 3. In fallback registra anche `/chronos_static/chronos-card.js` via `add_extra_js_url`
->
-> In caso di Lovelace YAML mode, aggiungi a mano la resource:
-> ```yaml
-> resources:
->   - url: /local/chronos-card.js?v=1.3.3
->     type: module
-> ```
+The frontend card is registered automatically by the integration on every startup:
 
-### Installazione manuale
+1. Bundle is copied to `<config>/www/chronos-card.js`
+2. Lovelace resource is created/updated to `/local/chronos-card.js?v=<version>` (UI dashboard mode)
+3. Fallback `add_extra_js_url` on `/chronos_static/chronos-card.js`
 
-1. Copia la cartella `custom_components/chronos/` (incluso `www/chronos-card.js`) dentro `<config>/custom_components/`
-2. Riavvia Home Assistant
-3. **Settings → Devices & Services → Add Integration → Chronos Scheduler**
-4. Aggiungi `type: custom:chronos-card` in dashboard
+For Lovelace YAML mode, add the resource manually once:
 
-## Setup iniziale
+```yaml
+resources:
+  - url: /local/chronos-card.js?v=1.6.0
+    type: module
+```
 
-Al primo avvio l'integration ti chiede di selezionare un'entità `weather.*` (es. `weather.home`) come sorgente meteo. Puoi cambiarla in seguito da **Impostazioni** dentro la card.
+### Manual installation
 
-## Domini supportati
+1. Copy `custom_components/chronos/` (including `www/chronos-card.js`) into `<config>/custom_components/`
+2. Restart Home Assistant
+3. Settings → Devices & Services → Add Integration → Chronos Scheduler
+4. Add `type: custom:chronos-card` in your dashboard
 
-| Dominio HA       | Tipo Chronos    | Capabilities tipiche                       |
+## First-time setup
+
+On first run the integration asks to select a `weather.*` entity to use as the weather source. You can change it later from the in-card Settings, or even leave it empty if you only rely on point sensors (Ecowitt, WeatherFlow, …) configured per attribute under Settings → Weather source → sensor overrides.
+
+## Supported domains
+
+| HA domain        | Chronos type    | Typical capabilities                       |
 |------------------|-----------------|--------------------------------------------|
-| `climate.*`      | Termostato      | set_temperature, set_hvac_mode, set_preset |
-| `light.*`        | Luce            | turn_on, turn_off, brightness, color       |
-| `cover.*`        | Tapparella      | open, close, set_position                  |
-| `switch.*`       | Presa           | turn_on, turn_off                          |
-| `fan.*`          | Ventilatore     | turn_on, set_percentage, oscillate         |
-| `vacuum.*`       | Aspirapolvere   | start, stop, return_to_base                |
-| `lawn_mower.*`   | Tosaerba        | start_mowing, dock, pause                  |
-| `water_heater.*` | Boiler          | set_temperature, set_operation_mode        |
-| `valve.*`        | Irrigazione     | open_valve, close_valve                    |
+| `climate.*`      | Thermostat      | set_temperature, set_hvac_mode, set_preset |
+| `light.*`        | Light           | turn_on, turn_off, brightness, color       |
+| `cover.*`        | Blind           | open, close, set_position                  |
+| `switch.*`       | Plug            | turn_on, turn_off                          |
+| `fan.*`          | Fan             | turn_on, set_percentage, oscillate         |
+| `vacuum.*`       | Vacuum          | start, pause, return_to_base               |
+| `lawn_mower.*`   | Mower           | start_mowing, dock, pause                  |
+| `water_heater.*` | Water heater    | set_temperature, set_operation_mode        |
+| `valve.*`        | Irrigation      | open_valve, close_valve                    |
 
-## Licenza
+## Weather rules
 
-MIT — vedi [LICENSE](LICENSE).
+A schedule can have any number of weather rules. Each rule has:
+
+- **IF** condition: weather attribute compared with operator and threshold (e.g. `temperature > 22`, `wind_speed > 30`, `sun.minutes_until_sunset < 30`)
+- **THEN** action: skip the block, shift the start time, force a specific action, or change duration
+- **Fire mode** (when the THEN is "force"):
+    - `every` — fires on every false→true transition (use only when desired oscillation is acceptable)
+    - `once_per_day` — at most once per calendar day, re-arms at midnight
+    - `once_per_daytime` — at most once between sunrise and sunset, re-arms at next sunrise
+    - `once_per_nighttime` — at most once between sunset and sunrise, re-arms at next sunset
+
+Rules can be attached to schedules with time blocks (the rule modifies block behaviour) or to schedules with no time blocks at all (pure weather-triggered automation).
+
+## Time block anchors
+
+Block start and end can be either a fixed hour or anchored to sunrise/sunset with an offset in minutes. The integration resolves the anchor against `sun.sun` on every tick, so a block anchored to `sunset - 15 min` automatically tracks seasonal change.
+
+## Translations
+
+UI is available in Italian, English, French and German. Selectable from Settings → Language. Defaults to Home Assistant's language.
+
+## Services
+
+| Service               | Description                                                              |
+|-----------------------|--------------------------------------------------------------------------|
+| `chronos.reload`      | Reload Chronos configuration from storage                                |
+| `chronos.fire_block`  | Fire the currently active block of a schedule (bypass timing and rules)  |
+
+## Development
+
+Source layout:
+
+```
+custom_components/chronos/    # Python integration
+├── __init__.py               # Entry, WS commands, frontend card auto-registration
+├── scheduler.py              # 1-min tick, weather rule evaluator, action dispatcher
+├── store.py                  # Persistence via HA Store API
+├── config_flow.py            # Setup UI
+├── const.py                  # Device types, actions, weather attributes
+├── brand/icon.png            # HA Brands Proxy icon (2026.3+)
+└── www/chronos-card.js       # Frontend bundle (committed)
+
+chronos-card/                 # TypeScript / Lit sources
+└── src/
+    ├── chronos-card.ts       # Main custom element
+    ├── timeline.ts           # Linear / radial / list timeline
+    ├── i18n.ts               # IT / EN / FR / DE strings
+    └── screens/              # 9 screens
+```
+
+To rebuild the frontend bundle:
+
+```sh
+cd chronos-card
+npm install
+npm run build
+```
+
+Releases are produced via `scripts/release.sh <version> "<release notes>"` which bumps versions in `const.py`, `manifest.json`, and `chronos-card/src/version.ts`, rebuilds, commits, tags, pushes and creates the GitHub release.
+
+## License
+
+MIT — see [LICENSE](LICENSE).

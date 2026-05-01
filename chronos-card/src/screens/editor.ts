@@ -3,7 +3,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { chronosStyles } from "../styles";
 import { icon, deviceIcon } from "../icons";
 import { getActionsForType, getActionDef, actionLabel, actionColor, KIND_COLORS, defaultAction } from "../actions";
-import { fmtHour, getDays, DEVICE_TYPES, computeRepeat } from "../utils";
+import { fmtHour, getDays, DEVICE_TYPES, computeRepeat, resolveBlockTime } from "../utils";
 import { t } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
 import type { Block, Schedule } from "../types";
@@ -191,10 +191,8 @@ export class ChronosEditor extends LitElement {
               </div>
               ${block ? html`
                 <div class="col" style="gap:12px">
-                  <div class="grid-2">
-                    <div class="field"><label class="field__label">${t("editor.block.from")}</label><input class="input mono" .value=${fmtHour(block.start)} readonly/></div>
-                    <div class="field"><label class="field__label">${t("editor.block.to")}</label><input class="input mono" .value=${fmtHour(block.end)} readonly/></div>
-                  </div>
+                  ${this._renderTimeEdge(schedule.id, block, "start")}
+                  ${this._renderTimeEdge(schedule.id, block, "end")}
                   <div class="field">
                     <label class="field__label">${t("editor.block.action")}</label>
                     <div class="row" style="gap:6px;flex-wrap:wrap">
@@ -265,6 +263,89 @@ export class ChronosEditor extends LitElement {
         ${this._confirmDelete ? this._renderDeleteModal(schedule) : nothing}
       </div>
     `;
+  }
+
+  private _renderTimeEdge(schedId: string, block: Block, edge: "start" | "end") {
+    const anchor = (block as any)[`${edge}_anchor`] as "sunrise" | "sunset" | undefined;
+    const offset = ((block as any)[`${edge}_offset`] as number | undefined) ?? 0;
+    const mode: "fixed" | "sunrise" | "sunset" = anchor ?? "fixed";
+    const resolved = resolveBlockTime(block, edge);
+    const label = edge === "start" ? t("editor.block.from") : t("editor.block.to");
+    return html`
+      <div class="field">
+        <label class="field__label">${label}</label>
+        <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center">
+          <select class="select mono" style="width:130px"
+            @change=${(e: Event) => this._setEdgeMode(schedId, edge, (e.target as HTMLSelectElement).value as any)}>
+            <option value="fixed" ?selected=${mode === "fixed"}>${t("editor.block.fixed")}</option>
+            <option value="sunrise" ?selected=${mode === "sunrise"}>${t("editor.block.sunrise")}</option>
+            <option value="sunset" ?selected=${mode === "sunset"}>${t("editor.block.sunset")}</option>
+          </select>
+          ${mode === "fixed" ? html`
+            <input type="time" class="input mono" style="width:120px"
+              .value=${this._toHHMM(resolved)}
+              @change=${(e: Event) => this._setEdgeFixed(schedId, edge, (e.target as HTMLInputElement).value)}/>
+          ` : html`
+            <input type="number" class="input mono" style="width:90px" step="5" min="-180" max="180"
+              .value=${String(offset)}
+              @change=${(e: Event) => this._setEdgeOffset(schedId, edge, parseInt((e.target as HTMLInputElement).value, 10))}/>
+            <span class="text-xs text-mute">min</span>
+            <span class="text-xs text-mute" style="font-style:italic">→ ${t("editor.block.today")} ${fmtHour(resolved)}</span>
+          `}
+        </div>
+      </div>
+    `;
+  }
+
+  private _toHHMM(hour: number): string {
+    const hh = Math.max(0, Math.min(23, Math.floor(hour)));
+    const mm = Math.round((hour - hh) * 60);
+    return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+  }
+
+  private _setEdgeMode(schedId: string, edge: "start" | "end", mode: "fixed" | "sunrise" | "sunset") {
+    const sched = this.card._schedules.find((s) => s.id === schedId);
+    if (!sched) return;
+    const newBlocks = [...sched.blocks];
+    const b: any = { ...newBlocks[this._selectedBlockIdx] };
+    if (mode === "fixed") {
+      // Materialize current resolved value as the fixed time, drop anchor
+      const resolved = resolveBlockTime(b, edge);
+      b[edge] = resolved;
+      delete b[`${edge}_anchor`];
+      delete b[`${edge}_offset`];
+    } else {
+      b[`${edge}_anchor`] = mode;
+      if (b[`${edge}_offset`] === undefined) b[`${edge}_offset`] = 0;
+    }
+    newBlocks[this._selectedBlockIdx] = b;
+    this.card.updateBlocksLocal(schedId, newBlocks);
+  }
+
+  private _setEdgeFixed(schedId: string, edge: "start" | "end", hhmm: string) {
+    if (!hhmm) return;
+    const [h, m] = hhmm.split(":").map((x) => parseInt(x, 10));
+    if (isNaN(h) || isNaN(m)) return;
+    const sched = this.card._schedules.find((s) => s.id === schedId);
+    if (!sched) return;
+    const newBlocks = [...sched.blocks];
+    const b: any = { ...newBlocks[this._selectedBlockIdx] };
+    b[edge] = h + m / 60;
+    delete b[`${edge}_anchor`];
+    delete b[`${edge}_offset`];
+    newBlocks[this._selectedBlockIdx] = b;
+    this.card.updateBlocksLocal(schedId, newBlocks);
+  }
+
+  private _setEdgeOffset(schedId: string, edge: "start" | "end", offset: number) {
+    if (isNaN(offset)) return;
+    const sched = this.card._schedules.find((s) => s.id === schedId);
+    if (!sched) return;
+    const newBlocks = [...sched.blocks];
+    const b: any = { ...newBlocks[this._selectedBlockIdx] };
+    b[`${edge}_offset`] = offset;
+    newBlocks[this._selectedBlockIdx] = b;
+    this.card.updateBlocksLocal(schedId, newBlocks);
   }
 
   private _setBlockAction(schedId: string, actionId: string, defaultValue?: any) {

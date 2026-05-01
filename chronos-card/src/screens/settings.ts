@@ -113,27 +113,16 @@ export class ChronosSettingsScreen extends LitElement {
 
         <div class="card">
           <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("settings.appearance.title")}</h3><p class="card__sub">${t("settings.appearance.subtitle")}</p></div></div>
-          <div class="grid-2">
-            <div class="field">
-              <label class="field__label">${t("settings.theme")}</label>
-              <div class="segmented">
-                ${(["light", "dark", "auto"] as const).map((v) => html`
-                  <button data-active="${s.theme === v}" @click=${() => this._updateSetting("theme", v)}>
-                    ${t("settings.theme." + v)}
-                  </button>
-                `)}
-              </div>
+          <div class="field">
+            <label class="field__label">${t("settings.density")}</label>
+            <div class="segmented">
+              ${(["comfortable", "compact"] as const).map((v) => html`
+                <button data-active="${s.density === v}" @click=${() => this._updateSetting("density", v)}>
+                  ${t("settings.density." + v)}
+                </button>
+              `)}
             </div>
-            <div class="field">
-              <label class="field__label">${t("settings.density")}</label>
-              <div class="segmented">
-                ${(["comfortable", "compact"] as const).map((v) => html`
-                  <button data-active="${s.density === v}" @click=${() => this._updateSetting("density", v)}>
-                    ${t("settings.density." + v)}
-                  </button>
-                `)}
-              </div>
-            </div>
+            <span class="field__hint">${t("settings.appearance.theme_hint")}</span>
           </div>
         </div>
 

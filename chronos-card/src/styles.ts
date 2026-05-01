@@ -3,6 +3,11 @@ import { css } from "lit";
 // Token vars + host-level layout. Applicato SOLO al chronos-card root.
 // I custom property cascadano attraverso shadow DOM, quindi i figli
 // li ereditano senza bisogno di ridefinire :host nei loro stili.
+// Hybrid theme: chrome variables (background, text, border, surface) come from
+// Home Assistant theme tokens with our oklch values as fallback. This way the
+// card automatically follows whatever theme the user has installed (default,
+// dark, custom HACS themes), and we keep our distinctive accent palette for
+// brand recognition.
 export const chronosTokens = css`
   :host {
     display: block;
@@ -10,28 +15,33 @@ export const chronosTokens = css`
     --font-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
 
-    --bg: oklch(0.985 0.004 85);
-    --bg-soft: oklch(0.965 0.005 85);
-    --bg-sunken: oklch(0.945 0.006 85);
-    --surface: #ffffff;
-    --border: oklch(0.90 0.006 85);
-    --border-soft: oklch(0.93 0.005 85);
-    --text: oklch(0.22 0.012 85);
-    --text-soft: oklch(0.42 0.012 85);
-    --text-muted: oklch(0.60 0.010 85);
+    /* Chrome — follow HA theme. Fallback to our oklch when not set. */
+    --bg: var(--primary-background-color, oklch(0.985 0.004 85));
+    --bg-soft: var(--secondary-background-color, oklch(0.965 0.005 85));
+    --bg-sunken: var(--ha-card-background, var(--secondary-background-color, oklch(0.945 0.006 85)));
+    --surface: var(--card-background-color, #ffffff);
+    --border: var(--divider-color, oklch(0.90 0.006 85));
+    --border-soft: var(--divider-color, oklch(0.93 0.005 85));
+    --text: var(--primary-text-color, oklch(0.22 0.012 85));
+    --text-soft: var(--secondary-text-color, oklch(0.42 0.012 85));
+    --text-muted: var(--disabled-text-color, oklch(0.60 0.010 85));
 
-    --accent: oklch(0.55 0.15 265);
+    /* Accent — Chronos identity. Stay our oklch (with HA accent as soft override
+     * for users who want their theme accent to influence Chronos too). */
+    --accent: var(--accent-color, oklch(0.55 0.15 265));
     --accent-soft: oklch(0.93 0.04 265);
     --accent-ink: oklch(0.35 0.15 265);
     --weather: oklch(0.72 0.15 65);
     --weather-soft: oklch(0.95 0.04 65);
     --weather-ink: oklch(0.48 0.15 65);
 
-    --ok: oklch(0.65 0.14 155);
-    --warn: oklch(0.72 0.15 65);
-    --danger: oklch(0.60 0.18 25);
-    --info: oklch(0.60 0.13 230);
+    /* Semantic — keep ours for consistency */
+    --ok: var(--success-color, oklch(0.65 0.14 155));
+    --warn: var(--warning-color, oklch(0.72 0.15 65));
+    --danger: var(--error-color, oklch(0.60 0.18 25));
+    --info: var(--info-color, oklch(0.60 0.13 230));
 
+    /* Block kind colors — Chronos identity, never change */
     --mode-eco: oklch(0.70 0.12 155);
     --mode-comfort: oklch(0.55 0.15 265);
     --mode-boost: oklch(0.62 0.20 30);
@@ -44,12 +54,12 @@ export const chronosTokens = css`
     --r-xl: 22px;
     --r-pill: 999px;
 
-    --shadow-xs: 0 1px 2px rgba(20, 14, 8, 0.04);
-    --shadow-sm: 0 1px 3px rgba(20, 14, 8, 0.05), 0 1px 2px rgba(20, 14, 8, 0.03);
-    --shadow-md: 0 4px 14px rgba(20, 14, 8, 0.06), 0 2px 4px rgba(20, 14, 8, 0.04);
-    --shadow-lg: 0 16px 40px rgba(20, 14, 8, 0.10), 0 4px 12px rgba(20, 14, 8, 0.06);
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.06);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.10), 0 2px 4px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.16), 0 4px 12px rgba(0, 0, 0, 0.08);
 
-    --block-edge: #000;
+    --block-edge: var(--primary-text-color, #000);
 
     --density-pad: 16px;
     --density-gap: 16px;
@@ -60,29 +70,6 @@ export const chronosTokens = css`
     line-height: 1.45;
     color: var(--text);
     -webkit-font-smoothing: antialiased;
-  }
-
-  :host([dark]) {
-    --bg: oklch(0.16 0.01 265);
-    --bg-soft: oklch(0.20 0.012 265);
-    --bg-sunken: oklch(0.13 0.01 265);
-    --surface: oklch(0.22 0.013 265);
-    --border: oklch(0.30 0.015 265);
-    --border-soft: oklch(0.26 0.013 265);
-    --text: oklch(0.95 0.006 265);
-    --text-soft: oklch(0.78 0.010 265);
-    --text-muted: oklch(0.62 0.010 265);
-    --accent: oklch(0.72 0.15 265);
-    --accent-soft: oklch(0.30 0.08 265);
-    --accent-ink: oklch(0.85 0.12 265);
-    --weather: oklch(0.80 0.15 65);
-    --weather-soft: oklch(0.30 0.08 65);
-    --weather-ink: oklch(0.88 0.13 65);
-    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.25);
-    --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.40), 0 2px 4px rgba(0, 0, 0, 0.30);
-    --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(0, 0, 0, 0.40);
-    --block-edge: #fff;
   }
 
   :host([density="compact"]) {

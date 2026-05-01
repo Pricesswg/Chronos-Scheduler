@@ -2,7 +2,7 @@ import { LitElement, html, svg, nothing, PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { chronosStyles } from "./styles";
 import { actionColor, actionLabel, getActionDef } from "./actions";
-import { fmtHour, clamp, snapToGrid } from "./utils";
+import { fmtHour, clamp, snapToGrid, resolveBlockTime } from "./utils";
 import { defaultAction } from "./actions";
 import type { Block, DeviceType } from "./types";
 
@@ -54,20 +54,24 @@ export class ChronosTimeline extends LitElement {
             ${[0, 6, 12, 18, 24].map((h) => html`<span style="left:${pct(h)}%">${String(h).padStart(2, "0")}:00</span>`)}
           </div>
         ` : nothing}
-        ${this.blocks.map((b, i) => html`
+        ${this.blocks.map((b, i) => {
+          const rs = resolveBlockTime(b, "start");
+          const re = resolveBlockTime(b, "end");
+          return html`
           <div
             class="tl-block"
             data-selected="${this.selectedIdx === i}"
-            style="left:${pct(b.start)}%;width:${pct(b.end - b.start)}%;background:${actionColor(this.deviceType, b.action)}"
+            style="left:${pct(rs)}%;width:${pct(re - rs)}%;background:${actionColor(this.deviceType, b.action)}"
             @mousedown=${(e: MouseEvent) => this._onBlockDown(e, i, "move")}
             @click=${(e: MouseEvent) => { e.stopPropagation(); this._fireSelect(i); }}
           >
             ${this.interactive ? html`<div class="tl-block__handle tl-block__handle--l" @mousedown=${(e: MouseEvent) => this._onBlockDown(e, i, "l")}></div>` : nothing}
             <span class="truncate">${actionLabel(this.deviceType, b.action)}</span>
-            ${this.height !== "mini" ? html`<span class="mono" style="font-size:10px;opacity:0.85">${fmtHour(b.start)}</span>` : nothing}
+            ${this.height !== "mini" ? html`<span class="mono" style="font-size:10px;opacity:0.85">${fmtHour(rs)}</span>` : nothing}
             ${this.interactive ? html`<div class="tl-block__handle tl-block__handle--r" @mousedown=${(e: MouseEvent) => this._onBlockDown(e, i, "r")}></div>` : nothing}
           </div>
-        `)}
+          `;
+        })}
         ${this.now !== null ? html`<div class="tl-now" style="left:${pct(this.now)}%"></div>` : nothing}
       </div>
     `;
@@ -123,9 +127,12 @@ export class ChronosTimeline extends LitElement {
     return svg`
       <svg class="radial" viewBox="0 0 ${size} ${size}" style="touch-action:none">
         <circle cx="${cx}" cy="${cy}" r="${(rOuter + rInner) / 2}" fill="none" stroke="var(--border-soft)" stroke-width="${rOuter - rInner}"/>
-        ${this.blocks.map((b, i) => svg`
+        ${this.blocks.map((b, i) => {
+          const rs = resolveBlockTime(b, "start");
+          const re = resolveBlockTime(b, "end");
+          return svg`
           <path
-            d="${arc(b.start, b.end, rOuter, rInner)}"
+            d="${arc(rs, re, rOuter, rInner)}"
             fill="${actionColor(this.deviceType, b.action)}"
             stroke="${this.selectedIdx === i ? "var(--accent)" : "var(--block-edge)"}"
             stroke-width="${this.selectedIdx === i ? 3 : 1.5}"
@@ -134,11 +141,14 @@ export class ChronosTimeline extends LitElement {
             @mousedown=${(e: MouseEvent) => this._onRadialHandleDown(e, i, "move")}
             @click=${(e: MouseEvent) => { e.stopPropagation(); this._fireSelect(i); }}
           />
-        `)}
+        `;
+        })}
         ${this.blocks.map((b) => {
+          const rs = resolveBlockTime(b, "start");
+          const re = resolveBlockTime(b, "end");
           // Etichetta sul midpoint dell'arco; solo se l'arco è abbastanza largo (>1.5h)
-          if (b.end - b.start < 1.5) return svg``;
-          const midH = (b.start + b.end) / 2;
+          if (re - rs < 1.5) return svg``;
+          const midH = (rs + re) / 2;
           const a = (midH / 24) * Math.PI * 2 - Math.PI / 2;
           const rMid = (rOuter + rInner) / 2;
           const x = cx + rMid * Math.cos(a);
@@ -153,8 +163,8 @@ export class ChronosTimeline extends LitElement {
           if (!label) return svg``;
           return svg`
             <text x="${x}" y="${y}" text-anchor="middle" dy="4"
-              font-size="13" font-weight="700" fill="white"
-              stroke="rgba(0,0,0,0.55)" stroke-width="0.5" paint-order="stroke fill"
+              font-size="13" font-weight="700" fill="#0f172a"
+              stroke="rgba(255,255,255,0.85)" stroke-width="2.5" paint-order="stroke fill"
               pointer-events="none">${label}</text>
           `;
         })}
@@ -167,7 +177,7 @@ export class ChronosTimeline extends LitElement {
           const a = (h / 24) * Math.PI * 2 - Math.PI / 2;
           return svg`<text x="${cx + rLabels * Math.cos(a)}" y="${cy + rLabels * Math.sin(a)}" text-anchor="middle" dy="4" font-size="11">${String(h).padStart(2, "0")}</text>`;
         })}
-        ${this.interactive && selectedBlock ? svg`${handleAt(selectedBlock.start, this.selectedIdx, "l")}${handleAt(selectedBlock.end, this.selectedIdx, "r")}` : nothing}
+        ${this.interactive && selectedBlock ? svg`${handleAt(resolveBlockTime(selectedBlock, "start"), this.selectedIdx, "l")}${handleAt(resolveBlockTime(selectedBlock, "end"), this.selectedIdx, "r")}` : nothing}
         ${nowAngle !== null ? svg`
           <g pointer-events="none">
             <line x1="${cx + 90 * Math.cos(nowAngle)}" y1="${cy + 90 * Math.sin(nowAngle)}" x2="${cx + (rOuter + 20) * Math.cos(nowAngle)}" y2="${cy + (rOuter + 20) * Math.sin(nowAngle)}" stroke="var(--danger)" stroke-width="2"/>
@@ -190,12 +200,12 @@ export class ChronosTimeline extends LitElement {
             style="border-color:${this.selectedIdx === i ? "var(--accent)" : "var(--border-soft)"};background:${this.selectedIdx === i ? "var(--accent-soft)" : "var(--bg-sunken)"}"
             @click=${() => this._fireSelect(i)}
           >
-            <div class="tl-list__time">${fmtHour(b.start)} → ${fmtHour(b.end)}</div>
+            <div class="tl-list__time">${fmtHour(resolveBlockTime(b, "start"))} → ${fmtHour(resolveBlockTime(b, "end"))}</div>
             <div class="tl-list__mode">
               <span class="tl-list__mode-dot" style="background:${actionColor(this.deviceType, b.action)}"></span>
               <strong>${actionLabel(this.deviceType, b.action)}</strong>
             </div>
-            <span class="mono text-xs text-mute">${Math.round((b.end - b.start) * 60)} min</span>
+            <span class="mono text-xs text-mute">${Math.round((resolveBlockTime(b, "end") - resolveBlockTime(b, "start")) * 60)} min</span>
           </div>
         `)}
       </div>
@@ -209,7 +219,11 @@ export class ChronosTimeline extends LitElement {
     e.preventDefault();
     this._fireSelect(idx);
     const b = this.blocks[idx];
-    this._drag = { idx, handle, startX: e.clientX, origStart: b.start, origEnd: b.end };
+    this._drag = {
+      idx, handle, startX: e.clientX,
+      origStart: resolveBlockTime(b, "start"),
+      origEnd: resolveBlockTime(b, "end"),
+    };
     this._boundMove = (ev: MouseEvent) => this._onDragMove(ev);
     this._boundUp = () => this._onDragUp();
     window.addEventListener("mousemove", this._boundMove);
@@ -224,11 +238,18 @@ export class ChronosTimeline extends LitElement {
     const h = clamp(((e.clientX - rect.left) / rect.width) * 24, 0, 24);
     const snap = snapToGrid(h);
     const next = [...this.blocks];
-    const b = { ...next[this._drag.idx] };
+    const b: any = { ...next[this._drag.idx] };
     if (this._drag.handle === "l") {
-      b.start = clamp(snap, 0, b.end - 0.25);
+      const newStart = clamp(snap, 0, resolveBlockTime(b, "end") - 0.25);
+      b.start = newStart;
+      // Drag breaks the anchor on this edge
+      delete b.start_anchor;
+      delete b.start_offset;
     } else if (this._drag.handle === "r") {
-      b.end = clamp(snap, b.start + 0.25, 24);
+      const newEnd = clamp(snap, resolveBlockTime(b, "start") + 0.25, 24);
+      b.end = newEnd;
+      delete b.end_anchor;
+      delete b.end_offset;
     } else {
       const dx = e.clientX - this._drag.startX;
       const dh = (dx / rect.width) * 24;
@@ -237,6 +258,10 @@ export class ChronosTimeline extends LitElement {
       s = snapToGrid(s);
       b.start = s;
       b.end = s + duration;
+      delete b.start_anchor;
+      delete b.start_offset;
+      delete b.end_anchor;
+      delete b.end_offset;
     }
     next[this._drag.idx] = b;
     this._fireBlocksChanged(next);
@@ -271,23 +296,34 @@ export class ChronosTimeline extends LitElement {
 
     const startH = hoursFromEvent(e);
 
+    const origStart = resolveBlockTime(b, "start");
+    const origEnd = resolveBlockTime(b, "end");
+
     const onMove = (ev: MouseEvent) => {
       const h = hoursFromEvent(ev);
       const snap = snapToGrid(h);
       const next = [...this.blocks];
-      const block = { ...next[idx] };
+      const block: any = { ...next[idx] };
       if (handle === "l") {
-        block.start = clamp(snap, 0, block.end - 0.25);
+        block.start = clamp(snap, 0, resolveBlockTime(block, "end") - 0.25);
+        delete block.start_anchor;
+        delete block.start_offset;
       } else if (handle === "r") {
-        block.end = clamp(snap, block.start + 0.25, 24);
+        block.end = clamp(snap, resolveBlockTime(block, "start") + 0.25, 24);
+        delete block.end_anchor;
+        delete block.end_offset;
       } else {
         const dh = h - startH;
-        const dur = b.end - b.start;
-        let s = b.start + dh;
+        const dur = origEnd - origStart;
+        let s = origStart + dh;
         s = snapToGrid(s);
         s = clamp(s, 0, 24 - dur);
         block.start = s;
         block.end = s + dur;
+        delete block.start_anchor;
+        delete block.start_offset;
+        delete block.end_anchor;
+        delete block.end_offset;
       }
       next[idx] = block;
       this._fireBlocksChanged(next);
@@ -312,7 +348,11 @@ export class ChronosTimeline extends LitElement {
     const h = clamp(((e.clientX - rect.left) / rect.width) * 24, 0, 24);
     const start = Math.max(0, snapToGrid(h) - 0.5);
     const end = Math.min(24, start + 1);
-    const conflict = this.blocks.some((b) => !(end <= b.start || start >= b.end));
+    const conflict = this.blocks.some((b) => {
+      const bs = resolveBlockTime(b, "start");
+      const be = resolveBlockTime(b, "end");
+      return !(end <= bs || start >= be);
+    });
     if (conflict) return;
     const newBlocks = [...this.blocks, { start, end, action: defaultAction(this.deviceType) }];
     this._fireBlocksChanged(newBlocks);

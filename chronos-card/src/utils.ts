@@ -19,6 +19,33 @@ export function snapToGrid(h: number, snapMinutes?: number): number {
 }
 
 import { t } from "./i18n";
+import type { Block, TimeAnchor } from "./types";
+
+let _hassRef: any = null;
+export function setHassRef(h: any) { _hassRef = h; }
+
+/** Resolve a block edge ("start" or "end") into an hour-of-day float, applying
+ * sunrise/sunset anchor + offset if set. Falls back to the numeric value. */
+export function resolveBlockTime(block: Block, edge: "start" | "end"): number {
+  const anchor = (block as any)[`${edge}_anchor`] as TimeAnchor | undefined;
+  const offset = ((block as any)[`${edge}_offset`] as number | undefined) ?? 0;
+  if (anchor === "sunrise" || anchor === "sunset") {
+    const sun = _hassRef?.states?.["sun.sun"];
+    if (sun) {
+      const attr = anchor === "sunrise" ? "next_rising" : "next_setting";
+      const iso = sun.attributes?.[attr];
+      if (iso) {
+        const t = new Date(iso);
+        if (!isNaN(t.getTime())) {
+          const base = t.getHours() + t.getMinutes() / 60 + t.getSeconds() / 3600;
+          return clamp(base + offset / 60, 0, 24);
+        }
+      }
+    }
+  }
+  const v = (block as any)[edge];
+  return typeof v === "number" ? v : parseFloat(String(v ?? 0)) || 0;
+}
 
 export function getDays(): string[] {
   return [

@@ -29,6 +29,7 @@ export class ChronosWeatherRule extends LitElement {
   @state() private _value = "22";
   @state() private _action = "skip";
   @state() private _actionValue = "";
+  @state() private _fireMode: "every" | "once_per_day" | "once_per_daytime" | "once_per_nighttime" = "once_per_daytime";
 
   render() {
     const schedule = this.card._schedules.find((s) => s.id === this.card._selectedId) || this.card._schedules[0];
@@ -142,6 +143,18 @@ export class ChronosWeatherRule extends LitElement {
                         placeholder="${this._action === "shift" ? "-1, +2 ore" : "+30, -15 min"}"/>`}
                 </div>
               ` : nothing}
+              ${this._action === "force" ? html`
+                <div class="field">
+                  <label class="field__label">${t("wr.fire_mode.label")}</label>
+                  <select class="select" @change=${(e: Event) => { this._fireMode = (e.target as HTMLSelectElement).value as any; }}>
+                    <option value="every" ?selected=${this._fireMode === "every"}>${t("wr.fire_mode.every")}</option>
+                    <option value="once_per_day" ?selected=${this._fireMode === "once_per_day"}>${t("wr.fire_mode.once_per_day")}</option>
+                    <option value="once_per_daytime" ?selected=${this._fireMode === "once_per_daytime"}>${t("wr.fire_mode.once_per_daytime")}</option>
+                    <option value="once_per_nighttime" ?selected=${this._fireMode === "once_per_nighttime"}>${t("wr.fire_mode.once_per_nighttime")}</option>
+                  </select>
+                  <span class="field__hint">${t("wr.fire_mode.hint")}</span>
+                </div>
+              ` : nothing}
             </div>
           </div>
         </div>
@@ -156,7 +169,14 @@ export class ChronosWeatherRule extends LitElement {
           <button class="btn btn--primary" @click=${() => {
             const schedule2 = this.card._schedules.find((s) => s.id === this.card._selectedId);
             if (!schedule2) return;
-            const newRules = [...(schedule2.weather_rules || []), { if: ifText, then: thenText, active: true }];
+            const newRule: any = { if: ifText, then: thenText, active: true };
+            // For "force" actions we also persist a structured trigger_action
+            // so the scheduler can fire it edge-triggered.
+            if (this._action === "force" && this._actionValue) {
+              newRule.trigger_action = { action_id: this._actionValue };
+              newRule.fire_mode = this._fireMode;
+            }
+            const newRules = [...(schedule2.weather_rules || []), newRule];
             this.card.updateScheduleLocal(schedule2.id, { weather_rules: newRules });
             this.card.navigate("editor");
           }}>${icon("check", 14)} ${t("common.save")}</button>

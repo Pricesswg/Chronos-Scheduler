@@ -33,7 +33,7 @@ import {
   removeSchedule as wsRemoveSchedule,
   updateSettings as wsUpdateSettings,
 } from "./ws";
-import { fmtHour, computeRepeat, setSnapMinutes } from "./utils";
+import { fmtHour, computeRepeat, setSnapMinutes, setHassRef } from "./utils";
 
 import "./screens/overview";
 import "./screens/editor";
@@ -85,7 +85,6 @@ export class ChronosCard extends LitElement {
   @state() _sensorEntities: any[] = [];
   @state() _mobile = false;
   @state() _drawerOpen = false;
-  @state() _dark = false;
 
   private _resizeObserver?: ResizeObserver;
 
@@ -118,14 +117,7 @@ export class ChronosCard extends LitElement {
 
   updated(changed: PropertyValues) {
     if (changed.has("hass") && this.hass) {
-      const dark = this.hass.themes?.darkMode ?? false;
-      if (dark !== this._dark) {
-        this._dark = dark;
-      }
-    }
-    if (changed.has("_dark")) {
-      if (this._dark) this.setAttribute("dark", "");
-      else this.removeAttribute("dark");
+      setHassRef(this.hass);
     }
     if (changed.has("_settings") && this._settings) {
       if (this._settings.density) this.setAttribute("density", this._settings.density);
@@ -332,6 +324,29 @@ export class ChronosCard extends LitElement {
     await this._loadAll();
   }
 
+  /** Read current dark mode from HA's theme state. */
+  private _isDark(): boolean {
+    return !!this.hass?.themes?.darkMode;
+  }
+
+  /**
+   * Toggle Home Assistant's theme between light and dark by calling the
+   * frontend.set_theme service. This affects the entire HA frontend (every
+   * dashboard, settings page) — Chronos automatically picks up the change
+   * via CSS variables. No local state needed.
+   */
+  private async _toggleHaTheme() {
+    const wantDark = !this._isDark();
+    try {
+      await (this.hass as any).callService("frontend", "set_theme", {
+        name: "default",
+        mode: wantDark ? "dark" : "light",
+      });
+    } catch (e) {
+      console.error("Chronos: cannot toggle HA theme", e);
+    }
+  }
+
   private async _reloadAfterError() {
     try {
       this._devices = await fetchDevices(this.hass);
@@ -464,8 +479,9 @@ export class ChronosCard extends LitElement {
           <span class="time-dot"></span>
           <span>${fmtHour(nowHour)}</span>
         </div>
-        <button class="btn btn--icon btn--ghost" @click=${() => { this._dark = !this._dark; }}>
-          ${icon(this._dark ? "sun" : "moon", 16)}
+        <button class="btn btn--icon btn--ghost" @click=${() => this._toggleHaTheme()}
+          title="${this._isDark() ? "Light theme" : "Dark theme"}">
+          ${icon(this._isDark() ? "sun" : "moon", 16)}
         </button>
       </div>
     `;
