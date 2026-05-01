@@ -1,4 +1,4 @@
-import { LitElement, html, nothing } from "lit";
+import { LitElement, html, svg, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { chronosStyles } from "../styles";
 import { icon, deviceIcon } from "../icons";
@@ -182,11 +182,12 @@ export class ChronosHelpScreen extends LitElement {
     const W = 280;
     const H = 18;
     return html`
-      <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:18px;border-radius:4px;background:var(--bg-sunken)">
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"
+        style="width:100%;height:18px;border-radius:4px;background:var(--bg-sunken);display:block">
         ${r.blocks.map((b) => {
           const x = (b.start / 24) * W;
           const w = ((b.end - b.start) / 24) * W;
-          return html`<rect x="${x}" y="0" width="${Math.max(2, w)}" height="${H}" fill="${actionColor(r.device_type, b.action)}" rx="2"/>`;
+          return svg`<rect x="${x}" y="0" width="${Math.max(2, w)}" height="${H}" fill="${actionColor(r.device_type, b.action)}" rx="2"/>`;
         })}
       </svg>
     `;
