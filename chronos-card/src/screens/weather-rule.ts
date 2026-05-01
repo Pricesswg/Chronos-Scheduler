@@ -29,6 +29,7 @@ export class ChronosWeatherRule extends LitElement {
   @state() private _value = "22";
   @state() private _action = "skip";
   @state() private _actionValue = "";
+  @state() private _triggerValue: number | string | null = null;
   @state() private _fireMode: "every" | "once_per_day" | "once_per_daytime" | "once_per_nighttime" = "once_per_daytime";
 
   render() {
@@ -136,12 +137,14 @@ export class ChronosWeatherRule extends LitElement {
                     : `${t("wr.action.duration")} (${t("common.min")})`
                   }</label>
                   ${this._action === "force"
-                    ? html`<select class="select" @change=${(e: Event) => { this._actionValue = (e.target as HTMLSelectElement).value; }}>
+                    ? html`<select class="select" @change=${(e: Event) => this._setForceAction((e.target as HTMLSelectElement).value, typeActions)}>
+                        <option value="" ?selected=${!this._actionValue}>—</option>
                         ${typeActions.map((a) => html`<option value="${a.id}" ?selected=${this._actionValue === a.id}>${a.label}</option>`)}
                       </select>`
                     : html`<input class="input mono" .value=${this._actionValue} @input=${(e: InputEvent) => { this._actionValue = (e.target as HTMLInputElement).value; }}
                         placeholder="${this._action === "shift" ? "-1, +2 ore" : "+30, -15 min"}"/>`}
                 </div>
+                ${this._action === "force" && forcedDef?.value ? this._renderTriggerValueField(forcedDef) : nothing}
               ` : nothing}
               ${this._action === "force" ? html`
                 <div class="field">
@@ -170,10 +173,12 @@ export class ChronosWeatherRule extends LitElement {
             const schedule2 = this.card._schedules.find((s) => s.id === this.card._selectedId);
             if (!schedule2) return;
             const newRule: any = { if: ifText, then: thenText, active: true };
-            // For "force" actions we also persist a structured trigger_action
-            // so the scheduler can fire it edge-triggered.
             if (this._action === "force" && this._actionValue) {
-              newRule.trigger_action = { action_id: this._actionValue };
+              const trigger: any = { action_id: this._actionValue };
+              if (forcedDef?.value && this._triggerValue !== null && this._triggerValue !== "") {
+                trigger.value = this._triggerValue;
+              }
+              newRule.trigger_action = trigger;
               newRule.fire_mode = this._fireMode;
             }
             const newRules = [...(schedule2.weather_rules || []), newRule];
@@ -181,6 +186,44 @@ export class ChronosWeatherRule extends LitElement {
             this.card.navigate("editor");
           }}>${icon("check", 14)} ${t("common.save")}</button>
         </div>
+      </div>
+    `;
+  }
+
+  /** Set the forced action and reset value to its default if it has one. */
+  private _setForceAction(actionId: string, typeActions: any[]) {
+    this._actionValue = actionId;
+    const def = typeActions.find((a) => a.id === actionId);
+    this._triggerValue = def?.value ? def.value.default ?? null : null;
+  }
+
+  /** Render the value field for the chosen forced action (number slider+input or enum select). */
+  private _renderTriggerValueField(def: any) {
+    const v = def.value;
+    const cur = this._triggerValue ?? v.default;
+    return html`
+      <div class="field">
+        <label class="field__label">${v.label || t("common.value")} ${v.unit ? html`<span class="text-mute">(${v.unit})</span>` : nothing}</label>
+        ${v.type === "number" ? html`
+          <div class="row" style="gap:10px;align-items:center">
+            <input type="range" min="${v.min}" max="${v.max}" step="${v.step}"
+              .value=${String(cur)}
+              @input=${(e: InputEvent) => { this._triggerValue = parseFloat((e.target as HTMLInputElement).value); }}
+              style="flex:1"/>
+            <input type="number" class="input mono" min="${v.min}" max="${v.max}" step="${v.step}"
+              .value=${String(cur)}
+              @input=${(e: InputEvent) => {
+                const x = parseFloat((e.target as HTMLInputElement).value);
+                if (!isNaN(x)) this._triggerValue = x;
+              }}
+              style="width:90px;text-align:right;font-weight:600"/>
+            <span class="mono text-mute" style="min-width:30px">${v.unit || ""}</span>
+          </div>
+        ` : v.type === "enum" ? html`
+          <select class="select" @change=${(e: Event) => { this._triggerValue = (e.target as HTMLSelectElement).value; }}>
+            ${(v.options || []).map((o: string) => html`<option value="${o}" ?selected=${String(cur) === o}>${o}</option>`)}
+          </select>
+        ` : nothing}
       </div>
     `;
   }
