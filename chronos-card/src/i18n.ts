@@ -62,6 +62,7 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "nav.new_schedule": { it: "Nuova schedulazione", en: "New schedule", fr: "Nouvelle planification", de: "Neuer Zeitplan" },
   "nav.manage_devices": { it: "Gestisci dispositivi", en: "Manage devices", fr: "Gérer les appareils", de: "Geräte verwalten" },
   "nav.settings": { it: "Impostazioni", en: "Settings", fr: "Réglages", de: "Einstellungen" },
+  "nav.help": { it: "Aiuto", en: "Help", fr: "Aide", de: "Hilfe" },
   "nav.menu_open": { it: "Apri menu", en: "Open menu", fr: "Ouvrir le menu", de: "Menü öffnen" },
   "nav.menu_close": { it: "Chiudi menu", en: "Close menu", fr: "Fermer le menu", de: "Menü schließen" },
 
@@ -337,6 +338,84 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "timeline.linear": { it: "Lineare", en: "Linear", fr: "Linéaire", de: "Linear" },
   "timeline.radial": { it: "Radiale", en: "Radial", fr: "Radial", de: "Radial" },
   "timeline.list": { it: "Lista", en: "List", fr: "Liste", de: "Liste" },
+
+  // Help screen
+  "help.title": { it: "Guida e ricette", en: "Help and recipes", fr: "Aide et recettes", de: "Hilfe und Rezepte" },
+  "help.subtitle": { it: "Esempi pratici di schedulazioni comuni — clicca per crearle e personalizzarle", en: "Practical examples of common schedules — click to create and customise", fr: "Exemples pratiques de planifications courantes — cliquez pour créer et personnaliser", de: "Praktische Beispiele für häufige Zeitpläne — klicken zum Erstellen und Anpassen" },
+  "help.intro.title": { it: "Come funziona Chronos", en: "How Chronos works", fr: "Comment fonctionne Chronos", de: "Wie Chronos funktioniert" },
+  "help.intro.body": {
+    it: "Crea schedulazioni con fasce orarie giornaliere. Ogni fascia esegue un'azione (es. set_temperature 21°C). Aggiungi regole meteo che possono saltare la fascia, modificarne durata o forzare un'altra azione in base a sensori esterni o condizioni del sole. Le fasce possono essere ancorate ad alba/tramonto per adattarsi alle stagioni automaticamente.",
+    en: "Create schedules with daily time blocks. Each block runs an action (e.g. set_temperature 21°C). Add weather rules that can skip the block, change its duration, or force a different action based on external sensors or sun position. Blocks can be anchored to sunrise/sunset so they follow seasonal change automatically.",
+    fr: "Créez des planifications avec des créneaux horaires quotidiens. Chaque créneau exécute une action (ex. set_temperature 21°C). Ajoutez des règles météo qui peuvent ignorer le créneau, modifier sa durée ou forcer une autre action selon des capteurs externes ou la position du soleil. Les créneaux peuvent être ancrés au lever/coucher du soleil pour suivre les saisons automatiquement.",
+    de: "Erstelle Zeitpläne mit täglichen Zeitblöcken. Jeder Block führt eine Aktion aus (z.B. set_temperature 21°C). Füge Wetterregeln hinzu, die den Block überspringen, seine Dauer ändern oder eine andere Aktion basierend auf externen Sensoren oder dem Sonnenstand erzwingen können. Blöcke können an Sonnenaufgang/-untergang verankert werden, um sich automatisch an die Jahreszeit anzupassen.",
+  },
+  "help.create_button": { it: "Crea questa schedulazione", en: "Create this schedule", fr: "Créer cette planification", de: "Diesen Zeitplan erstellen" },
+  "help.tag.anchored": { it: "Ancorata al sole", en: "Sun-anchored", fr: "Ancrée au soleil", de: "Sonnen-verankert" },
+  "help.tag.trigger": { it: "Trigger meteo", en: "Weather trigger", fr: "Déclencheur météo", de: "Wetter-Trigger" },
+
+  // Recipes
+  "recipe.thermostat_day_night.title": { it: "Riscaldamento giorno/notte", en: "Day/night heating", fr: "Chauffage jour/nuit", de: "Tag/Nacht-Heizung" },
+  "recipe.thermostat_day_night.when": { it: "Termostato che alterna 18°C la notte e 21°C il giorno", en: "Thermostat alternating 18°C at night and 21°C during the day", fr: "Thermostat alternant 18°C la nuit et 21°C le jour", de: "Thermostat: 18°C nachts, 21°C tagsüber" },
+  "recipe.thermostat_day_night.howto": {
+    it: "Tre fasce: 00-07 e 22-24 → 18°C (eco notturno), 07-22 → 21°C (comfort). Regola meteo: se la temperatura esterna supera 22°C la fascia viene saltata (non scalda inutilmente nelle giornate calde).",
+    en: "Three blocks: 00-07 and 22-24 → 18°C (night eco), 07-22 → 21°C (comfort). Weather rule: if outdoor temperature exceeds 22°C the block is skipped (no needless heating on warm days).",
+    fr: "Trois créneaux : 00-07 et 22-24 → 18°C (éco nuit), 07-22 → 21°C (confort). Règle météo : si la température extérieure dépasse 22°C le créneau est ignoré.",
+    de: "Drei Blöcke: 00-07 und 22-24 → 18°C (Nacht-Eco), 07-22 → 21°C (Komfort). Wetterregel: bei Außentemperatur über 22°C wird der Block übersprungen.",
+  },
+  "recipe.thermostat_day_night.preset_name": { it: "Riscaldamento casa", en: "Home heating", fr: "Chauffage maison", de: "Hausheizung" },
+
+  "recipe.lights_at_sunset.title": { it: "Luci al tramonto", en: "Lights at sunset", fr: "Lumières au coucher du soleil", de: "Licht bei Sonnenuntergang" },
+  "recipe.lights_at_sunset.when": { it: "Accensione 30 minuti prima del tramonto, fino alle 23", en: "Turn on 30 minutes before sunset, until 23:00", fr: "Allumage 30 minutes avant le coucher, jusqu'à 23h", de: "Einschalten 30 Min. vor Sonnenuntergang, bis 23 Uhr" },
+  "recipe.lights_at_sunset.howto": {
+    it: "Una fascia ancorata al tramonto con offset -30 minuti, fine fissa alle 23:00. Luce all'80% di luminosità. La fascia si sposta da sola di stagione in stagione (in inverno parte alle 16:30, in estate alle 20:00).",
+    en: "One block anchored to sunset with -30 minute offset, fixed end at 23:00. Light at 80% brightness. The block shifts seasonally on its own (16:30 in winter, 20:00 in summer).",
+    fr: "Un créneau ancré au coucher du soleil avec un décalage de -30 minutes, fin fixe à 23h. Lumière à 80% de luminosité. Le créneau se décale automatiquement selon la saison.",
+    de: "Ein Block, am Sonnenuntergang verankert mit -30 Min. Versatz, festes Ende um 23 Uhr. Licht bei 80% Helligkeit. Der Block verschiebt sich automatisch je nach Jahreszeit.",
+  },
+  "recipe.lights_at_sunset.preset_name": { it: "Luci serali", en: "Evening lights", fr: "Lumières du soir", de: "Abendliche Beleuchtung" },
+
+  "recipe.blinds_wind_safety.title": { it: "Tapparelle automatiche col vento", en: "Wind-safe automatic blinds", fr: "Volets sécurité vent", de: "Windschutz für Rollladen" },
+  "recipe.blinds_wind_safety.when": { it: "Tapparelle aperte di giorno, chiudono se il vento supera 30 km/h", en: "Blinds open during daytime, close if wind exceeds 30 km/h", fr: "Volets ouverts le jour, fermés si le vent dépasse 30 km/h", de: "Rollladen tagsüber offen, schließen bei Wind über 30 km/h" },
+  "recipe.blinds_wind_safety.howto": {
+    it: "Una fascia da alba a tramonto, posizione 100% (aperta). Regola meteo trigger: se vento > 30 km/h forza la chiusura, una sola volta tra alba e tramonto. Senza il rate-limit le tapparelle sbatterebbero ad ogni raffica.",
+    en: "One block from sunrise to sunset, position 100% (open). Trigger weather rule: if wind > 30 km/h force close, at most once between sunrise and sunset. Without rate-limiting the blinds would flap on every gust.",
+    fr: "Un créneau du lever au coucher du soleil, position 100% (ouvert). Règle déclencheur météo : si vent > 30 km/h forcer la fermeture, au plus une fois entre lever et coucher. Sans limitation, les volets battraient à chaque rafale.",
+    de: "Ein Block von Sonnenauf- bis -untergang, Position 100% (offen). Wetter-Trigger: bei Wind > 30 km/h Schließen erzwingen, höchstens einmal zwischen Auf- und Untergang. Ohne Rate-Limiting würden die Rollladen bei jeder Böe schlagen.",
+  },
+  "recipe.blinds_wind_safety.preset_name": { it: "Tapparelle giorno", en: "Daytime blinds", fr: "Volets jour", de: "Tagesrollladen" },
+
+  "recipe.irrigation_skip_rain.title": { it: "Irrigazione mattutina con skip pioggia", en: "Morning irrigation with rain skip", fr: "Irrigation matinale avec saut pluie", de: "Morgendliche Bewässerung mit Regen-Skip" },
+  "recipe.irrigation_skip_rain.when": { it: "30 minuti di irrigazione alle 6, saltati se la previsione indica pioggia", en: "30 minutes of irrigation at 06:00, skipped if forecast says rain", fr: "30 min d'irrigation à 6h, ignoré si pluie prévue", de: "30 Min. Bewässerung um 6 Uhr, übersprungen bei Regenvorhersage" },
+  "recipe.irrigation_skip_rain.howto": {
+    it: "Una fascia 06:00 → 06:30 con turn_on durata 30 minuti. Regola meteo: se la pioggia prevista nelle prossime 6 ore supera 2 mm la fascia viene saltata. Risparmia acqua nei giorni di pioggia.",
+    en: "One block 06:00 → 06:30 with turn_on duration 30 min. Weather rule: if forecast rain in the next 6 hours exceeds 2 mm the block is skipped. Saves water on rainy days.",
+    fr: "Un créneau 06h00 → 06h30, turn_on durée 30 min. Règle météo : si la pluie prévue dans les 6 prochaines heures dépasse 2 mm, le créneau est ignoré. Économise l'eau les jours de pluie.",
+    de: "Ein Block 06:00 → 06:30, turn_on Dauer 30 Min. Wetterregel: bei Regenvorhersage > 2 mm in den nächsten 6 Std. wird der Block übersprungen. Spart Wasser an Regentagen.",
+  },
+  "recipe.irrigation_skip_rain.preset_name": { it: "Irrigazione giardino", en: "Garden irrigation", fr: "Irrigation jardin", de: "Gartenbewässerung" },
+
+  "recipe.boiler_eco_night.title": { it: "Boiler ECO notturno", en: "Night-ECO water heater", fr: "Chauffe-eau ECO nuit", de: "Nacht-ECO-Boiler" },
+  "recipe.boiler_eco_night.when": { it: "Modalità electric durante il giorno, eco di notte per risparmiare", en: "Electric during the day, eco at night to save energy", fr: "Mode electric le jour, eco la nuit pour économiser", de: "Tagsüber electric, nachts eco zum Energie sparen" },
+  "recipe.boiler_eco_night.howto": {
+    it: "Tre fasce: 00-06 ECO, 06-23 electric, 23-24 ECO. Riduce i consumi nelle ore di non utilizzo. Aggiungi una regola meteo per saltare la fascia electric se la temperatura esterna è già alta.",
+    en: "Three blocks: 00-06 ECO, 06-23 electric, 23-24 ECO. Reduces consumption during unused hours. Add a weather rule to skip the electric block when outside temperature is already high.",
+    fr: "Trois créneaux : 00-06 ECO, 06-23 electric, 23-24 ECO. Réduit la consommation aux heures non utilisées. Ajoute une règle météo pour ignorer le créneau electric si la température extérieure est élevée.",
+    de: "Drei Blöcke: 00-06 ECO, 06-23 electric, 23-24 ECO. Reduziert Verbrauch in ungenutzten Zeiten. Füge eine Wetterregel hinzu, um den electric-Block bei hoher Außentemperatur zu überspringen.",
+  },
+  "recipe.boiler_eco_night.preset_name": { it: "Boiler casa", en: "Home water heater", fr: "Chauffe-eau maison", de: "Haus-Boiler" },
+
+  // Glossary
+  "help.glossary.title": { it: "Glossario", en: "Glossary", fr: "Glossaire", de: "Glossar" },
+  "help.glossary.block.title": { it: "Fascia oraria (block)", en: "Time block", fr: "Créneau horaire", de: "Zeitblock" },
+  "help.glossary.block.body": { it: "Intervallo orario quotidiano (start–end) con un'azione associata. Il sistema esegue l'azione quando il tempo corrente entra nell'intervallo.", en: "A daily time interval (start–end) with an attached action. The system runs the action when the current time enters the interval.", fr: "Intervalle horaire quotidien (start–end) avec une action associée. Le système exécute l'action quand l'heure actuelle entre dans l'intervalle.", de: "Tägliches Zeitintervall (start–end) mit einer zugewiesenen Aktion. Das System führt die Aktion aus, wenn die aktuelle Zeit das Intervall erreicht." },
+  "help.glossary.anchor.title": { it: "Ancora alba/tramonto", en: "Sunrise/sunset anchor", fr: "Ancre lever/coucher", de: "Sonnen-Anker" },
+  "help.glossary.anchor.body": { it: "Invece di un orario fisso, una fascia può iniziare/finire ad alba o tramonto, con un offset in minuti. Si adatta automaticamente alle stagioni.", en: "Instead of a fixed clock time, a block can start/end at sunrise or sunset with a minute offset. Adapts automatically to seasons.", fr: "Au lieu d'une heure fixe, un créneau peut commencer/finir au lever ou coucher du soleil avec un décalage en minutes. S'adapte automatiquement aux saisons.", de: "Anstelle einer festen Uhrzeit kann ein Block bei Sonnenauf- oder -untergang mit Minuten-Versatz beginnen/enden. Passt sich automatisch an die Jahreszeiten an." },
+  "help.glossary.rule.title": { it: "Regola meteo", en: "Weather rule", fr: "Règle météo", de: "Wetterregel" },
+  "help.glossary.rule.body": { it: "Condizione IF/THEN che modifica l'esecuzione di un blocco o agisce come trigger autonomo. Può saltare la fascia, traslarne l'orario, cambiare durata o forzare un'azione diversa.", en: "An IF/THEN condition that modifies a block's execution or acts as a standalone trigger. Can skip, shift, change duration, or force a different action.", fr: "Condition SI/ALORS qui modifie l'exécution d'un créneau ou agit comme déclencheur autonome. Peut ignorer, décaler, changer la durée ou forcer une action différente.", de: "WENN/DANN-Bedingung, die die Block-Ausführung modifiziert oder als eigenständiger Trigger dient. Kann überspringen, verschieben, Dauer ändern oder andere Aktion erzwingen." },
+  "help.glossary.fire_mode.title": { it: "Frequenza di attivazione (fire mode)", en: "Fire mode", fr: "Mode de déclenchement", de: "Auslöse-Modus" },
+  "help.glossary.fire_mode.body": { it: "Per regole trigger: ogni transizione, una volta al giorno, una tra alba/tramonto, o una tra tramonto/alba. Evita che oscillazioni della grandezza monitorata facciano sbattere il dispositivo.", en: "For trigger rules: every transition, once per day, once between sunrise/sunset, or once between sunset/sunrise. Prevents oscillations of the monitored value from making the device flap.", fr: "Pour les règles déclencheur : chaque transition, une fois par jour, une fois entre lever/coucher, ou une fois entre coucher/lever. Empêche les oscillations de la valeur surveillée de faire battre l'appareil.", de: "Für Trigger-Regeln: jede Transition, einmal pro Tag, einmal zwischen Auf-/Untergang oder einmal zwischen Unter-/Aufgang. Verhindert, dass Schwankungen des überwachten Wertes das Gerät zappeln lassen." },
+  "help.glossary.override.title": { it: "Override su sensori puntuali", en: "Point-sensor overrides", fr: "Surcharges par capteurs", de: "Punktsensor-Überschreibungen" },
+  "help.glossary.override.body": { it: "Per ogni attributo meteo (temperatura, umidità, vento, …) puoi puntare a una sensor.* specifica. Utile se hai una stazione meteo locale (Ecowitt, WeatherFlow) più affidabile del provider cloud.", en: "For each weather attribute (temperature, humidity, wind, …) you can point at a specific sensor.* entity. Useful if you have a local weather station (Ecowitt, WeatherFlow) more reliable than the cloud provider.", fr: "Pour chaque attribut météo (température, humidité, vent, …) tu peux pointer vers une entité sensor.* spécifique. Utile si tu as une station météo locale plus fiable.", de: "Für jedes Wetter-Attribut (Temperatur, Feuchte, Wind, …) kannst du auf eine spezifische sensor.*-Entität verweisen. Nützlich bei einer lokalen Wetterstation, zuverlässiger als Cloud-Anbieter." },
 
   // Weather attributes (override + rule builder)
   "weather.attr.temperature": { it: "Temperatura attuale", en: "Current temperature", fr: "Température actuelle", de: "Aktuelle Temperatur" },

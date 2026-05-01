@@ -45,6 +45,7 @@ import "./screens/live";
 import "./screens/wizard";
 import "./screens/devices";
 import "./screens/settings";
+import "./screens/help";
 
 const TITLE_KEYS: Record<Screen, [string, string]> = {
   overview: ["screen.overview.title", "chronos / overview"],
@@ -57,6 +58,7 @@ const TITLE_KEYS: Record<Screen, [string, string]> = {
   wizard: ["screen.wizard.title", "chronos / wizard"],
   devices: ["screen.devices.title", "chronos / devices"],
   settings: ["screen.settings.title", "chronos / settings"],
+  help: ["nav.help", "chronos / help"],
 };
 
 @customElement("chronos-card")
@@ -411,6 +413,7 @@ export class ChronosCard extends LitElement {
     const actions = [
       { key: "wizard" as Screen, label: t("nav.new_schedule"), iconName: "wand" },
       { key: "devices" as Screen, label: t("nav.manage_devices"), iconName: "device" },
+      { key: "help" as Screen, label: t("nav.help"), iconName: "info" },
     ];
 
     const isMini = mode === "mini";
@@ -509,6 +512,8 @@ export class ChronosCard extends LitElement {
         return html`<chronos-devices-screen .card=${this} .nowHour=${nowHour}></chronos-devices-screen>`;
       case "settings":
         return html`<chronos-settings-screen .card=${this} .nowHour=${nowHour}></chronos-settings-screen>`;
+      case "help":
+        return html`<chronos-help-screen .card=${this} .nowHour=${nowHour}></chronos-help-screen>`;
       default:
         return html`<chronos-overview .card=${this} .nowHour=${nowHour}></chronos-overview>`;
     }

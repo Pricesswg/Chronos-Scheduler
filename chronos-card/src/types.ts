@@ -124,7 +124,8 @@ export type Screen =
   | "live"
   | "wizard"
   | "devices"
-  | "settings";
+  | "settings"
+  | "help";
 
 export interface ChronosState {
   screen: Screen;
