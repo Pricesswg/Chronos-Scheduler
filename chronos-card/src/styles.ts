@@ -563,9 +563,48 @@ export const chronosStyles = css`
   .fw-500 { font-weight: 500; }
   .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+  /* Editor 2-column layout (timeline + block detail). Stacks on tablet. */
+  .editor-cols {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 18px;
+  }
+
+  /* Rule builder weather variables picker grid */
+  .wr-vars { max-height: 380px; overflow-y: auto; padding-right: 4px; }
+
+  @media (max-width: 1000px) {
+    .editor-cols { grid-template-columns: 1fr; }
+  }
+
   @media (max-width: 900px) {
     .grid-2, .grid-3 { grid-template-columns: 1fr; }
     .content__inner { padding: 18px 16px 40px; }
     .topbar { padding: 12px 16px; }
+    .topbar__crumbs { display: none; }
+    .topbar__title { font-size: 16px; }
+  }
+
+  @media (max-width: 600px) {
+    .content__inner { padding: 14px 10px 30px; }
+    .topbar { padding: 10px 12px; gap: 8px; }
+    .topbar__title { font-size: 14px; }
+    .page-title { font-size: 22px !important; }
+    .page-sub { font-size: 12px !important; }
+    .card { padding: 12px !important; }
+    .card--pad-lg { padding: 16px !important; }
+    .device-row { flex-wrap: wrap; gap: 8px; padding: 10px 8px !important; }
+    .device-row__main { flex: 1 1 100%; min-width: 0; }
+    .rule-block { flex-wrap: wrap; padding: 10px 8px !important; gap: 6px; }
+    .timeline { height: 76px; }
+    .radial { max-width: 360px; }
+    .weekgrid__row { grid-template-columns: 38px 1fr; gap: 6px; }
+    .kpi { padding: 12px; }
+    .kpi__value { font-size: 22px; }
+    .sched-card { padding: 12px; gap: 10px; }
+    .grid-auto { grid-template-columns: 1fr !important; }
+    .wr-vars { max-height: 260px; }
+    .segmented button { padding: 5px 8px; font-size: 11.5px; }
+    .btn { padding: 7px 10px; font-size: 12.5px; }
   }
 `;

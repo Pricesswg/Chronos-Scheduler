@@ -67,7 +67,7 @@ export class ChronosEditor extends LitElement {
           </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 340px;gap:18px">
+        <div class="editor-cols">
           <div class="col" style="gap:16px">
             <!-- Timeline card -->
             <div class="card">

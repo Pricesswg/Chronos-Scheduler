@@ -197,7 +197,7 @@ export class ChronosWeatherRule extends LitElement {
         <div class="card">
           <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("wr.if.title")}</h3><p class="card__sub">${t("wr.if.subtitle")}</p></div></div>
           <div class="col" style="gap:12px">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;max-height:380px;overflow-y:auto;padding-right:4px">
+            <div class="grid-2 wr-vars">
               ${weatherAttrs.map((v) => html`
                 <button class="tile-pick" data-selected="${this._variable === v.key}" @click=${() => { this._variable = v.key; }} style="padding:10px">
                   <div class="row" style="gap:8px">

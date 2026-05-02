@@ -97,7 +97,7 @@ export class ChronosWizard extends LitElement {
           <div class="col" style="gap:14px">
             <h3 style="margin:0">${t("wizard.devices.heading")}</h3>
             <p class="text-mute text-sm" style="margin:0">${t("wizard.devices.hint")}</p>
-            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
+            <div class="grid-auto" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">
               ${this.card._devices.map((d) => html`
                 <button class="tile-pick" data-selected="${this._pickedDevices.includes(d.id)}"
                   @click=${() => this._togglePick(d.id)}>
