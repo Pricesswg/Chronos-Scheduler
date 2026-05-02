@@ -28,7 +28,7 @@ const RECIPES: Recipe[] = [
       { start: 22, end: 24, action: { id: "set_temperature", value: 18 } },
     ],
     weather_rules: [
-      { if: "temperature > 22", then: "Salta esecuzione", active: true },
+      { if: "temperature > 22", then: "Skip", active: true, effect: "skip", block_index: null },
     ],
   },
   {
@@ -61,9 +61,11 @@ const RECIPES: Recipe[] = [
     weather_rules: [
       {
         if: "wind_speed > 30",
-        then: "Forza: Chiudi",
+        then: "Force close",
         active: true,
-        trigger_action: { action_id: "close_cover" },
+        effect: "force_action",
+        block_index: 0,
+        action_id: "close_cover",
         fire_mode: "once_per_daytime",
       },
     ],
@@ -77,7 +79,7 @@ const RECIPES: Recipe[] = [
       { start: 6, end: 6.5, action: { id: "turn_on", value: 30 } },
     ],
     weather_rules: [
-      { if: "forecast.rain_6h > 2", then: "Salta esecuzione", active: true },
+      { if: "forecast.rain_6h > 2", then: "Skip", active: true, effect: "skip", block_index: 0 },
     ],
   },
   {
@@ -144,7 +146,7 @@ export class ChronosHelpScreen extends LitElement {
   private _renderRecipe(r: Recipe) {
     const totalCoverage = r.blocks.reduce((s, b) => s + (b.end - b.start), 0);
     const hasAnchors = r.blocks.some((b: any) => b.start_anchor || b.end_anchor);
-    const hasTriggers = r.weather_rules.some((w) => w.trigger_action);
+    const hasTriggers = r.weather_rules.some((w) => w.effect === "force_action" || w.effect === "scale_duration" || w.effect === "scale_value");
     return html`
       <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:12px">
         <div class="row" style="gap:10px;align-items:flex-start">

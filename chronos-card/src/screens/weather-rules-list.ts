@@ -29,7 +29,7 @@ export class ChronosWeatherRulesList extends LitElement {
           schedId: s.id,
           schedName: s.name,
           idx,
-          ifText: r.if,
+          ifText: r.if || "—",
           thenText: r.then,
           active: r.active,
         });

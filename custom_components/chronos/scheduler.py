@@ -133,34 +133,184 @@ class ChronosScheduler:
             if weekday < len(days) and not days[weekday]:
                 continue
 
-            current_block = self._block_at(sched, current_hour)
+            # Compute effective blocks: original blocks with continuous rule
+            # effects applied (extend/shrink/shift/replace_value/scale_*).
+            effective_blocks = self._effective_blocks(sched)
+            current_block, current_idx = self._block_at(effective_blocks, current_hour)
             prev_key = sched_id
             previous_block = self._last_executed.get(prev_key)
 
-            # Block transition handling
             if current_block != previous_block:
                 self._last_executed[prev_key] = current_block
                 if current_block is not None:
                     _LOGGER.info(
-                        "Chronos: TRANSITION schedule=%s hour=%.2f → block resolved=%.2f-%.2f action=%s",
-                        sched_name, current_hour,
+                        "Chronos: TRANSITION schedule=%s hour=%.2f → block #%d resolved=%.2f-%.2f action=%s",
+                        sched_name, current_hour, current_idx,
                         self._resolve_block_time(current_block, "start"),
                         self._resolve_block_time(current_block, "end"),
                         current_block.get("action"),
                     )
-                    await self._apply_block(sched, current_block)
+                    await self._apply_block(sched, current_block, current_idx)
 
-            # Weather-trigger evaluation: every tick, every active rule that
-            # has a trigger_action. Edge-triggered + rate-limited per fire_mode.
-            await self._evaluate_triggers(sched, local_now)
+            await self._evaluate_triggers(sched, local_now, effective_blocks, current_idx)
 
-    def _block_at(self, sched: dict, hour: float) -> dict | None:
-        for block in sched.get("blocks", []):
+    def _block_at(self, blocks: list, hour: float) -> tuple[dict | None, int]:
+        for i, block in enumerate(blocks):
             start = self._resolve_block_time(block, "start")
             end = self._resolve_block_time(block, "end")
             if start <= hour < end:
-                return block
-        return None
+                return block, i
+        return None, -1
+
+    def _effective_blocks(self, sched: dict) -> list[dict]:
+        """Return blocks with continuous rule effects applied.
+
+        Continuous effects: shift, extend, shrink, replace_value, scale_duration,
+        scale_value. They are recomputed every tick so the schedule reacts to
+        live weather without modifying stored data.
+
+        Trigger effects (skip, force_action) are NOT applied here — they fire
+        as side effects in _evaluate_triggers.
+        """
+        blocks = [dict(b) for b in sched.get("blocks", []) or []]
+        rules = sched.get("weather_rules", []) or []
+        for rule in rules:
+            if not rule.get("active"):
+                continue
+            effect = rule.get("effect")
+            if effect not in ("shift", "extend", "shrink", "replace_value", "scale_duration", "scale_value"):
+                continue
+            # For non-scale rules, gate by the IF condition
+            if effect != "scale_duration" and effect != "scale_value":
+                if rule.get("if"):
+                    try:
+                        if not self._evaluate_if(rule.get("if", "")):
+                            continue
+                    except Exception:
+                        continue
+            idx = rule.get("block_index")
+            target_indices = [idx] if isinstance(idx, int) else list(range(len(blocks)))
+            for ti in target_indices:
+                if 0 <= ti < len(blocks):
+                    self._apply_block_effect(blocks, ti, rule)
+        return blocks
+
+    def _evaluate_if(self, expr: str) -> bool:
+        """Sync wrapper for rule IF parsing+eval (read attribute via store)."""
+        parsed = _parse_expression(expr)
+        if parsed is None:
+            return False
+        key, op_str, threshold_str = parsed
+        op_fn = OPS.get(op_str)
+        if op_fn is None:
+            return False
+        if key.startswith("forecast."):
+            return False  # forecast needs async; handled only by _evaluate_rule
+        actual = self._read_attribute(key)
+        if actual is None:
+            return False
+        try:
+            return op_fn(float(actual), float(threshold_str))
+        except (ValueError, TypeError):
+            return op_fn(str(actual), threshold_str)
+
+    def _apply_block_effect(self, blocks: list, idx: int, rule: dict) -> None:
+        """Apply one rule's continuous effect to blocks[idx], possibly adjusting
+        an adjacent block to keep total time consistent."""
+        block = blocks[idx]
+        effect = rule["effect"]
+        direction = rule.get("direction", "forward")
+        delta_min = rule.get("delta_minutes", 0) or 0
+
+        if effect == "shift":
+            delta_h = delta_min / 60
+            block["start"] = self._resolve_block_time(block, "start") + delta_h
+            block["end"] = self._resolve_block_time(block, "end") + delta_h
+            block["start"] = max(0.0, min(24.0, block["start"]))
+            block["end"] = max(block["start"], min(24.0, block["end"]))
+            for k in ("start_anchor", "start_offset", "end_anchor", "end_offset"):
+                block.pop(k, None)
+
+        elif effect in ("extend", "shrink"):
+            delta_h = delta_min / 60
+            if effect == "shrink":
+                delta_h = -delta_h
+            self._apply_duration_change(blocks, idx, delta_h, direction)
+
+        elif effect == "replace_value":
+            block.setdefault("action", {})["value"] = rule.get("action_value")
+
+        elif effect == "scale_duration":
+            new_minutes = self._compute_scale(rule)
+            if new_minutes is None:
+                return
+            cur_start = self._resolve_block_time(block, "start")
+            cur_end = self._resolve_block_time(block, "end")
+            cur_duration_h = cur_end - cur_start
+            new_duration_h = max(1/60, new_minutes / 60)
+            delta_h = new_duration_h - cur_duration_h
+            self._apply_duration_change(blocks, idx, delta_h, direction)
+
+        elif effect == "scale_value":
+            new_value = self._compute_scale(rule)
+            if new_value is None:
+                return
+            block.setdefault("action", {})["value"] = round(new_value, 2)
+
+    def _apply_duration_change(self, blocks: list, idx: int, delta_h: float, direction: str) -> None:
+        """Add delta_h to block[idx] duration, adjusting the adjacent block.
+
+        direction = "forward": end moves later, next block's start moves forward.
+        direction = "backward": start moves earlier, previous block's end moves back.
+        """
+        block = blocks[idx]
+        cur_start = self._resolve_block_time(block, "start")
+        cur_end = self._resolve_block_time(block, "end")
+        if direction == "backward":
+            new_start = max(0.0, cur_start - delta_h)
+            if idx > 0:
+                prev = blocks[idx - 1]
+                prev_start = self._resolve_block_time(prev, "start")
+                new_start = max(prev_start + 1/60, new_start)
+                prev["end"] = new_start
+                for k in ("end_anchor", "end_offset"):
+                    prev.pop(k, None)
+            else:
+                new_start = max(0.0, new_start)
+            block["start"] = min(cur_end - 1/60, new_start)
+            for k in ("start_anchor", "start_offset"):
+                block.pop(k, None)
+        else:
+            # forward (default)
+            new_end = min(24.0, cur_end + delta_h)
+            if idx + 1 < len(blocks):
+                nxt = blocks[idx + 1]
+                nxt_end = self._resolve_block_time(nxt, "end")
+                new_end = min(nxt_end - 1/60, new_end)
+                nxt["start"] = new_end
+                for k in ("start_anchor", "start_offset"):
+                    nxt.pop(k, None)
+            block["end"] = max(cur_start + 1/60, new_end)
+            for k in ("end_anchor", "end_offset"):
+                block.pop(k, None)
+
+    def _compute_scale(self, rule: dict) -> float | None:
+        """Linear scale of weather variable into output range."""
+        var = rule.get("scale_var") or "temperature"
+        var_min = float(rule.get("scale_var_min", 0))
+        var_max = float(rule.get("scale_var_max", 1))
+        out_min = float(rule.get("scale_out_min", 0))
+        out_max = float(rule.get("scale_out_max", 1))
+        cur = self._read_attribute(var)
+        try:
+            cur_f = float(cur) if cur is not None else var_min
+        except (TypeError, ValueError):
+            return None
+        if var_max == var_min:
+            return out_min
+        ratio = (cur_f - var_min) / (var_max - var_min)
+        ratio = max(0.0, min(1.0, ratio))
+        return out_min + ratio * (out_max - out_min)
 
     def _resolve_block_time(self, block: dict, edge: str) -> float:
         """Resolve block start/end into an hour-of-day float.
@@ -192,10 +342,10 @@ class ChronosScheduler:
         except (TypeError, ValueError):
             return 0.0
 
-    async def _evaluate_triggers(self, sched: dict, local_now) -> None:
-        """Evaluate all active weather rules on this schedule with a
-        trigger_action attached. Fire on edge transitions if the fire_mode
-        window allows.
+    async def _evaluate_triggers(self, sched: dict, local_now, effective_blocks: list, current_idx: int) -> None:
+        """Evaluate all active force_action rules on this schedule. Fire on
+        edge transitions, gated by fire_mode and (when set) by block_index
+        matching the currently active block.
         """
         sched_id = str(sched.get("id", ""))
         sched_name = sched.get("name", "")
@@ -203,9 +353,12 @@ class ChronosScheduler:
         for idx, rule in enumerate(rules):
             if not rule.get("active"):
                 continue
-            trigger = rule.get("trigger_action")
-            if not trigger:
-                continue  # legacy: handled at block transition
+            if rule.get("effect") != "force_action":
+                continue
+            # If rule targets a specific block, only fire when that block is active
+            target_idx = rule.get("block_index")
+            if isinstance(target_idx, int) and target_idx != current_idx:
+                continue
             key = f"{sched_id}:{idx}"
             state = self._rule_state.setdefault(key, {"last_eval": False, "last_fire": None})
             try:
@@ -219,9 +372,8 @@ class ChronosScheduler:
             if not current:
                 continue
             if was:
-                continue  # already true on previous tick, edge already fired
+                continue
 
-            # Rule just transitioned from False to True. Check rate limit.
             fire_mode = rule.get("fire_mode", "every")
             if not self._is_armed(fire_mode, state.get("last_fire"), local_now):
                 _LOGGER.debug(
@@ -231,10 +383,12 @@ class ChronosScheduler:
                 continue
 
             _LOGGER.info(
-                "Chronos: TRIGGER schedule=%s rule=%s → action=%s mode=%s",
-                sched_name, rule.get("if"), trigger, fire_mode,
+                "Chronos: TRIGGER schedule=%s rule=%s → force action=%s val=%s mode=%s block_idx=%s",
+                sched_name, rule.get("if"), rule.get("action_id"), rule.get("action_value"),
+                fire_mode, target_idx,
             )
-            await self._execute_trigger(sched, trigger)
+            trigger_action = {"action_id": rule.get("action_id"), "value": rule.get("action_value")}
+            await self._execute_trigger(sched, trigger_action)
             state["last_fire"] = local_now
 
     def _is_armed(self, fire_mode: str, last_fire, local_now) -> bool:
@@ -426,43 +580,44 @@ class ChronosScheduler:
                 title=f"Chronos · {sched_name}",
             )
 
-    async def _apply_block(self, sched: dict, block: dict) -> None:
-        """Apply a block transition. Evaluates legacy 'skip'-style weather rules
-        before dispatching the action. Trigger-style rules (with trigger_action)
-        are handled separately by _evaluate_triggers each tick."""
+    async def _apply_block(self, sched: dict, block: dict, block_idx: int = -1) -> None:
+        """Apply a block transition. Evaluates 'skip' rules targeting this
+        block before dispatching the action."""
         sched_name = sched.get("name", "")
         weather_rules = sched.get("weather_rules", []) or []
 
-        # Only legacy rules without trigger_action gate block execution.
-        legacy_rules = [r for r in weather_rules if r.get("active") and not r.get("trigger_action")]
-
-        for rule in legacy_rules:
+        for rule in weather_rules:
+            if not rule.get("active"):
+                continue
+            if rule.get("effect") != "skip":
+                continue
+            target_idx = rule.get("block_index")
+            if isinstance(target_idx, int) and target_idx != block_idx:
+                continue
             matched = await self._evaluate_rule(rule)
             if not matched:
                 continue
             self._hass.bus.async_fire(EVENT_RULE_TRIGGERED, {
                 "schedule_id": sched["id"],
                 "schedule_name": sched_name,
-                "rule_if": rule["if"],
-                "rule_then": rule["then"],
+                "rule_if": rule.get("if", ""),
+                "rule_then": rule.get("then", ""),
             })
             if self._store.settings.get("notify_rule_triggered"):
                 await self._notify(
-                    f"Regola meteo attivata: {rule['if']} → {rule['then']}",
+                    f"Regola meteo attivata: {rule.get('if', '')} → {rule.get('then', '')}",
                     title=f"Chronos · {sched_name}",
                 )
-            then_lower = rule.get("then", "").lower()
-            if "salta" in then_lower or "skip" in then_lower:
-                _LOGGER.info(
-                    "Chronos: SKIPPED schedule=%s by rule %s",
-                    sched_name, rule["if"],
+            _LOGGER.info(
+                "Chronos: SKIPPED schedule=%s block=#%d by rule %s",
+                sched_name, block_idx, rule.get("if"),
+            )
+            if self._store.settings.get("notify_sched_skipped"):
+                await self._notify(
+                    f"Fascia saltata per regola meteo: {rule.get('if', '')}",
+                    title=f"Chronos · {sched_name}",
                 )
-                if self._store.settings.get("notify_sched_skipped"):
-                    await self._notify(
-                        f"Fascia saltata per regola meteo: {rule['if']}",
-                        title=f"Chronos · {sched_name}",
-                    )
-                return
+            return
 
         await self._dispatch_action(sched, block)
 

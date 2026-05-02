@@ -382,10 +382,13 @@ export class ChronosWizard extends LitElement {
       days: this._days,
       enabled: true,
       blocks: [...this._blocks].sort((a, b) => a.start - b.start),
-      weather_rules: this._weatherEnabled
-        ? [{ if: "temperature > 22°C", then: "Salta esecuzione", active: true }]
-        : [],
+      weather_rules: [],
     };
     await this.card.doAddSchedule(schedule);
+    // If user opted in for weather logic, jump straight to the rule builder.
+    // doAddSchedule already navigated to "editor"; redirect to weatherRule.
+    if (this._weatherEnabled) {
+      this.card.navigate("weatherRule");
+    }
   }
 }

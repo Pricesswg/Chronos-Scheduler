@@ -37,20 +37,48 @@ export interface Block {
 
 export type FireMode = "every" | "once_per_day" | "once_per_daytime" | "once_per_nighttime";
 
-export interface TriggerAction {
-  action_id: string;
-  value?: number | string;
-}
+export type RuleEffect =
+  | "skip"
+  | "shift"
+  | "extend"
+  | "shrink"
+  | "force_action"
+  | "replace_value"
+  | "scale_duration"
+  | "scale_value";
+
+export type DurationDirection = "forward" | "backward";
 
 export interface WeatherRule {
-  if: string;
-  then: string;
   active: boolean;
-  /** When set, the rule is a real trigger: scheduler edge-fires this action
-   * whenever the IF condition becomes true (rate-limited by fire_mode).
-   * When unset, the rule is legacy skip-style: it only modifies block execution. */
-  trigger_action?: TriggerAction;
+  /** Display strings (kept for human readability, also used by old views). */
+  if?: string;
+  then: string;
+
+  /** Which block this rule targets. undefined / null = all blocks. */
+  block_index?: number | null;
+
+  /** What this rule does. */
+  effect: RuleEffect;
+
+  /** For shift/extend/shrink. */
+  delta_minutes?: number;
+  /** For extend/shrink/shift/scale_duration: which edge of the block moves. */
+  direction?: DurationDirection;
+
+  /** For force_action / replace_value. */
+  action_id?: string;
+  action_value?: number | string;
+
+  /** For force_action: how often the rule can fire. */
   fire_mode?: FireMode;
+
+  /** For scale_duration / scale_value: linear interpolation parameters. */
+  scale_var?: string;
+  scale_var_min?: number;
+  scale_var_max?: number;
+  scale_out_min?: number;
+  scale_out_max?: number;
 }
 
 export interface Schedule {

@@ -17,6 +17,35 @@ from .const import (
 )
 
 
+def _migrate_rule(rule: dict) -> bool:
+    """One-shot migration of a weather rule from pre-v1.7 schema to v1.7+.
+
+    Returns True if the rule was modified.
+    """
+    if "effect" in rule:
+        return False  # already migrated
+
+    then_lower = (rule.get("then") or "").lower()
+    trigger_action = rule.get("trigger_action") or {}
+
+    if "salta" in then_lower or "skip" in then_lower:
+        rule["effect"] = "skip"
+    elif trigger_action:
+        rule["effect"] = "force_action"
+        rule["action_id"] = trigger_action.get("action_id")
+        if "value" in trigger_action:
+            rule["action_value"] = trigger_action["value"]
+        rule.pop("trigger_action", None)
+    else:
+        # Could be a legacy "shift" / "duration" textual rule that was never
+        # actually executed (the old scheduler ignored those). Default to skip.
+        rule["effect"] = "skip"
+
+    if "block_index" not in rule:
+        rule["block_index"] = None  # = all blocks
+    return True
+
+
 class ChronosStore:
     def __init__(self, hass: HomeAssistant) -> None:
         self._hass = hass
@@ -49,6 +78,10 @@ class ChronosStore:
             if any(not isinstance(x, str) for x in ids):
                 s["device_ids"] = [str(x) for x in ids]
                 dirty_schedules = True
+            # Migra le weather_rules al nuovo schema (v1.7+)
+            for rule in s.get("weather_rules") or []:
+                if _migrate_rule(rule):
+                    dirty_schedules = True
         if dirty_devices:
             await self._save_devices()
         if dirty_schedules:
