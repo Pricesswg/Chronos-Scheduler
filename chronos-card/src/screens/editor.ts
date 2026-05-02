@@ -272,7 +272,8 @@ export class ChronosEditor extends LitElement {
               <div class="card__header">
                 <div style="flex:1"><h3 class="card__title">${t("editor.devices_section")}</h3><p class="card__sub">${t("editor.devices_count", { n: devices.length })}</p></div>
               </div>
-              <div class="col" style="gap:2px">
+              ${this._renderDevicePicker(schedule, deviceType)}
+              <div class="col" style="gap:2px;margin-top:10px">
                 ${devices.map((d: any) => html`
                   <div class="device-row">
                     <div class="device-row__icon">${deviceIcon(d.type, 17)}</div>
@@ -280,8 +281,16 @@ export class ChronosEditor extends LitElement {
                       <div class="device-row__name">${d.alias}</div>
                       <div class="device-row__meta">${d.area} · ${d.entity_id}</div>
                     </div>
+                    <button class="btn btn--icon btn--ghost btn--sm" style="color:var(--danger)"
+                      @click=${() => this._removeDeviceFromSchedule(schedule.id, d.id)}
+                      title="${t("common.remove")}">
+                      ${icon("trash", 12)}
+                    </button>
                   </div>
                 `)}
+                ${!devices.length ? html`
+                  <p class="text-xs text-mute" style="text-align:center;padding:14px 0;font-style:italic">${t("editor.devices_empty")}</p>
+                ` : nothing}
               </div>
             </div>
           </div>
@@ -372,6 +381,47 @@ export class ChronosEditor extends LitElement {
     b[`${edge}_offset`] = offset;
     newBlocks[this._selectedBlockIdx] = b;
     this.card.updateBlocksLocal(schedId, newBlocks);
+  }
+
+  /** Picker that lists devices of the same type not yet on this schedule.
+   * Empty when no eligible candidates exist. */
+  private _renderDevicePicker(schedule: any, deviceType: string) {
+    const inSched = new Set(schedule.device_ids || []);
+    const candidates = this.card._devices.filter(
+      (d) => d.type === deviceType && !inSched.has(d.id)
+    );
+    if (!candidates.length) {
+      return html`<p class="text-xs text-mute" style="margin:0">${t("editor.devices_no_more", { type: deviceType })}</p>`;
+    }
+    return html`
+      <div class="row" style="gap:8px;align-items:center">
+        <select class="select mono" style="flex:1" id="add-device-${schedule.id}">
+          ${candidates.map((d) => html`<option value="${d.id}">${d.alias} · ${d.entity_id}</option>`)}
+        </select>
+        <button class="btn btn--sm btn--primary"
+          @click=${(e: Event) => {
+            const sel = (e.target as HTMLElement).closest(".row")?.querySelector("select") as HTMLSelectElement | null;
+            if (sel?.value) this._addDeviceToSchedule(schedule.id, sel.value);
+          }}>
+          ${icon("plus", 12)} ${t("common.add")}
+        </button>
+      </div>
+    `;
+  }
+
+  private _addDeviceToSchedule(schedId: string, deviceId: string) {
+    const sched = this.card._schedules.find((s) => s.id === schedId);
+    if (!sched) return;
+    const ids = sched.device_ids || [];
+    if (ids.includes(deviceId)) return;
+    this.card.updateScheduleLocal(schedId, { device_ids: [...ids, deviceId] });
+  }
+
+  private _removeDeviceFromSchedule(schedId: string, deviceId: string) {
+    const sched = this.card._schedules.find((s) => s.id === schedId);
+    if (!sched) return;
+    const ids = (sched.device_ids || []).filter((id) => id !== deviceId);
+    this.card.updateScheduleLocal(schedId, { device_ids: ids });
   }
 
   private _setBlockAction(schedId: string, actionId: string, defaultValue?: any) {

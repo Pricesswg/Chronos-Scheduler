@@ -118,6 +118,8 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "editor.weather_rules.empty": { it: "Nessuna regola meteo · esecuzione fissa indipendente dal meteo", en: "No weather rules · fixed execution regardless of weather", fr: "Aucune règle météo · exécution fixe indépendamment de la météo", de: "Keine Wetterregeln · feste Ausführung unabhängig vom Wetter" },
   "editor.devices_section": { it: "Dispositivi influenzati", en: "Affected devices", fr: "Appareils concernés", de: "Betroffene Geräte" },
   "editor.devices_count": { it: "{n} selezionati", en: "{n} selected", fr: "{n} sélectionnés", de: "{n} ausgewählt" },
+  "editor.devices_empty": { it: "Nessun dispositivo collegato a questa schedulazione.", en: "No devices linked to this schedule.", fr: "Aucun appareil lié à cette planification.", de: "Keine Geräte mit diesem Zeitplan verknüpft." },
+  "editor.devices_no_more": { it: "Tutti i dispositivi compatibili ({type}) sono già stati aggiunti.", en: "All compatible devices ({type}) are already added.", fr: "Tous les appareils compatibles ({type}) sont déjà ajoutés.", de: "Alle kompatiblen Geräte ({type}) sind bereits hinzugefügt." },
   "editor.dirty.unsaved": { it: "Modifiche non salvate", en: "Unsaved changes", fr: "Modifications non enregistrées", de: "Ungespeicherte Änderungen" },
   "editor.dirty.saved": { it: "Tutto salvato", en: "All saved", fr: "Tout enregistré", de: "Alles gespeichert" },
 
