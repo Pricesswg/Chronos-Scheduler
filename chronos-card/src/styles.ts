@@ -97,7 +97,7 @@ export const chronosStyles = css`
   /* App shell */
   .app {
     display: grid;
-    grid-template-columns: 244px 1fr;
+    grid-template-columns: auto 1fr;
     min-height: 600px;
     height: 100%;
     background: var(--bg);
@@ -106,9 +106,9 @@ export const chronosStyles = css`
     border: 1px solid var(--border);
     position: relative;
   }
-  .app[data-mobile="true"] { grid-template-columns: 64px 1fr; }
 
   .sidebar {
+    width: 244px;
     background: var(--bg-soft);
     border-right: 1px solid var(--border);
     display: flex;
@@ -119,8 +119,10 @@ export const chronosStyles = css`
     overflow-y: auto;
     position: relative;
     z-index: 30;
+    transition: width 180ms ease;
   }
   .sidebar[data-mode="mini"] {
+    width: 64px;
     padding: 10px 8px;
     align-items: center;
   }

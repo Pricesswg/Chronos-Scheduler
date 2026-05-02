@@ -54,7 +54,15 @@ export class ChronosWeatherRule extends LitElement {
 
   render() {
     const schedule = this.card._schedules.find((s) => s.id === this.card._selectedId) || this.card._schedules[0];
-    if (!schedule) return nothing;
+    if (!schedule) return html`
+      <div class="card" style="text-align:center;padding:40px;color:var(--text-muted)">
+        <div style="font-weight:600;color:var(--text);font-size:14px">${t("overview.no_schedules")}</div>
+        <div style="font-size:12.5px;margin-top:4px">${t("overview.no_schedules.cta")}</div>
+        <button class="btn btn--primary" style="margin-top:16px" @click=${() => this.card.navigate("wizard")}>
+          ${icon("plus", 14)} ${t("nav.new_schedule")}
+        </button>
+      </div>
+    `;
 
     const deviceType = schedule.device_type;
     const typeActions = getActionsForType(deviceType);
@@ -69,11 +77,27 @@ export class ChronosWeatherRule extends LitElement {
     return html`
       <div class="col" style="gap:22px;max-width:1100px">
         <div>
-          <button class="btn btn--ghost btn--sm" @click=${() => this.card.navigate("editor")}>
-            ${icon("chevron-left", 14)} ${t("nav.editor")}
+          <button class="btn btn--ghost btn--sm" @click=${() => this.card.navigate("weatherRulesList")}>
+            ${icon("chevron-left", 14)} ${t("nav.weather_rules")}
           </button>
           <h1 class="page-title" style="margin-top:6px">${t("wr.heading")}</h1>
-          <p class="page-sub">${t("wr.subtitle")} · <strong>${schedule.name}</strong></p>
+          <p class="page-sub">${t("wr.subtitle")}</p>
+        </div>
+
+        <div class="card">
+          <div class="field">
+            <label class="field__label">${t("wr.schedule_picker.label")}</label>
+            <select class="select mono" @change=${(e: Event) => {
+              const newId = (e.target as HTMLSelectElement).value;
+              this.card.selectSchedule(newId);
+              this._blockIndex = null;  // blocks differ per schedule
+            }}>
+              ${this.card._schedules.map((s) => html`
+                <option value="${s.id}" ?selected=${s.id === schedule.id}>${s.name}</option>
+              `)}
+            </select>
+            <span class="field__hint">${t("wr.schedule_picker.hint")}</span>
+          </div>
         </div>
 
         ${this._renderPreviewBanner(schedule)}

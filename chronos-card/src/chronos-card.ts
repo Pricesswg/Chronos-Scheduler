@@ -87,6 +87,7 @@ export class ChronosCard extends LitElement {
   @state() _sensorEntities: any[] = [];
   @state() _mobile = false;
   @state() _drawerOpen = false;
+  @state() _desktopCollapsed = false;
 
   private _resizeObserver?: ResizeObserver;
 
@@ -359,7 +360,12 @@ export class ChronosCard extends LitElement {
     const nowHour = now.getHours() + now.getMinutes() / 60;
 
     const drawerOpen = this._mobile && this._drawerOpen;
-    const sidebarMode = !this._mobile ? "full" : drawerOpen ? "drawer" : "mini";
+    let sidebarMode: "full" | "mini" | "drawer";
+    if (this._mobile) {
+      sidebarMode = drawerOpen ? "drawer" : "mini";
+    } else {
+      sidebarMode = this._desktopCollapsed ? "mini" : "full";
+    }
 
     return html`
       ${errorBanner}
@@ -395,14 +401,17 @@ export class ChronosCard extends LitElement {
     ];
 
     const isMini = mode === "mini";
-    const showHamburger = this._mobile;
+    const showHamburger = true;  // always visible: mobile toggles drawer, desktop collapses sidebar
 
     return html`
       <aside class="sidebar" data-mode="${mode}">
         ${showHamburger
           ? html`
               <button class="sidebar__hamburger" title="${isMini ? t("nav.menu_open") : t("nav.menu_close")}"
-                @click=${() => { this._drawerOpen = !this._drawerOpen; }}>
+                @click=${() => {
+                  if (this._mobile) this._drawerOpen = !this._drawerOpen;
+                  else this._desktopCollapsed = !this._desktopCollapsed;
+                }}>
                 ${icon(isMini ? "menu" : "close", 18)}
               </button>
             `

@@ -17,6 +17,7 @@ export class ChronosEditor extends LitElement {
   @property({ type: Number }) nowHour = 0;
 
   @state() private _selectedBlockIdx = 0;
+  @state() private _selectedRuleIdx: number = -1;
   @state() private _confirmDelete = false;
 
   render() {
@@ -91,6 +92,7 @@ export class ChronosEditor extends LitElement {
                 .now=${schedule.enabled ? this.nowHour : null}
                 .interactive=${true}
                 .forecast=${this.card._forecast}
+                .previewRule=${this._selectedRuleIdx >= 0 ? schedule.weather_rules?.[this._selectedRuleIdx] : null}
                 @block-select=${(e: CustomEvent) => { this._selectedBlockIdx = e.detail.index; }}
                 @blocks-changed=${(e: CustomEvent) => { this.card.updateBlocksLocal(schedule.id, e.detail.blocks); }}
               ></chronos-timeline>
@@ -152,14 +154,30 @@ export class ChronosEditor extends LitElement {
                     <div style="font-weight:600;color:var(--text);font-size:14px">${t("editor.weather_rules.empty")}</div>
                   </div>`
                 : html`<div class="col" style="gap:8px">
-                    ${(schedule.weather_rules || []).map((r, i) => html`
-                      <div class="rule-block">
-                        <span class="rule-block__label rule-block__label--if">IF</span>
-                        <span class="rule-token rule-token--weather">${r.if}</span>
-                        <span class="rule-block__label rule-block__label--then">THEN</span>
+                    ${(schedule.weather_rules || []).map((r, i) => {
+                      const targetLabel = (r.block_index === null || r.block_index === undefined)
+                        ? t("wr.target.all_blocks")
+                        : (() => {
+                            const b = schedule.blocks[r.block_index!];
+                            if (!b) return `#${r.block_index! + 1}`;
+                            return `#${r.block_index! + 1} ${fmtHour(resolveBlockTime(b, "start"))}-${fmtHour(resolveBlockTime(b, "end"))}`;
+                          })();
+                      const isSelected = this._selectedRuleIdx === i;
+                      return html`
+                      <div class="rule-block" data-selected="${isSelected}"
+                        style="cursor:pointer;${isSelected ? "border:2px solid var(--accent);background:var(--accent-soft)" : ""}"
+                        @click=${() => { this._selectedRuleIdx = isSelected ? -1 : i; }}>
+                        <span class="chip chip--accent" style="flex:0 0 auto" title="${t("wr.target.label")}">
+                          ${icon("clock", 11)} ${targetLabel}
+                        </span>
+                        ${r.if ? html`
+                          <span class="rule-block__label rule-block__label--if">IF</span>
+                          <span class="rule-token rule-token--weather">${r.if}</span>
+                        ` : nothing}
+                        <span class="rule-block__label rule-block__label--then">${t("wr.effect." + (r.effect || "skip"))}</span>
                         <span class="rule-token rule-token--accent">${r.then}</span>
                         <div style="flex:1"></div>
-                        <label class="switch">
+                        <label class="switch" @click=${(e: Event) => e.stopPropagation()}>
                           <input type="checkbox" .checked=${r.active} @change=${(e: Event) => {
                             const newRules = [...(schedule.weather_rules || [])];
                             newRules[i] = { ...newRules[i], active: (e.target as HTMLInputElement).checked };
@@ -169,16 +187,19 @@ export class ChronosEditor extends LitElement {
                           <span class="switch__thumb"></span>
                         </label>
                         <button class="btn btn--icon btn--ghost btn--sm" style="color:var(--danger)"
-                          @click=${() => {
-                            if (!confirm(`${t("common.remove")}: ${r.if} → ${r.then}?`)) return;
+                          @click=${(e: Event) => {
+                            e.stopPropagation();
+                            if (!confirm(`${t("common.remove")}: ${r.if || ""} → ${r.then}?`)) return;
                             const newRules = (schedule.weather_rules || []).filter((_, j) => j !== i);
                             this.card.updateScheduleLocal(schedule.id, { weather_rules: newRules });
+                            if (this._selectedRuleIdx === i) this._selectedRuleIdx = -1;
                           }}
                           title="${t("common.remove")}">
                           ${icon("trash", 12)}
                         </button>
                       </div>
-                    `)}
+                      `;
+                    })}
                   </div>`}
             </div>
           </div>

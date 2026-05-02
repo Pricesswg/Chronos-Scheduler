@@ -4,7 +4,7 @@ import { chronosStyles } from "./styles";
 import { actionColor, actionLabel, getActionDef } from "./actions";
 import { fmtHour, clamp, snapToGrid, resolveBlockTime } from "./utils";
 import { defaultAction } from "./actions";
-import type { Block, DeviceType } from "./types";
+import type { Block, DeviceType, WeatherRule } from "./types";
 
 @customElement("chronos-timeline")
 export class ChronosTimeline extends LitElement {
@@ -19,6 +19,10 @@ export class ChronosTimeline extends LitElement {
   @property({ type: String }) height: "normal" | "compact" | "mini" = "normal";
   @property({ type: Boolean }) showWeather = true;
   @property({ type: Array }) forecast: any[] = [];
+  /** When set, renders a ghost overlay showing the geometric range of the
+   * rule's effect on its target block (for shift / extend / shrink /
+   * scale_duration). For non-geometric effects no ghost is drawn. */
+  @property({ attribute: false }) previewRule: WeatherRule | null = null;
 
   @state() private _drag: {
     idx: number;
@@ -36,6 +40,52 @@ export class ChronosTimeline extends LitElement {
     if (this.variant === "radial") return this._renderRadial();
     if (this.variant === "list") return this._renderList();
     return this._renderLinear();
+  }
+
+  private _renderRadialGhost(cx: number, cy: number, rOuter: number, arcFn: (s: number, e: number, rO: number, rI: number) => string) {
+    const range = this._computePreviewRange();
+    if (!range) return svg``;
+    const rGhostOuter = rOuter + 22;
+    const rGhostInner = rOuter + 8;
+    return svg`
+      <path d="${arcFn(range.startH, range.endH, rGhostOuter, rGhostInner)}"
+        fill="var(--accent)" fill-opacity="0.18"
+        stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4 3"
+        pointer-events="none"/>
+    `;
+  }
+
+  /** Compute the geometric range a preview rule would affect on its target
+   * block. Returns null if the rule is not geometric or has no target block. */
+  private _computePreviewRange(): { startH: number; endH: number; targetIdx: number } | null {
+    const rule = this.previewRule;
+    if (!rule) return null;
+    const idx = rule.block_index;
+    if (idx === null || idx === undefined || idx < 0 || idx >= this.blocks.length) return null;
+    const block = this.blocks[idx];
+    const bs = resolveBlockTime(block, "start");
+    const be = resolveBlockTime(block, "end");
+    const dir = rule.direction || "forward";
+    const dH = (rule.delta_minutes || 0) / 60;
+
+    if (rule.effect === "shift") {
+      return { startH: bs + dH, endH: be + dH, targetIdx: idx };
+    }
+    if (rule.effect === "extend") {
+      if (dir === "forward") return { startH: be, endH: Math.min(24, be + dH), targetIdx: idx };
+      return { startH: Math.max(0, bs - dH), endH: bs, targetIdx: idx };
+    }
+    if (rule.effect === "shrink") {
+      if (dir === "forward") return { startH: Math.max(bs, be - dH), endH: be, targetIdx: idx };
+      return { startH: bs, endH: Math.min(be, bs + dH), targetIdx: idx };
+    }
+    if (rule.effect === "scale_duration") {
+      const outMin = (rule.scale_out_min || 0) / 60;
+      const outMax = (rule.scale_out_max || 60) / 60;
+      if (dir === "forward") return { startH: bs + outMin, endH: Math.min(24, bs + outMax), targetIdx: idx };
+      return { startH: Math.max(0, be - outMax), endH: be - outMin, targetIdx: idx };
+    }
+    return null;
   }
 
   // --- Linear ---
@@ -72,8 +122,22 @@ export class ChronosTimeline extends LitElement {
           </div>
           `;
         })}
+        ${this._renderLinearGhost(pct)}
         ${this.now !== null ? html`<div class="tl-now" style="left:${pct(this.now)}%"></div>` : nothing}
       </div>
+    `;
+  }
+
+  private _renderLinearGhost(pct: (h: number) => number) {
+    const range = this._computePreviewRange();
+    if (!range) return nothing;
+    const left = pct(range.startH);
+    const width = pct(range.endH) - left;
+    if (width <= 0) return nothing;
+    const color = "var(--accent)";
+    return html`
+      <div style="position:absolute;left:${left}%;width:${width}%;top:-8px;height:6px;background:${color};opacity:0.55;border-radius:3px;pointer-events:none"></div>
+      <div style="position:absolute;left:${left}%;width:${width}%;bottom:-8px;height:6px;background:transparent;border-bottom:2px dashed ${color};opacity:0.7;pointer-events:none"></div>
     `;
   }
 
@@ -177,6 +241,7 @@ export class ChronosTimeline extends LitElement {
           const a = (h / 24) * Math.PI * 2 - Math.PI / 2;
           return svg`<text x="${cx + rLabels * Math.cos(a)}" y="${cy + rLabels * Math.sin(a)}" text-anchor="middle" dy="4" font-size="11">${String(h).padStart(2, "0")}</text>`;
         })}
+        ${this._renderRadialGhost(cx, cy, rOuter, arc)}
         ${this.interactive && selectedBlock ? svg`${handleAt(resolveBlockTime(selectedBlock, "start"), this.selectedIdx, "l")}${handleAt(resolveBlockTime(selectedBlock, "end"), this.selectedIdx, "r")}` : nothing}
         ${nowAngle !== null ? svg`
           <g pointer-events="none">

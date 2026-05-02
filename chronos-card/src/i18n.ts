@@ -309,6 +309,8 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "wr.action.duration": { it: "Cambia durata", en: "Change duration", fr: "Changer la durée", de: "Dauer ändern" },
   "wr.action.duration.desc": { it: "Estende o accorcia la fascia", en: "Extend or shorten the block", fr: "Allonge ou raccourcit le créneau", de: "Verlängert oder kürzt den Block" },
   // Rule builder v1.7
+  "wr.schedule_picker.label": { it: "Schedulazione", en: "Schedule", fr: "Planification", de: "Zeitplan" },
+  "wr.schedule_picker.hint": { it: "A quale schedulazione viene aggiunta la regola", en: "Which schedule the rule will be added to", fr: "À quelle planification la règle est ajoutée", de: "Zu welchem Zeitplan die Regel hinzugefügt wird" },
   "wr.target.title": { it: "A quale fascia si applica", en: "Which block this rule targets", fr: "Quel créneau cette règle cible", de: "Auf welchen Block die Regel angewendet wird" },
   "wr.target.subtitle": { it: "Limita l'effetto a una sola fascia o lascia globale", en: "Limit the effect to a single block or keep it global", fr: "Limite l'effet à un seul créneau ou laisse global", de: "Effekt auf einen einzelnen Block beschränken oder global lassen" },
   "wr.target.label": { it: "Fascia", en: "Block", fr: "Créneau", de: "Block" },
