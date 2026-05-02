@@ -43,36 +43,53 @@ export class ChronosTimeline extends LitElement {
   }
 
   private _renderRadialGhost(cx: number, cy: number, rOuter: number, _arcFn: (s: number, e: number, rO: number, rI: number) => string) {
+    // Always draw the faint reference ring when interactive (so the user sees
+    // there is a "projection layer" around the main timeline). The accent
+    // arc is overlaid only when a rule is selected for preview.
+    const r = rOuter + 14;
+    const ringStrokeWidth = 8;
+    const reference = this.previewRule ? svg`
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none"
+        stroke="var(--border-soft)" stroke-width="${ringStrokeWidth}"
+        opacity="0.4" pointer-events="none"/>
+    ` : svg``;
+
     const range = this._computePreviewRange();
-    if (!range) return svg``;
-    if (range.endH <= range.startH) return svg``;
-    // Single stroked arc just outside the main ring, sharing center (cx, cy).
-    const r = rOuter + 9;
+    if (!range) return reference;
+    if (range.endH <= range.startH) return reference;
+
     const a1 = (range.startH / 24) * Math.PI * 2 - Math.PI / 2;
     const a2 = (range.endH / 24) * Math.PI * 2 - Math.PI / 2;
     const large = (range.endH - range.startH) > 12 ? 1 : 0;
     const x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1);
     const x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2);
-    // The "anchor" end is bigger / has the arrow pointing outward
-    const aAnchor = range.anchor === "end" ? a2 : a1;
+
+    // Anchor = the side of the ghost that's flush against the block edge.
+    //  - forward extend  (ghost AFTER block):  anchor at startH = a1
+    //  - backward extend (ghost BEFORE block): anchor at endH   = a2
+    //  - shift / scale:  same convention via range.anchor
+    const aAnchor = range.anchor === "end" ? a1 : a2;
     const xAnchor = cx + r * Math.cos(aAnchor);
     const yAnchor = cy + r * Math.sin(aAnchor);
-    // Arrow tip pointing AWAY from the block edge
-    const arrowR = r + 12;
-    const arrowDir = range.anchor === "end" ? 1 : -1;
-    const aArrow = aAnchor + arrowDir * 0.06;  // slight clockwise/counter-clockwise offset
+
+    // Arrow tip pointing AWAY from the block, in the direction of motion.
+    const aFar = range.anchor === "end" ? a2 : a1;
+    const arrowR = r + 14;
+    const aArrow = aFar + (range.anchor === "end" ? 1 : -1) * 0.04;
     const xArrowTip = cx + arrowR * Math.cos(aArrow);
     const yArrowTip = cy + arrowR * Math.sin(aArrow);
+
     return svg`
+      ${reference}
       <path d="M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}"
-        fill="none" stroke="var(--accent)" stroke-width="5"
-        stroke-linecap="round" stroke-dasharray="6 4" stroke-opacity="0.85"
+        fill="none" stroke="var(--accent)" stroke-width="${ringStrokeWidth}"
+        stroke-linecap="round" stroke-opacity="0.95"
         pointer-events="none"/>
-      <circle cx="${x1}" cy="${y1}" r="3.5" fill="var(--accent)" pointer-events="none"/>
-      <circle cx="${x2}" cy="${y2}" r="3.5" fill="var(--accent)" pointer-events="none"/>
-      <line x1="${xAnchor}" y1="${yAnchor}" x2="${xArrowTip}" y2="${yArrowTip}"
+      <circle cx="${xAnchor}" cy="${yAnchor}" r="5" fill="var(--accent)" stroke="white" stroke-width="2" pointer-events="none"/>
+      <line x1="${cx + (r + 4) * Math.cos(aFar)}" y1="${cy + (r + 4) * Math.sin(aFar)}"
+        x2="${xArrowTip}" y2="${yArrowTip}"
         stroke="var(--accent)" stroke-width="3" stroke-linecap="round" pointer-events="none"/>
-      <circle cx="${xArrowTip}" cy="${yArrowTip}" r="4" fill="var(--accent)" pointer-events="none"/>
+      <circle cx="${xArrowTip}" cy="${yArrowTip}" r="4.5" fill="var(--accent)" pointer-events="none"/>
     `;
   }
 
@@ -156,20 +173,28 @@ export class ChronosTimeline extends LitElement {
   }
 
   private _renderLinearGhost(pct: (h: number) => number) {
+    if (!this.previewRule) return nothing;
     const range = this._computePreviewRange();
     if (!range) return nothing;
     const left = pct(range.startH);
     const width = pct(range.endH) - left;
     if (width <= 0) return nothing;
     const color = "var(--accent)";
-    // Arrow indicator on the anchor side: triangle pointing outward
-    const arrowSide = range.anchor === "end" ? "right" : "left";
-    const arrowChar = arrowSide === "right" ? "→" : "←";
-    const arrowPos = arrowSide === "right" ? `left:${pct(range.endH)}%` : `right:${100 - pct(range.startH)}%`;
+    const anchorSide = range.anchor === "end" ? "left" : "right";
+    const movingSide = anchorSide === "left" ? "right" : "left";
+    const arrowChar = movingSide === "right" ? "→" : "←";
+    const anchorPos = anchorSide === "left"
+      ? `left:${left}%`
+      : `left:calc(${pct(range.endH)}% - 4px)`;
+    const arrowPos = movingSide === "right"
+      ? `left:calc(${pct(range.endH)}% + 2px)`
+      : `right:calc(${100 - pct(range.startH)}% + 2px)`;
+    // Ghost band drawn inside the timeline's bottom empty area (between blocks
+    // and hour labels). 8px tall band, centered around bottom: 13px.
     return html`
-      <div style="position:absolute;left:${left}%;width:${width}%;top:-8px;height:6px;background:${color};opacity:0.55;border-radius:3px;pointer-events:none"></div>
-      <div style="position:absolute;left:${left}%;width:${width}%;bottom:-8px;height:6px;background:transparent;border-bottom:2px dashed ${color};opacity:0.7;pointer-events:none"></div>
-      <div style="position:absolute;${arrowPos};top:-14px;color:${color};font-weight:700;font-size:14px;pointer-events:none">${arrowChar}</div>
+      <div style="position:absolute;left:${left}%;width:${width}%;bottom:11px;height:6px;background:${color};opacity:0.85;border-radius:3px;pointer-events:none"></div>
+      <div style="position:absolute;${anchorPos};bottom:8px;width:4px;height:12px;background:${color};border-radius:1px;pointer-events:none"></div>
+      <div style="position:absolute;${arrowPos};bottom:8px;color:${color};font-weight:700;font-size:11px;line-height:12px;pointer-events:none">${arrowChar}</div>
     `;
   }
 
@@ -289,9 +314,13 @@ export class ChronosTimeline extends LitElement {
 
   // --- List ---
   private _renderList() {
+    const range = this._computePreviewRange();
     return html`
       <div class="tl-list">
-        ${this.blocks.map((b, i) => html`
+        ${this.blocks.map((b, i) => {
+          const isTarget = range && range.targetIdx === i;
+          const previewLabel = isTarget ? this._listPreviewLabel(range) : "";
+          return html`
           <div
             class="tl-list__row"
             style="border-color:${this.selectedIdx === i ? "var(--accent)" : "var(--border-soft)"};background:${this.selectedIdx === i ? "var(--accent-soft)" : "var(--bg-sunken)"}"
@@ -302,11 +331,34 @@ export class ChronosTimeline extends LitElement {
               <span class="tl-list__mode-dot" style="background:${actionColor(this.deviceType, b.action)}"></span>
               <strong>${actionLabel(this.deviceType, b.action)}</strong>
             </div>
+            ${previewLabel ? html`
+              <span class="chip" style="background:var(--accent-soft);color:var(--accent-ink);font-weight:600">
+                ${previewLabel}
+              </span>
+            ` : nothing}
             <span class="mono text-xs text-mute">${Math.round((resolveBlockTime(b, "end") - resolveBlockTime(b, "start")) * 60)} min</span>
           </div>
-        `)}
+          `;
+        })}
       </div>
     `;
+  }
+
+  /** Build a short delta label for the list preview chip. */
+  private _listPreviewLabel(range: { startH: number; endH: number; targetIdx: number; anchor: "start" | "end" }): string {
+    const rule = this.previewRule;
+    if (!rule) return "";
+    const dMin = Math.round((range.endH - range.startH) * 60);
+    const arrow = range.anchor === "end" ? "→" : "←";
+    if (rule.effect === "shift") return `${arrow} shift ${dMin}m`;
+    if (rule.effect === "extend") return `${arrow} +${dMin} min`;
+    if (rule.effect === "shrink") return `${arrow} −${dMin} min`;
+    if (rule.effect === "scale_duration") {
+      const omin = rule.scale_out_min ?? 0;
+      const omax = rule.scale_out_max ?? 60;
+      return `${arrow} ${omin}–${omax} min`;
+    }
+    return "";
   }
 
   // --- Drag logic ---
