@@ -186,6 +186,11 @@ export class ChronosEditor extends LitElement {
                           <span class="switch__track"></span>
                           <span class="switch__thumb"></span>
                         </label>
+                        <button class="btn btn--icon btn--ghost btn--sm"
+                          @click=${(e: Event) => { e.stopPropagation(); this.card.editWeatherRule(schedule.id, i); }}
+                          title="${t("common.edit") !== "common.edit" ? t("common.edit") : "Modifica"}">
+                          ${icon("edit", 12)}
+                        </button>
                         <button class="btn btn--icon btn--ghost btn--sm" style="color:var(--danger)"
                           @click=${(e: Event) => {
                             e.stopPropagation();

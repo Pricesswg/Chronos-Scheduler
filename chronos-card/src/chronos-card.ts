@@ -88,6 +88,9 @@ export class ChronosCard extends LitElement {
   @state() _mobile = false;
   @state() _drawerOpen = false;
   @state() _desktopCollapsed = false;
+  /** When set, the rule builder edits this rule of the selected schedule
+   * instead of creating a new one. Reset to -1 when leaving the builder. */
+  @state() _editingRuleIdx = -1;
 
   private _resizeObserver?: ResizeObserver;
 
@@ -205,7 +208,18 @@ export class ChronosCard extends LitElement {
     } else {
       this._screen = screen;
     }
+    // Reset edit state when leaving the rule builder
+    if (this._screen !== "weatherRule") {
+      this._editingRuleIdx = -1;
+    }
     this._drawerOpen = false;
+  }
+
+  /** Open the rule builder pre-filled with an existing rule for editing. */
+  editWeatherRule(scheduleId: string, ruleIdx: number) {
+    this.selectSchedule(scheduleId);
+    this._editingRuleIdx = ruleIdx;
+    this._screen = "weatherRule";
   }
 
   selectSchedule(id: string, screen?: Screen) {

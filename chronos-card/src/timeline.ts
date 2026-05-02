@@ -93,25 +93,24 @@ export class ChronosTimeline extends LitElement {
     const dir = rule.direction || "forward";
     const dH = (rule.delta_minutes || 0) / 60;
 
-    // We render the ghost as the NEW (post-rule) block size, so the user
-    // sees the whole future block including the existing portion. The arrow
-    // points outward on the edge that moves.
+    // Ghost shows the DELTA / range of the moving edge — small arc just
+    // outside the ring at the appropriate side, not the full new block.
     if (rule.effect === "shift") {
       return { startH: bs + dH, endH: be + dH, targetIdx: idx, anchor: dH >= 0 ? "end" : "start" };
     }
     if (rule.effect === "extend") {
-      if (dir === "forward") return { startH: bs, endH: Math.min(24, be + dH), targetIdx: idx, anchor: "end" };
-      return { startH: Math.max(0, bs - dH), endH: be, targetIdx: idx, anchor: "start" };
+      if (dir === "forward") return { startH: be, endH: Math.min(24, be + dH), targetIdx: idx, anchor: "end" };
+      return { startH: Math.max(0, bs - dH), endH: bs, targetIdx: idx, anchor: "start" };
     }
     if (rule.effect === "shrink") {
-      if (dir === "forward") return { startH: bs, endH: Math.max(bs + 0.05, be - dH), targetIdx: idx, anchor: "end" };
-      return { startH: Math.min(be - 0.05, bs + dH), endH: be, targetIdx: idx, anchor: "start" };
+      if (dir === "forward") return { startH: Math.max(bs, be - dH), endH: be, targetIdx: idx, anchor: "end" };
+      return { startH: bs, endH: Math.min(be, bs + dH), targetIdx: idx, anchor: "start" };
     }
     if (rule.effect === "scale_duration") {
-      // Show the MAXIMUM possible duration (worst case) as the ghost extent
+      const outMin = (rule.scale_out_min || 0) / 60;
       const outMax = (rule.scale_out_max || 60) / 60;
-      if (dir === "forward") return { startH: bs, endH: Math.min(24, bs + outMax), targetIdx: idx, anchor: "end" };
-      return { startH: Math.max(0, be - outMax), endH: be, targetIdx: idx, anchor: "start" };
+      if (dir === "forward") return { startH: bs + outMin, endH: Math.min(24, bs + outMax), targetIdx: idx, anchor: "end" };
+      return { startH: Math.max(0, be - outMax), endH: be - outMin, targetIdx: idx, anchor: "start" };
     }
     return null;
   }

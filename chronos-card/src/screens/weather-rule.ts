@@ -27,6 +27,11 @@ export class ChronosWeatherRule extends LitElement {
   @property({ attribute: false, hasChanged: () => true }) card!: ChronosCard;
   @property({ type: Number }) nowHour = 0;
 
+  // Tracks which rule index the builder is currently mirroring, so we can
+  // detect when the user navigated in for editing a (possibly different) rule
+  // and refresh the form state.
+  private _hydratedFor: string = "";
+
   // Common
   @state() private _blockIndex: number | null = null; // null = all blocks
   @state() private _effect: RuleEffect = "skip";
@@ -54,6 +59,7 @@ export class ChronosWeatherRule extends LitElement {
 
   render() {
     const schedule = this.card._schedules.find((s) => s.id === this.card._selectedId) || this.card._schedules[0];
+    if (schedule) this._hydrateFromExisting(schedule);
     if (!schedule) return html`
       <div class="card" style="text-align:center;padding:40px;color:var(--text-muted)">
         <div style="font-weight:600;color:var(--text);font-size:14px">${t("overview.no_schedules")}</div>
@@ -80,7 +86,7 @@ export class ChronosWeatherRule extends LitElement {
           <button class="btn btn--ghost btn--sm" @click=${() => this.card.navigate("weatherRulesList")}>
             ${icon("chevron-left", 14)} ${t("nav.weather_rules")}
           </button>
-          <h1 class="page-title" style="margin-top:6px">${t("wr.heading")}</h1>
+          <h1 class="page-title" style="margin-top:6px">${this.card._editingRuleIdx >= 0 ? t("wr.heading.edit") : t("wr.heading")}</h1>
           <p class="page-sub">${t("wr.subtitle")}</p>
         </div>
 
@@ -480,8 +486,11 @@ export class ChronosWeatherRule extends LitElement {
   private async _saveRule(schedule: any, varDef: any, typeActions: any[]) {
     const ifText = this._buildIfText(varDef);
     const thenText = this._buildThenText();
+    const editingIdx = this.card._editingRuleIdx;
+    // Preserve `active` flag when editing; default true on create.
+    const wasActive = editingIdx >= 0 ? schedule.weather_rules?.[editingIdx]?.active ?? true : true;
     const rule: WeatherRule = {
-      active: true,
+      active: wasActive,
       if: ifText,
       then: thenText,
       effect: this._effect,
@@ -508,9 +517,68 @@ export class ChronosWeatherRule extends LitElement {
       rule.scale_out_max = this._scaleOutMax;
       if (this._effect === "scale_duration") rule.direction = this._direction;
     }
-    const newRules = [...(schedule.weather_rules || []), rule];
+    let newRules: WeatherRule[];
+    if (editingIdx >= 0) {
+      newRules = [...(schedule.weather_rules || [])];
+      newRules[editingIdx] = rule;
+    } else {
+      newRules = [...(schedule.weather_rules || []), rule];
+    }
     this.card.updateScheduleLocal(schedule.id, { weather_rules: newRules });
     this.card.navigate("editor");
+  }
+
+  /** Pre-fill the form fields from an existing rule when entering in edit mode. */
+  private _hydrateFromExisting(schedule: any) {
+    const editingIdx = this.card._editingRuleIdx;
+    const stamp = `${schedule.id}::${editingIdx}`;
+    if (this._hydratedFor === stamp) return;
+    this._hydratedFor = stamp;
+
+    if (editingIdx < 0) {
+      // create mode — reset to defaults so re-entering from a list with a
+      // different schedule doesn't carry stale state from a prior edit.
+      this._blockIndex = null;
+      this._effect = "skip";
+      this._variable = "temperature";
+      this._op = ">";
+      this._value = "22";
+      this._deltaMin = 30;
+      this._direction = "forward";
+      this._actionId = "";
+      this._actionValue = null;
+      this._fireMode = "once_per_daytime";
+      this._scaleVar = "temperature";
+      this._scaleVarMin = 25;
+      this._scaleVarMax = 35;
+      this._scaleOutMin = 30;
+      this._scaleOutMax = 120;
+      return;
+    }
+
+    const r = schedule.weather_rules?.[editingIdx];
+    if (!r) return;
+    this._effect = r.effect || "skip";
+    this._blockIndex = (r.block_index === undefined ? null : r.block_index);
+    if (r.if) {
+      // Best-effort parse of the legacy human-readable expression
+      const m = String(r.if).match(/^([\w.]+)\s*(>=|<=|!=|==|>|<)\s*(.*?)$/);
+      if (m) {
+        this._variable = m[1];
+        this._op = m[2];
+        this._value = m[3].replace(/[^0-9.\-+a-zA-Z]/g, "");
+      }
+    }
+    if (r.delta_minutes !== undefined) this._deltaMin = r.delta_minutes;
+    if (r.direction) this._direction = r.direction;
+    if (r.action_id) this._actionId = r.action_id;
+    this._actionValue = r.action_value !== undefined ? r.action_value : null;
+    if (r.fire_mode) this._fireMode = r.fire_mode;
+    if (r.scale_var) this._scaleVar = r.scale_var;
+    if (r.scale_var_min !== undefined) this._scaleVarMin = r.scale_var_min;
+    if (r.scale_var_max !== undefined) this._scaleVarMax = r.scale_var_max;
+    if (r.scale_out_min !== undefined) this._scaleOutMin = r.scale_out_min;
+    if (r.scale_out_max !== undefined) this._scaleOutMax = r.scale_out_max;
   }
 
   private _buildIfText(varDef: any): string {

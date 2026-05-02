@@ -30,6 +30,7 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "common.cancel": { it: "Annulla", en: "Cancel", fr: "Annuler", de: "Abbrechen" },
   "common.save": { it: "Salva", en: "Save", fr: "Enregistrer", de: "Speichern" },
   "common.delete": { it: "Elimina", en: "Delete", fr: "Supprimer", de: "Löschen" },
+  "common.edit": { it: "Modifica", en: "Edit", fr: "Modifier", de: "Bearbeiten" },
   "common.remove": { it: "Rimuovi", en: "Remove", fr: "Retirer", de: "Entfernen" },
   "common.add": { it: "Aggiungi", en: "Add", fr: "Ajouter", de: "Hinzufügen" },
   "common.back": { it: "Indietro", en: "Back", fr: "Retour", de: "Zurück" },
@@ -292,6 +293,7 @@ const STRINGS: Record<string, Record<Lang, string>> = {
 
   // Weather rule builder
   "wr.heading": { it: "Regola meteo", en: "Weather rule", fr: "Règle météo", de: "Wetterregel" },
+  "wr.heading.edit": { it: "Modifica regola meteo", en: "Edit weather rule", fr: "Modifier la règle météo", de: "Wetterregel bearbeiten" },
   "wr.subtitle": { it: "Costruisci una condizione IF/THEN. Verrà valutata ad ogni transizione di fascia.", en: "Build an IF/THEN condition. It is evaluated on every block transition.", fr: "Construis une condition SI/ALORS. Évaluée à chaque transition de créneau.", de: "Erstelle eine WENN/DANN-Bedingung. Wird bei jedem Blockwechsel ausgewertet." },
   "wr.if.title": { it: "Condizione · quando", en: "Condition · when", fr: "Condition · quand", de: "Bedingung · wann" },
   "wr.if.subtitle": { it: "Cosa deve essere vero per attivare la regola", en: "What must be true for the rule to fire", fr: "Ce qui doit être vrai pour déclencher la règle", de: "Was wahr sein muss, damit die Regel auslöst" },
@@ -337,9 +339,9 @@ const STRINGS: Record<string, Record<Lang, string>> = {
 
   "wr.delta": { it: "Variazione", en: "Delta", fr: "Variation", de: "Differenz" },
   "wr.direction.label": { it: "Direzione", en: "Direction", fr: "Direction", de: "Richtung" },
-  "wr.direction.forward": { it: "→ Estende verso fascia successiva", en: "→ Extend into next block", fr: "→ Étendre vers le créneau suivant", de: "→ In den nächsten Block erweitern" },
-  "wr.direction.backward": { it: "← Estende verso fascia precedente", en: "← Extend into previous block", fr: "← Étendre vers le créneau précédent", de: "← In den vorherigen Block erweitern" },
-  "wr.direction.hint": { it: "Verso quale fascia adiacente cresce o si sposta il blocco selezionato", en: "Which adjacent block the selected block grows or shifts into", fr: "Vers quel créneau adjacent le bloc sélectionné s'étend ou se déplace", de: "In welchen angrenzenden Block der gewählte Block wächst oder sich verschiebt" },
+  "wr.direction.forward": { it: "Avanti (sposta la fine)", en: "Forward (move end)", fr: "Avant (décaler la fin)", de: "Vorwärts (Ende verschieben)" },
+  "wr.direction.backward": { it: "Indietro (sposta l'inizio)", en: "Backward (move start)", fr: "Arrière (décaler le début)", de: "Rückwärts (Anfang verschieben)" },
+  "wr.direction.hint": { it: "In quale direzione spostare l'edge del blocco target", en: "Which edge of the target block to move", fr: "Quel bord du créneau cible déplacer", de: "Welche Kante des Zielblocks verschoben werden soll" },
 
   "wr.scale.input.title": { it: "Variabile di input", en: "Input variable", fr: "Variable d'entrée", de: "Eingangsvariable" },
   "wr.scale.input.subtitle": { it: "Range della variabile meteo letta in tempo reale", en: "Range of the weather variable read live", fr: "Plage de la variable météo en direct", de: "Bereich der live gelesenen Wettervariable" },

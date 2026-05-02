@@ -74,9 +74,9 @@ export class ChronosWeatherRulesList extends LitElement {
                     <span class="switch__track"></span>
                     <span class="switch__thumb"></span>
                   </label>
-                  <button class="btn btn--sm" @click=${(e: Event) => { e.stopPropagation(); this.card.selectSchedule(r.schedId, "editor"); }}
-                    title="${t("device.open_schedule")}">
-                    ${icon("edit", 12)} ${t("device.open_schedule")}
+                  <button class="btn btn--sm" @click=${(e: Event) => { e.stopPropagation(); this.card.editWeatherRule(r.schedId, r.idx); }}
+                    title="${t("common.edit")}">
+                    ${icon("edit", 12)} ${t("common.edit")}
                   </button>
                   <button class="btn btn--icon btn--ghost btn--sm" style="color:var(--danger)"
                     @click=${(e: Event) => { e.stopPropagation(); this._deleteRule(r.schedId, r.idx); }}
