@@ -42,22 +42,47 @@ export class ChronosTimeline extends LitElement {
     return this._renderLinear();
   }
 
-  private _renderRadialGhost(cx: number, cy: number, rOuter: number, arcFn: (s: number, e: number, rO: number, rI: number) => string) {
+  private _renderRadialGhost(cx: number, cy: number, rOuter: number, _arcFn: (s: number, e: number, rO: number, rI: number) => string) {
     const range = this._computePreviewRange();
     if (!range) return svg``;
-    const rGhostOuter = rOuter + 22;
-    const rGhostInner = rOuter + 8;
+    if (range.endH <= range.startH) return svg``;
+    // Single stroked arc just outside the main ring, sharing center (cx, cy).
+    const r = rOuter + 9;
+    const a1 = (range.startH / 24) * Math.PI * 2 - Math.PI / 2;
+    const a2 = (range.endH / 24) * Math.PI * 2 - Math.PI / 2;
+    const large = (range.endH - range.startH) > 12 ? 1 : 0;
+    const x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1);
+    const x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2);
+    // The "anchor" end is bigger / has the arrow pointing outward
+    const aAnchor = range.anchor === "end" ? a2 : a1;
+    const xAnchor = cx + r * Math.cos(aAnchor);
+    const yAnchor = cy + r * Math.sin(aAnchor);
+    // Arrow tip pointing AWAY from the block edge
+    const arrowR = r + 12;
+    const arrowDir = range.anchor === "end" ? 1 : -1;
+    const aArrow = aAnchor + arrowDir * 0.06;  // slight clockwise/counter-clockwise offset
+    const xArrowTip = cx + arrowR * Math.cos(aArrow);
+    const yArrowTip = cy + arrowR * Math.sin(aArrow);
     return svg`
-      <path d="${arcFn(range.startH, range.endH, rGhostOuter, rGhostInner)}"
-        fill="var(--accent)" fill-opacity="0.18"
-        stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4 3"
+      <path d="M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}"
+        fill="none" stroke="var(--accent)" stroke-width="5"
+        stroke-linecap="round" stroke-dasharray="6 4" stroke-opacity="0.85"
         pointer-events="none"/>
+      <circle cx="${x1}" cy="${y1}" r="3.5" fill="var(--accent)" pointer-events="none"/>
+      <circle cx="${x2}" cy="${y2}" r="3.5" fill="var(--accent)" pointer-events="none"/>
+      <line x1="${xAnchor}" y1="${yAnchor}" x2="${xArrowTip}" y2="${yArrowTip}"
+        stroke="var(--accent)" stroke-width="3" stroke-linecap="round" pointer-events="none"/>
+      <circle cx="${xArrowTip}" cy="${yArrowTip}" r="4" fill="var(--accent)" pointer-events="none"/>
     `;
   }
 
   /** Compute the geometric range a preview rule would affect on its target
-   * block. Returns null if the rule is not geometric or has no target block. */
-  private _computePreviewRange(): { startH: number; endH: number; targetIdx: number } | null {
+   * block. Returns null if the rule is not geometric or has no target block.
+   * `anchor` indicates which edge the change starts from (for arrow display):
+   *  "end"   — change starts at block end (forward direction)
+   *  "start" — change starts at block start (backward direction)
+   */
+  private _computePreviewRange(): { startH: number; endH: number; targetIdx: number; anchor: "start" | "end" } | null {
     const rule = this.previewRule;
     if (!rule) return null;
     const idx = rule.block_index;
@@ -69,21 +94,21 @@ export class ChronosTimeline extends LitElement {
     const dH = (rule.delta_minutes || 0) / 60;
 
     if (rule.effect === "shift") {
-      return { startH: bs + dH, endH: be + dH, targetIdx: idx };
+      return { startH: bs + dH, endH: be + dH, targetIdx: idx, anchor: dH >= 0 ? "end" : "start" };
     }
     if (rule.effect === "extend") {
-      if (dir === "forward") return { startH: be, endH: Math.min(24, be + dH), targetIdx: idx };
-      return { startH: Math.max(0, bs - dH), endH: bs, targetIdx: idx };
+      if (dir === "forward") return { startH: be, endH: Math.min(24, be + dH), targetIdx: idx, anchor: "end" };
+      return { startH: Math.max(0, bs - dH), endH: bs, targetIdx: idx, anchor: "start" };
     }
     if (rule.effect === "shrink") {
-      if (dir === "forward") return { startH: Math.max(bs, be - dH), endH: be, targetIdx: idx };
-      return { startH: bs, endH: Math.min(be, bs + dH), targetIdx: idx };
+      if (dir === "forward") return { startH: Math.max(bs, be - dH), endH: be, targetIdx: idx, anchor: "end" };
+      return { startH: bs, endH: Math.min(be, bs + dH), targetIdx: idx, anchor: "start" };
     }
     if (rule.effect === "scale_duration") {
       const outMin = (rule.scale_out_min || 0) / 60;
       const outMax = (rule.scale_out_max || 60) / 60;
-      if (dir === "forward") return { startH: bs + outMin, endH: Math.min(24, bs + outMax), targetIdx: idx };
-      return { startH: Math.max(0, be - outMax), endH: be - outMin, targetIdx: idx };
+      if (dir === "forward") return { startH: bs + outMin, endH: Math.min(24, bs + outMax), targetIdx: idx, anchor: "end" };
+      return { startH: Math.max(0, be - outMax), endH: be - outMin, targetIdx: idx, anchor: "start" };
     }
     return null;
   }
@@ -135,9 +160,14 @@ export class ChronosTimeline extends LitElement {
     const width = pct(range.endH) - left;
     if (width <= 0) return nothing;
     const color = "var(--accent)";
+    // Arrow indicator on the anchor side: triangle pointing outward
+    const arrowSide = range.anchor === "end" ? "right" : "left";
+    const arrowChar = arrowSide === "right" ? "→" : "←";
+    const arrowPos = arrowSide === "right" ? `left:${pct(range.endH)}%` : `right:${100 - pct(range.startH)}%`;
     return html`
       <div style="position:absolute;left:${left}%;width:${width}%;top:-8px;height:6px;background:${color};opacity:0.55;border-radius:3px;pointer-events:none"></div>
       <div style="position:absolute;left:${left}%;width:${width}%;bottom:-8px;height:6px;background:transparent;border-bottom:2px dashed ${color};opacity:0.7;pointer-events:none"></div>
+      <div style="position:absolute;${arrowPos};top:-14px;color:${color};font-weight:700;font-size:14px;pointer-events:none">${arrowChar}</div>
     `;
   }
 

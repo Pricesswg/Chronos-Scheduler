@@ -59,26 +59,27 @@ export class ChronosWeatherRulesList extends LitElement {
           <div class="card">
             <div class="col" style="gap:0">
               ${allRules.map((r) => html`
-                <div class="rule-block" style="border-radius:0;border:0;border-bottom:1px solid var(--border-soft);padding:14px 12px">
-                  <div style="flex:0 0 200px;min-width:0">
-                    <button class="btn btn--ghost btn--sm" style="padding:2px 8px;display:inline-flex"
-                      @click=${() => this.card.selectSchedule(r.schedId, "editor")}>
-                      <span class="truncate" style="max-width:180px">${r.schedName}</span>
-                      ${icon("chevron-right", 11)}
-                    </button>
-                  </div>
+                <div class="rule-block" style="border-radius:0;border:0;border-bottom:1px solid var(--border-soft);padding:14px 12px;cursor:pointer"
+                  @click=${() => this.card.selectSchedule(r.schedId, "editor")}>
+                  <span class="chip chip--accent" style="flex:0 0 auto;max-width:180px" title="${r.schedName}">
+                    <span class="truncate" style="max-width:160px;display:inline-block;vertical-align:middle">${r.schedName}</span>
+                  </span>
                   <span class="rule-block__label rule-block__label--if">IF</span>
                   <span class="rule-token rule-token--weather">${r.ifText}</span>
                   <span class="rule-block__label rule-block__label--then">THEN</span>
                   <span class="rule-token rule-token--accent">${r.thenText}</span>
                   <div style="flex:1"></div>
-                  <label class="switch">
+                  <label class="switch" @click=${(e: Event) => e.stopPropagation()}>
                     <input type="checkbox" .checked=${r.active} @change=${(e: Event) => this._toggleRule(r.schedId, r.idx, (e.target as HTMLInputElement).checked)}/>
                     <span class="switch__track"></span>
                     <span class="switch__thumb"></span>
                   </label>
+                  <button class="btn btn--sm" @click=${(e: Event) => { e.stopPropagation(); this.card.selectSchedule(r.schedId, "editor"); }}
+                    title="${t("device.open_schedule")}">
+                    ${icon("edit", 12)} ${t("device.open_schedule")}
+                  </button>
                   <button class="btn btn--icon btn--ghost btn--sm" style="color:var(--danger)"
-                    @click=${() => this._deleteRule(r.schedId, r.idx)}
+                    @click=${(e: Event) => { e.stopPropagation(); this._deleteRule(r.schedId, r.idx); }}
                     title="${t("common.remove")}">
                     ${icon("trash", 12)}
                   </button>
