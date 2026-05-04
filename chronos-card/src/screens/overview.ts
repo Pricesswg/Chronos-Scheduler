@@ -57,6 +57,9 @@ export class ChronosOverview extends LitElement {
           </div>
           <div class="row">
             <button class="btn" @click=${() => this.card.navigate("week")}>${icon("calendar", 14)} ${t("nav.week")}</button>
+            <button class="btn" @click=${() => this.card.createSceneSchedule()} title="${t("overview.new_scene.hint")}">
+              ${icon("sun", 14)} ${t("overview.new_scene")}
+            </button>
             <button class="btn btn--primary" @click=${() => this.card.navigate("wizard")}>${icon("plus", 14)} ${t("nav.new_schedule")}</button>
           </div>
         </div>

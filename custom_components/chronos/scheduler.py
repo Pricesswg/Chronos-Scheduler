@@ -531,6 +531,40 @@ class ChronosScheduler:
         service_str = action_def["service"]
         domain, service = service_str.split(".", 1)
 
+        # Scene-type schedules don't iterate device_ids: the per-block action
+        # value is itself the scene entity_id to activate.
+        if device_type == "scene":
+            scene_entity = action.get("value")
+            if not scene_entity:
+                _LOGGER.warning(
+                    "Chronos: schedule=%s scene block has no scene entity selected",
+                    sched_name,
+                )
+                return
+            try:
+                _LOGGER.info(
+                    "Chronos: CALL service scene.turn_on data={entity_id: %s} schedule=%s",
+                    scene_entity, sched_name,
+                )
+                await self._hass.services.async_call(
+                    "scene", "turn_on", {"entity_id": scene_entity}, blocking=False
+                )
+                self._hass.bus.async_fire(EVENT_BLOCK_EXECUTED, {
+                    "schedule_id": sched["id"],
+                    "device_id": None,
+                    "entity_id": scene_entity,
+                    "action_id": action_id,
+                    "value": scene_entity,
+                })
+                if self._store.settings.get("notify_block_executed", True):
+                    await self._notify(
+                        f"{action_def['label']} · {scene_entity}",
+                        title=f"Chronos · {sched_name}",
+                    )
+            except Exception:
+                _LOGGER.exception("Chronos: scene activation failed for %s", scene_entity)
+            return
+
         device_ids = sched.get("device_ids", []) or []
         if not device_ids:
             _LOGGER.warning(

@@ -4,7 +4,7 @@
 ![hass](https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue.svg)
 ![license](https://img.shields.io/badge/license-MIT-green.svg)
 
-**Chronos** is an advanced scheduler for Home Assistant. It manages thermostats, lights, blinds, irrigation, switches, fans, water heaters, mowers and vacuums through daily time slots with **conditional weather rules**.
+**Chronos** is an advanced scheduler for Home Assistant. It manages thermostats, lights, blinds, irrigation, switches, fans, water heaters, mowers, vacuums and scenes through daily time slots with **conditional weather rules**.
 
 A single Lovelace card provides:
 
@@ -14,6 +14,9 @@ A single Lovelace card provides:
 - 7-day week view with per-schedule filtering
 - Live status with weather and device readings
 - 6-step wizard for guided schedule creation
+- Scene schedules: a single schedule that activates a different scene per time block
+- Recurring yearly date ranges to limit a schedule to specific months/days
+- Light advanced parameters (RGB colour, colour temperature, transition) per block
 - Per-device and global settings (theme follows Home Assistant, color customisation, sensor-level weather overrides)
 
 All persisted by Home Assistant, accessible via WebSocket API, and auto-registered as a custom card.
@@ -42,7 +45,7 @@ For Lovelace YAML mode, add the resource manually once:
 
 ```yaml
 resources:
-  - url: /local/chronos-card.js?v=1.6.0
+  - url: /local/chronos-card.js?v=1.8.1
     type: module
 ```
 
@@ -70,6 +73,7 @@ On first run the integration asks to select a `weather.*` entity to use as the w
 | `lawn_mower.*`   | Mower           | start_mowing, dock, pause                  |
 | `water_heater.*` | Water heater    | set_temperature, set_operation_mode        |
 | `valve.*`        | Irrigation      | open_valve, close_valve                    |
+| `scene.*`        | Scene           | turn_on (selected per block, see below)    |
 
 ## Weather rules
 
@@ -84,6 +88,14 @@ A schedule can have any number of weather rules. Each rule has:
     - `once_per_nighttime` — at most once between sunset and sunrise, re-arms at next sunset
 
 Rules can be attached to schedules with time blocks (the rule modifies block behaviour) or to schedules with no time blocks at all (pure weather-triggered automation).
+
+## Scene schedules
+
+Scenes are not imported as devices. Instead, create a scene schedule from the overview ("Schedule scenes" button): the schedule has no devices, and each time block picks which `scene.*` entity to activate. This lets a single schedule fire different scenes throughout the day (for example, "morning" at 07:00, "movie" at 21:00, "night" at 23:30).
+
+## Recurring date ranges
+
+Each schedule can be limited to a yearly recurring date range (e.g. 1 May → 30 September). The year is ignored, so the range repeats every year, and ranges that cross year-end are supported (e.g. 1 December → 28 February). When today's date falls outside the range, the schedule is paused without being disabled.
 
 ## Time block anchors
 

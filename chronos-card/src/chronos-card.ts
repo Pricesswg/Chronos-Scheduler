@@ -25,6 +25,7 @@ import {
   fetchAvailableEntities,
   fetchWeatherEntities,
   fetchSensorEntities,
+  fetchSceneEntities,
   saveSchedule as wsSaveSchedule,
   toggleSchedule as wsToggleSchedule,
   addDevice as wsAddDevice,
@@ -85,6 +86,7 @@ export class ChronosCard extends LitElement {
   @state() _availableEntities: any[] = [];
   @state() _weatherEntities: any[] = [];
   @state() _sensorEntities: any[] = [];
+  @state() _sceneEntities: any[] = [];
   @state() _mobile = false;
   @state() _drawerOpen = false;
   @state() _desktopCollapsed = false;
@@ -159,7 +161,7 @@ export class ChronosCard extends LitElement {
     };
 
     try {
-      const [devices, schedules, settings, actionsMap, weatherAttrs, forecast, available, weatherEnt, sensorEnt] =
+      const [devices, schedules, settings, actionsMap, weatherAttrs, forecast, available, weatherEnt, sensorEnt, sceneEnt] =
         await Promise.all([
           safe(() => fetchDevices(this.hass), [], "devices/list"),
           safe(() => fetchSchedules(this.hass), [], "schedules/list"),
@@ -170,6 +172,7 @@ export class ChronosCard extends LitElement {
           safe(() => fetchAvailableEntities(this.hass), [], "entities/available"),
           safe(() => fetchWeatherEntities(this.hass), [], "weather/entities"),
           safe(() => fetchSensorEntities(this.hass), [], "sensor/entities"),
+          safe(() => fetchSceneEntities(this.hass), [], "scene/entities"),
         ]);
       this._devices = devices;
       this._schedules = schedules;
@@ -181,6 +184,7 @@ export class ChronosCard extends LitElement {
       this._availableEntities = available;
       this._weatherEntities = weatherEnt;
       this._sensorEntities = sensorEnt;
+      this._sceneEntities = sceneEnt;
       setActionsMap(actionsMap);
       setColorSettings(settings);
       if (settings?.snap_minutes) setSnapMinutes(settings.snap_minutes);
@@ -311,6 +315,22 @@ export class ChronosCard extends LitElement {
     } else if (!this._schedules.length) {
       this._selectedId = "";
     }
+  }
+
+  /** Create a scene-type schedule with no devices and a single default block.
+   * The user picks the scene per block on the editor. */
+  async createSceneSchedule() {
+    const schedule: Schedule = {
+      id: "",
+      name: t("overview.new_scene_default_name"),
+      device_type: "scene",
+      device_ids: [],
+      days: [1, 1, 1, 1, 1, 1, 1],
+      enabled: true,
+      blocks: [{ start: 8, end: 9, action: { id: "activate" } }],
+      weather_rules: [],
+    };
+    await this.doAddSchedule(schedule);
   }
 
   async doAddSchedule(schedule: Schedule) {

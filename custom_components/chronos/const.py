@@ -1,5 +1,5 @@
 DOMAIN = "chronos"
-VERSION = "1.8.0"
+VERSION = "1.8.1"
 STORAGE_VERSION = 1
 STORAGE_KEY_DEVICES = f"{DOMAIN}.devices"
 STORAGE_KEY_SCHEDULES = f"{DOMAIN}.schedules"
@@ -15,7 +15,9 @@ DOMAIN_TO_TYPE = {
     "lawn_mower": "mower",
     "water_heater": "boiler",
     "valve": "irrigation",
-    "scene": "scene",
+    # Note: "scene" is intentionally NOT here. Scenes are not imported as
+    # devices; instead, scene-type schedules pick a scene entity per block
+    # via the action's `value` field (resolved by the scene picker UI).
 }
 
 SUPPORTED_DOMAINS = set(DOMAIN_TO_TYPE.keys())
@@ -79,7 +81,13 @@ ACTIONS_BY_TYPE = {
         {"id": "turn_off", "label": "Spegni", "kind": "off", "service": "light.turn_off"},
     ],
     "scene": [
-        {"id": "activate", "label": "Attiva scena", "kind": "on", "service": "scene.turn_on"},
+        {
+            "id": "activate", "label": "Attiva scena", "kind": "on", "service": "scene.turn_on",
+            # value holds the scene entity_id to activate; the UI renders an
+            # entity picker (domain=scene). The scheduler uses this value as
+            # the entity_id for the service call (no device list needed).
+            "value": {"type": "entity", "domain": "scene", "label": "Scena"},
+        },
     ],
     "blind": [
         {

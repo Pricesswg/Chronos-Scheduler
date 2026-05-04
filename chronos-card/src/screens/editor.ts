@@ -46,7 +46,7 @@ export class ChronosEditor extends LitElement {
               <span class="chip ${schedule.enabled ? "chip--on" : ""}"><span class="chip__dot"></span>${schedule.enabled ? t("schedule.active") : t("schedule.disabled")}</span>
               <span class="chip">${icon("repeat", 11)} ${computeRepeat(schedule.days)}</span>
               <span class="chip chip--accent">${deviceIcon(deviceType, 11)} ${typeDef.label}</span>
-              <span class="chip">${icon("device", 11)} ${devices.length}</span>
+              ${deviceType !== "scene" ? html`<span class="chip">${icon("device", 11)} ${devices.length}</span>` : nothing}
               ${(schedule.weather_rules || []).filter((r) => r.active).length > 0
                 ? html`<span class="chip chip--weather">${icon("cloud", 11)} ${t("overview.rules_count", { n: (schedule.weather_rules || []).filter((r) => r.active).length })}</span>`
                 : nothing}
@@ -259,6 +259,19 @@ export class ChronosEditor extends LitElement {
                             return html`<option value="${o}" ?selected=${cur === o}>${o}</option>`;
                           })}
                         </select>
+                      ` : currentActionDef.value.type === "entity" ? html`
+                        <select class="input"
+                          @change=${(e: Event) => this._setBlockValue(schedule.id, (e.target as HTMLSelectElement).value)}>
+                          <option value="" ?selected=${!block.action?.value}>${t("editor.scene.pick_placeholder")}</option>
+                          ${this.card._sceneEntities.map((s: any) => html`
+                            <option value="${s.entity_id}" ?selected=${block.action?.value === s.entity_id}>
+                              ${s.friendly_name || s.entity_id}
+                            </option>
+                          `)}
+                        </select>
+                        ${!block.action?.value ? html`
+                          <span class="field__hint" style="color:var(--warn);margin-top:4px">${t("editor.scene.pick_warn")}</span>
+                        ` : nothing}
                       ` : nothing}
                     </div>
                   ` : nothing}
@@ -270,31 +283,40 @@ export class ChronosEditor extends LitElement {
               ` : nothing}
             </div>
 
-            <div class="card">
-              <div class="card__header">
-                <div style="flex:1"><h3 class="card__title">${t("editor.devices_section")}</h3><p class="card__sub">${t("editor.devices_count", { n: devices.length })}</p></div>
+            ${deviceType === "scene" ? html`
+              <div class="card">
+                <div class="card__header">
+                  <div style="flex:1"><h3 class="card__title">${t("editor.scene.section")}</h3><p class="card__sub">${t("editor.scene.section.hint")}</p></div>
+                </div>
+                <p class="text-xs text-mute" style="margin:0">${t("editor.scene.no_devices")}</p>
               </div>
-              ${this._renderDevicePicker(schedule, deviceType)}
-              <div class="col" style="gap:2px;margin-top:10px">
-                ${devices.map((d: any) => html`
-                  <div class="device-row">
-                    <div class="device-row__icon">${deviceIcon(d.type, 17)}</div>
-                    <div class="device-row__main">
-                      <div class="device-row__name">${d.alias}</div>
-                      <div class="device-row__meta">${d.area} · ${d.entity_id}</div>
+            ` : html`
+              <div class="card">
+                <div class="card__header">
+                  <div style="flex:1"><h3 class="card__title">${t("editor.devices_section")}</h3><p class="card__sub">${t("editor.devices_count", { n: devices.length })}</p></div>
+                </div>
+                ${this._renderDevicePicker(schedule, deviceType)}
+                <div class="col" style="gap:2px;margin-top:10px">
+                  ${devices.map((d: any) => html`
+                    <div class="device-row">
+                      <div class="device-row__icon">${deviceIcon(d.type, 17)}</div>
+                      <div class="device-row__main">
+                        <div class="device-row__name">${d.alias}</div>
+                        <div class="device-row__meta">${d.area} · ${d.entity_id}</div>
+                      </div>
+                      <button class="btn btn--icon btn--ghost btn--sm" style="color:var(--danger)"
+                        @click=${() => this._removeDeviceFromSchedule(schedule.id, d.id)}
+                        title="${t("common.remove")}">
+                        ${icon("trash", 12)}
+                      </button>
                     </div>
-                    <button class="btn btn--icon btn--ghost btn--sm" style="color:var(--danger)"
-                      @click=${() => this._removeDeviceFromSchedule(schedule.id, d.id)}
-                      title="${t("common.remove")}">
-                      ${icon("trash", 12)}
-                    </button>
-                  </div>
-                `)}
-                ${!devices.length ? html`
-                  <p class="text-xs text-mute" style="text-align:center;padding:14px 0;font-style:italic">${t("editor.devices_empty")}</p>
-                ` : nothing}
+                  `)}
+                  ${!devices.length ? html`
+                    <p class="text-xs text-mute" style="text-align:center;padding:14px 0;font-style:italic">${t("editor.devices_empty")}</p>
+                  ` : nothing}
+                </div>
               </div>
-            </div>
+            `}
           </div>
         </div>
         ${this._confirmDelete ? this._renderDeleteModal(schedule) : nothing}

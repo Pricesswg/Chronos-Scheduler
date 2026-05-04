@@ -138,7 +138,7 @@ export interface Settings {
 }
 
 export interface ActionValueSpec {
-  type: "number" | "enum";
+  type: "number" | "enum" | "entity";
   unit?: string;
   min?: number;
   max?: number;
@@ -146,6 +146,8 @@ export interface ActionValueSpec {
   default?: number | string;
   label?: string;
   options?: string[];
+  /** For type="entity": HA domain to filter the picker (e.g. "scene"). */
+  domain?: string;
 }
 
 export interface ActionDef {

@@ -47,7 +47,10 @@ const FALLBACK_ACTIONS: Record<string, ActionDef[]> = {
     { id: "turn_off", label: "Spegni", kind: "off", service: "light.turn_off" },
   ],
   scene: [
-    { id: "activate", label: "Attiva scena", kind: "on", service: "scene.turn_on" },
+    {
+      id: "activate", label: "Attiva scena", kind: "on", service: "scene.turn_on",
+      value: { type: "entity", domain: "scene", label: "Scena" },
+    },
   ],
   blind: [
     { id: "set_position", label: "Posiziona", kind: "set", service: "cover.set_cover_position", value: { type: "number", unit: "%", min: 0, max: 100, step: 5, default: 100, label: "Apertura" } },
@@ -85,7 +88,22 @@ export function setActionsMap(map: Record<string, ActionDef[]>): void {
 }
 
 export function getActionsForType(type: DeviceType): ActionDef[] {
-  return _serverActions[type] || FALLBACK_ACTIONS[type] || [];
+  const server = _serverActions[type];
+  const fallback = FALLBACK_ACTIONS[type] || [];
+  if (!server || !server.length) return fallback;
+  // Merge each server action with its fallback counterpart. The fallback fills
+  // in fields that an older backend version may not provide (e.g. `extras`),
+  // while server data wins for everything it actually defines.
+  return server.map((sAction) => {
+    const fAction = fallback.find((f) => f.id === sAction.id);
+    if (!fAction) return sAction;
+    return {
+      ...fAction,
+      ...sAction,
+      extras: sAction.extras || fAction.extras,
+      value: sAction.value || fAction.value,
+    };
+  });
 }
 
 export function getActionDef(type: DeviceType, actionId: string): ActionDef | undefined {
