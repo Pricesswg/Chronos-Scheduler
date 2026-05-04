@@ -220,6 +220,7 @@ export class ChronosEditor extends LitElement {
                 <div class="col" style="gap:12px">
                   ${this._renderTimeEdge(schedule.id, block, "start")}
                   ${this._renderTimeEdge(schedule.id, block, "end")}
+                  ${this._renderWrapWarning(block)}
                   <div class="field">
                     <label class="field__label">${t("editor.block.action")}</label>
                     <div class="row" style="gap:6px;flex-wrap:wrap">
@@ -357,9 +358,49 @@ export class ChronosEditor extends LitElement {
   }
 
   private _toHHMM(hour: number): string {
-    const hh = Math.max(0, Math.min(23, Math.floor(hour)));
-    const mm = Math.round((hour - hh) * 60);
+    const safe = Number.isFinite(hour) ? Math.max(0, Math.min(23.999, hour)) : 0;
+    let hh = Math.floor(safe);
+    let mm = Math.round((safe - hh) * 60);
+    if (mm >= 60) { mm = 0; hh = Math.min(23, hh + 1); }
     return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+  }
+
+  /** After mutating the selected block and pushing through updateBlocksLocal,
+   * the schedule's blocks array is sorted by `start`, which can move the
+   * selected block to a different index. We track its identity by reference
+   * (the spread copy `b` is the same object inserted into newBlocks) and
+   * realign `_selectedBlockIdx` to where it landed. Without this realignment,
+   * the next interaction targets the wrong block, which on time-edits causes
+   * cascading edits across blocks and Lit re-render storms. */
+  private _commitBlocks(schedId: string, newBlocks: any[], editedRef: any) {
+    this.card.updateBlocksLocal(schedId, newBlocks);
+    const sched = this.card._schedules.find((s) => s.id === schedId);
+    if (!sched) return;
+    const idx = sched.blocks.indexOf(editedRef);
+    if (idx >= 0) this._selectedBlockIdx = idx;
+  }
+
+  /** Block crosses midnight when its resolved end is at or before its resolved
+   * start, or when the user combined sunset-start with sunrise-end (which on
+   * average always wraps). The backend matches blocks with `start <= h < end`,
+   * so a wrapped block never fires. */
+  private _blockWrapsMidnight(block: Block): boolean {
+    const sa = (block as any).start_anchor;
+    const ea = (block as any).end_anchor;
+    if (sa === "sunset" && ea === "sunrise") return true;
+    const rs = resolveBlockTime(block, "start");
+    const re = resolveBlockTime(block, "end");
+    return re <= rs;
+  }
+
+  private _renderWrapWarning(block: Block) {
+    if (!this._blockWrapsMidnight(block)) return nothing;
+    return html`
+      <div style="border:1px solid var(--warn);background:var(--warn-soft,#fff7ed);color:#92400e;padding:10px 12px;border-radius:8px;font-size:12.5px;line-height:1.4">
+        <strong>${t("editor.block.wrap_warn.title")}</strong>
+        <div style="margin-top:4px">${t("editor.block.wrap_warn.body")}</div>
+      </div>
+    `;
   }
 
   private _setEdgeMode(schedId: string, edge: "start" | "end", mode: "fixed" | "sunrise" | "sunset") {
@@ -368,7 +409,6 @@ export class ChronosEditor extends LitElement {
     const newBlocks = [...sched.blocks];
     const b: any = { ...newBlocks[this._selectedBlockIdx] };
     if (mode === "fixed") {
-      // Materialize current resolved value as the fixed time, drop anchor
       const resolved = resolveBlockTime(b, edge);
       b[edge] = resolved;
       delete b[`${edge}_anchor`];
@@ -378,7 +418,7 @@ export class ChronosEditor extends LitElement {
       if (b[`${edge}_offset`] === undefined) b[`${edge}_offset`] = 0;
     }
     newBlocks[this._selectedBlockIdx] = b;
-    this.card.updateBlocksLocal(schedId, newBlocks);
+    this._commitBlocks(schedId, newBlocks, b);
   }
 
   private _setEdgeFixed(schedId: string, edge: "start" | "end", hhmm: string) {
@@ -393,7 +433,7 @@ export class ChronosEditor extends LitElement {
     delete b[`${edge}_anchor`];
     delete b[`${edge}_offset`];
     newBlocks[this._selectedBlockIdx] = b;
-    this.card.updateBlocksLocal(schedId, newBlocks);
+    this._commitBlocks(schedId, newBlocks, b);
   }
 
   private _setEdgeOffset(schedId: string, edge: "start" | "end", offset: number) {
@@ -404,7 +444,7 @@ export class ChronosEditor extends LitElement {
     const b: any = { ...newBlocks[this._selectedBlockIdx] };
     b[`${edge}_offset`] = offset;
     newBlocks[this._selectedBlockIdx] = b;
-    this.card.updateBlocksLocal(schedId, newBlocks);
+    this._commitBlocks(schedId, newBlocks, b);
   }
 
   private _renderExtras(schedId: string, block: Block, def: any) {
@@ -486,19 +526,21 @@ export class ChronosEditor extends LitElement {
     const days = Array.from({ length: 31 }, (_, i) => i + 1);
     return html`
       <div style="margin-top:14px;border-top:1px dashed var(--border-soft);padding-top:14px">
-        <label class="switch" style="display:flex;align-items:center;gap:10px;width:auto;cursor:pointer">
-          <input type="checkbox" .checked=${enabled}
-            @change=${(e: Event) => {
-              const on = (e.target as HTMLInputElement).checked;
-              const next = on
-                ? { start_month: 1, start_day: 1, end_month: 12, end_day: 31 }
-                : null;
-              this.card.updateScheduleLocal(schedule.id, { date_range: next });
-            }}/>
-          <span class="switch__track"></span>
-          <span class="switch__thumb"></span>
-          <span class="text-sm fw-600" style="margin-left:8px">${t("editor.date_range.toggle")}</span>
-        </label>
+        <div class="row" style="gap:12px;align-items:center">
+          <label class="switch">
+            <input type="checkbox" .checked=${enabled}
+              @change=${(e: Event) => {
+                const on = (e.target as HTMLInputElement).checked;
+                const next = on
+                  ? { start_month: 1, start_day: 1, end_month: 12, end_day: 31 }
+                  : null;
+                this.card.updateScheduleLocal(schedule.id, { date_range: next });
+              }}/>
+            <span class="switch__track"></span>
+            <span class="switch__thumb"></span>
+          </label>
+          <span class="text-sm fw-600">${t("editor.date_range.toggle")}</span>
+        </div>
         <span class="field__hint" style="display:block;margin-top:4px">${t("editor.date_range.hint")}</span>
         ${enabled ? html`
           <div class="row" style="gap:10px;flex-wrap:wrap;margin-top:10px;align-items:center">
