@@ -1,4 +1,4 @@
-# Chronos Scheduler
+# Chronos Scheduler  <script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script><script type='text/javascript'>kofiwidget2.init('Support me on Ko-fi', '#f58773', 'W7W21XGKFV');kofiwidget2.draw();</script> 
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 ![hass](https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue.svg)
