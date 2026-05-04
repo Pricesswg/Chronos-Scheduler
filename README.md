@@ -1,4 +1,4 @@
-# Chronos Scheduler  <script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script><script type='text/javascript'>kofiwidget2.init('Support me on Ko-fi', '#f58773', 'W7W21XGKFV');kofiwidget2.draw();</script> 
+# Chronos Scheduler  
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 ![hass](https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue.svg)
@@ -104,6 +104,11 @@ Block start and end can be either a fixed hour or anchored to sunrise/sunset wit
 ## Translations
 
 UI is available in Italian, English, French and German. Selectable from Settings → Language. Defaults to Home Assistant's language.
+
+## Support the integration
+
+You can support the development of this scheduler by giving a small donation here:
+<a href='https://ko-fi.com/W7W21XGKFV' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi2.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
 
 ## Services
 
