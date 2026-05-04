@@ -140,6 +140,7 @@ export class ChronosEditor extends LitElement {
                   <button class="btn btn--sm btn--ghost" @click=${() => this.card.updateScheduleLocal(schedule.id, { days: [0,0,0,0,0,1,1] })}>${t("editor.days.weekend")}</button>
                 </div>
               </div>
+              ${this._renderDateRange(schedule)}
             </div>
 
             <!-- Weather rules -->
@@ -261,6 +262,7 @@ export class ChronosEditor extends LitElement {
                       ` : nothing}
                     </div>
                   ` : nothing}
+                  ${currentActionDef?.extras?.length ? this._renderExtras(schedule.id, block, currentActionDef) : nothing}
                   <button class="btn btn--ghost" style="color:var(--danger)" @click=${() => this._removeBlock(schedule.id)}>
                     ${icon("trash", 14)} ${t("editor.block.delete")}
                   </button>
@@ -381,6 +383,142 @@ export class ChronosEditor extends LitElement {
     b[`${edge}_offset`] = offset;
     newBlocks[this._selectedBlockIdx] = b;
     this.card.updateBlocksLocal(schedId, newBlocks);
+  }
+
+  private _renderExtras(schedId: string, block: Block, def: any) {
+    const extras = block.action?.extras || {};
+    return html`
+      <div class="field" style="border-top:1px dashed var(--border-soft);padding-top:10px;margin-top:6px">
+        <label class="field__label">${t("editor.block.extras")}</label>
+        <div class="col" style="gap:8px">
+          ${(def.extras || []).map((spec: any) => {
+            const cur = extras[spec.key];
+            return html`
+              <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">
+                <span class="text-xs text-mute" style="min-width:130px">${spec.label || spec.key}${spec.unit ? ` (${spec.unit})` : ""}</span>
+                ${spec.type === "color" ? html`
+                  <input type="color"
+                    .value=${this._rgbToHex(cur)}
+                    @input=${(e: InputEvent) => this._setBlockExtra(schedId, spec.key, this._hexToRgb((e.target as HTMLInputElement).value))}
+                    style="width:48px;height:32px;padding:0;border:1px solid var(--border-soft);border-radius:6px;cursor:pointer"/>
+                ` : spec.type === "number" ? html`
+                  <input type="number" class="input mono"
+                    min="${spec.min}" max="${spec.max}" step="${spec.step}"
+                    .value=${cur !== undefined && cur !== null ? String(cur) : ""}
+                    @input=${(e: InputEvent) => {
+                      const v = (e.target as HTMLInputElement).value;
+                      const x = v === "" ? undefined : parseFloat(v);
+                      this._setBlockExtra(schedId, spec.key, isNaN(x as number) ? undefined : x);
+                    }}
+                    placeholder="—"
+                    style="flex:1;min-width:100px"/>
+                ` : nothing}
+                ${cur !== undefined && cur !== null && cur !== "" ? html`
+                  <button class="btn btn--icon btn--ghost btn--sm" title="${t("common.remove")}"
+                    @click=${() => this._setBlockExtra(schedId, spec.key, undefined)}>
+                    ${icon("close", 12)}
+                  </button>
+                ` : nothing}
+              </div>
+            `;
+          })}
+        </div>
+        <span class="field__hint">${t("editor.block.extras.hint")}</span>
+      </div>
+    `;
+  }
+
+  private _setBlockExtra(schedId: string, key: string, value: any) {
+    const sched = this.card._schedules.find((s) => s.id === schedId);
+    if (!sched) return;
+    const newBlocks = [...sched.blocks];
+    const block = newBlocks[this._selectedBlockIdx];
+    if (!block) return;
+    const action = { ...(block.action || { id: "" }) };
+    const extras = { ...(action.extras || {}) };
+    if (value === undefined) delete extras[key];
+    else extras[key] = value;
+    action.extras = Object.keys(extras).length ? extras : undefined;
+    newBlocks[this._selectedBlockIdx] = { ...block, action };
+    this.card.updateBlocksLocal(schedId, newBlocks);
+  }
+
+  private _rgbToHex(rgb: any): string {
+    if (!Array.isArray(rgb) || rgb.length < 3) return "#ffffff";
+    const [r, g, b] = rgb;
+    return "#" + [r, g, b].map((x) => Math.max(0, Math.min(255, x | 0)).toString(16).padStart(2, "0")).join("");
+  }
+
+  private _hexToRgb(hex: string): [number, number, number] {
+    const h = hex.replace("#", "");
+    const r = parseInt(h.length === 3 ? h[0] + h[0] : h.slice(0, 2), 16);
+    const g = parseInt(h.length === 3 ? h[1] + h[1] : h.slice(2, 4), 16);
+    const b = parseInt(h.length === 3 ? h[2] + h[2] : h.slice(4, 6), 16);
+    return [r, g, b];
+  }
+
+  private _renderDateRange(schedule: any) {
+    const dr = schedule.date_range;
+    const enabled = !!dr;
+    const months = Array.from({ length: 12 }, (_, i) => i + 1);
+    const days = Array.from({ length: 31 }, (_, i) => i + 1);
+    return html`
+      <div style="margin-top:14px;border-top:1px dashed var(--border-soft);padding-top:14px">
+        <label class="switch" style="display:flex;align-items:center;gap:10px;width:auto;cursor:pointer">
+          <input type="checkbox" .checked=${enabled}
+            @change=${(e: Event) => {
+              const on = (e.target as HTMLInputElement).checked;
+              const next = on
+                ? { start_month: 1, start_day: 1, end_month: 12, end_day: 31 }
+                : null;
+              this.card.updateScheduleLocal(schedule.id, { date_range: next });
+            }}/>
+          <span class="switch__track"></span>
+          <span class="switch__thumb"></span>
+          <span class="text-sm fw-600" style="margin-left:8px">${t("editor.date_range.toggle")}</span>
+        </label>
+        <span class="field__hint" style="display:block;margin-top:4px">${t("editor.date_range.hint")}</span>
+        ${enabled ? html`
+          <div class="row" style="gap:10px;flex-wrap:wrap;margin-top:10px;align-items:center">
+            <span class="text-xs text-mute" style="min-width:30px">${t("editor.date_range.from")}</span>
+            <select class="select mono" style="width:140px"
+              @change=${(e: Event) => this._updateDateRange(schedule.id, "start_month", parseInt((e.target as HTMLSelectElement).value, 10))}>
+              ${months.map((m) => html`<option value="${m}" ?selected=${dr.start_month === m}>${this._monthLabel(m)}</option>`)}
+            </select>
+            <select class="select mono" style="width:80px"
+              @change=${(e: Event) => this._updateDateRange(schedule.id, "start_day", parseInt((e.target as HTMLSelectElement).value, 10))}>
+              ${days.map((d) => html`<option value="${d}" ?selected=${dr.start_day === d}>${d}</option>`)}
+            </select>
+            <span class="text-xs text-mute" style="min-width:30px">${t("editor.date_range.to")}</span>
+            <select class="select mono" style="width:140px"
+              @change=${(e: Event) => this._updateDateRange(schedule.id, "end_month", parseInt((e.target as HTMLSelectElement).value, 10))}>
+              ${months.map((m) => html`<option value="${m}" ?selected=${dr.end_month === m}>${this._monthLabel(m)}</option>`)}
+            </select>
+            <select class="select mono" style="width:80px"
+              @change=${(e: Event) => this._updateDateRange(schedule.id, "end_day", parseInt((e.target as HTMLSelectElement).value, 10))}>
+              ${days.map((d) => html`<option value="${d}" ?selected=${dr.end_day === d}>${d}</option>`)}
+            </select>
+          </div>
+          ${dr.start_month * 100 + dr.start_day > dr.end_month * 100 + dr.end_day ? html`
+            <span class="field__hint" style="display:block;margin-top:6px;color:var(--warn)">${t("editor.date_range.wraps")}</span>
+          ` : nothing}
+        ` : nothing}
+      </div>
+    `;
+  }
+
+  private _updateDateRange(schedId: string, key: string, value: number) {
+    if (isNaN(value)) return;
+    const sched = this.card._schedules.find((s) => s.id === schedId);
+    if (!sched) return;
+    const cur = sched.date_range || { start_month: 1, start_day: 1, end_month: 12, end_day: 31 };
+    this.card.updateScheduleLocal(schedId, { date_range: { ...cur, [key]: value } });
+  }
+
+  private _monthLabel(m: number): string {
+    const k = `month.${m}`;
+    const v = t(k);
+    return v === k ? String(m) : v;
   }
 
   /** Picker that lists devices of the same type not yet on this schedule.

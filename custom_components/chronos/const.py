@@ -1,5 +1,5 @@
 DOMAIN = "chronos"
-VERSION = "1.7.7"
+VERSION = "1.8.0"
 STORAGE_VERSION = 1
 STORAGE_KEY_DEVICES = f"{DOMAIN}.devices"
 STORAGE_KEY_SCHEDULES = f"{DOMAIN}.schedules"
@@ -15,6 +15,7 @@ DOMAIN_TO_TYPE = {
     "lawn_mower": "mower",
     "water_heater": "boiler",
     "valve": "irrigation",
+    "scene": "scene",
 }
 
 SUPPORTED_DOMAINS = set(DOMAIN_TO_TYPE.keys())
@@ -69,8 +70,16 @@ ACTIONS_BY_TYPE = {
             "kind": "on",
             "service": "light.turn_on",
             "value": {"type": "number", "unit": "%", "min": 1, "max": 100, "step": 1, "default": 80, "label": "Luminosità"},
+            "extras": [
+                {"key": "rgb_color", "type": "color", "label": "Colore RGB"},
+                {"key": "color_temp_kelvin", "type": "number", "min": 2000, "max": 6500, "step": 100, "unit": "K", "label": "Temperatura colore"},
+                {"key": "transition", "type": "number", "min": 0, "max": 60, "step": 1, "unit": "s", "label": "Transizione"},
+            ],
         },
         {"id": "turn_off", "label": "Spegni", "kind": "off", "service": "light.turn_off"},
+    ],
+    "scene": [
+        {"id": "activate", "label": "Attiva scena", "kind": "on", "service": "scene.turn_on"},
     ],
     "blind": [
         {

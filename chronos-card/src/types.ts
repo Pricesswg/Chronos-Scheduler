@@ -7,7 +7,8 @@ export type DeviceType =
   | "plug"
   | "fan"
   | "mower"
-  | "vacuum";
+  | "vacuum"
+  | "scene";
 
 export interface ChronosDevice {
   id: string;
@@ -20,6 +21,21 @@ export interface ChronosDevice {
 export interface BlockAction {
   id: string;
   value?: number | string;
+  /** Optional extra params merged into the HA service call (e.g. for lights:
+   * rgb_color, color_temp_kelvin, transition). Keys come from the action def's
+   * `extras` array exposed by the backend. */
+  extras?: Record<string, any>;
+}
+
+export interface ActionExtraSpec {
+  key: string;
+  type: "color" | "number" | "enum";
+  label?: string;
+  unit?: string;
+  min?: number;
+  max?: number;
+  step?: number;
+  options?: string[];
 }
 
 export type TimeAnchor = "sunrise" | "sunset";
@@ -81,6 +97,13 @@ export interface WeatherRule {
   scale_out_max?: number;
 }
 
+export interface DateRange {
+  start_month: number; // 1-12
+  start_day: number;   // 1-31
+  end_month: number;
+  end_day: number;
+}
+
 export interface Schedule {
   id: string;
   name: string;
@@ -90,6 +113,10 @@ export interface Schedule {
   enabled: boolean;
   blocks: Block[];
   weather_rules: WeatherRule[];
+  /** Optional recurring date range. When set, the schedule only fires on
+   * dates inside the range, ignoring the year. Wraps across year-end if
+   * end_month/day < start_month/day. */
+  date_range?: DateRange | null;
 }
 
 export interface Settings {
@@ -127,6 +154,7 @@ export interface ActionDef {
   kind: "on" | "off" | "set" | "preset" | "cmd";
   service: string;
   value?: ActionValueSpec;
+  extras?: ActionExtraSpec[];
 }
 
 export interface WeatherAttribute {

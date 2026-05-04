@@ -69,6 +69,7 @@ export const DEVICE_TYPES: Record<string, { label: string; domain: string; capab
   boiler: { label: "Boiler", domain: "water_heater", capabilities: ["set_temperature", "operation_mode"] },
   mower: { label: "Tosaerba", domain: "lawn_mower", capabilities: ["start_mowing", "pause", "dock"] },
   vacuum: { label: "Robot aspirapolvere", domain: "vacuum", capabilities: ["start", "pause", "return_to_base", "fan_speed"] },
+  scene: { label: "Scena", domain: "scene", capabilities: ["turn_on"] },
 };
 
 export function computeRepeat(days: number[]): string {

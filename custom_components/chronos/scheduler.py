@@ -132,6 +132,9 @@ class ChronosScheduler:
             days = sched.get("days", [0] * 7)
             if weekday < len(days) and not days[weekday]:
                 continue
+            # Optional recurring date range (year-agnostic).
+            if not self._is_in_date_range(sched, local_now):
+                continue
 
             # Compute effective blocks: original blocks with continuous rule
             # effects applied (extend/shrink/shift/replace_value/scale_*).
@@ -153,6 +156,32 @@ class ChronosScheduler:
                     await self._apply_block(sched, current_block, current_idx)
 
             await self._evaluate_triggers(sched, local_now, effective_blocks, current_idx)
+
+    def _is_in_date_range(self, sched: dict, today_local) -> bool:
+        """Return True if today (month/day) is inside the schedule's recurring
+        date range (year-agnostic). When no range is set, always True.
+
+        Range can wrap across year-end (e.g. Dec 1 → Feb 28).
+        """
+        dr = sched.get("date_range")
+        if not dr:
+            return True
+        try:
+            sm = int(dr.get("start_month", 0))
+            sd = int(dr.get("start_day", 0))
+            em = int(dr.get("end_month", 0))
+            ed = int(dr.get("end_day", 0))
+        except (TypeError, ValueError):
+            return True
+        if not (sm and sd and em and ed):
+            return True
+        cur = today_local.month * 100 + today_local.day
+        start = sm * 100 + sd
+        end = em * 100 + ed
+        if start <= end:
+            return start <= cur <= end
+        # wraps across year-end
+        return cur >= start or cur <= end
 
     def _block_at(self, blocks: list, hour: float) -> tuple[dict | None, int]:
         for i, block in enumerate(blocks):
@@ -536,6 +565,15 @@ class ChronosScheduler:
                 service_data["percentage"] = int(value)
             elif action_id == "set_position" and value is not None:
                 service_data["position"] = int(value)
+
+            # Optional extras: arbitrary service params the user attached to the
+            # block action (e.g. light rgb_color, color_temp_kelvin, transition).
+            extras = action.get("extras") or {}
+            if isinstance(extras, dict):
+                for k, v in extras.items():
+                    if v is None or v == "":
+                        continue
+                    service_data[k] = v
 
             _LOGGER.info(
                 "Chronos: CALL service %s.%s data=%s schedule=%s",

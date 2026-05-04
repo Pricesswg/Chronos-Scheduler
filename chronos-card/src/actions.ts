@@ -35,8 +35,19 @@ const FALLBACK_ACTIONS: Record<string, ActionDef[]> = {
     { id: "turn_off", label: "Spegni", kind: "off", service: "water_heater.turn_off" },
   ],
   light: [
-    { id: "turn_on", label: "Accendi", kind: "on", service: "light.turn_on", value: { type: "number", unit: "%", min: 1, max: 100, step: 1, default: 80, label: "Luminosità" } },
+    {
+      id: "turn_on", label: "Accendi", kind: "on", service: "light.turn_on",
+      value: { type: "number", unit: "%", min: 1, max: 100, step: 1, default: 80, label: "Luminosità" },
+      extras: [
+        { key: "rgb_color", type: "color", label: "Colore RGB" },
+        { key: "color_temp_kelvin", type: "number", label: "Temperatura colore", unit: "K", min: 2000, max: 6500, step: 100 },
+        { key: "transition", type: "number", label: "Transizione", unit: "s", min: 0, max: 60, step: 1 },
+      ],
+    },
     { id: "turn_off", label: "Spegni", kind: "off", service: "light.turn_off" },
+  ],
+  scene: [
+    { id: "activate", label: "Attiva scena", kind: "on", service: "scene.turn_on" },
   ],
   blind: [
     { id: "set_position", label: "Posiziona", kind: "set", service: "cover.set_cover_position", value: { type: "number", unit: "%", min: 0, max: 100, step: 5, default: 100, label: "Apertura" } },
