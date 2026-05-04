@@ -26,6 +26,12 @@ export class ChronosTimeline extends LitElement {
 
   @state() private _drag: {
     idx: number;
+    /** Reference to the block currently being dragged. Updated on every move
+     * because we spread-copy the block to mutate it. Used to find the block's
+     * new index after the parent's `updateBlocksLocal` sort: tracking by index
+     * alone causes us to overwrite a sibling block when the dragged block
+     * crosses it (visible "disappearing block" bug). */
+    ref: Block;
     handle: "l" | "r" | "move";
     startX: number;
     startH?: number;
@@ -369,7 +375,7 @@ export class ChronosTimeline extends LitElement {
     this._fireSelect(idx);
     const b = this.blocks[idx];
     this._drag = {
-      idx, handle, startX: e.clientX,
+      idx, ref: b, handle, startX: e.clientX,
       origStart: resolveBlockTime(b, "start"),
       origEnd: resolveBlockTime(b, "end"),
     };
@@ -386,12 +392,15 @@ export class ChronosTimeline extends LitElement {
     const rect = el.getBoundingClientRect();
     const h = clamp(((e.clientX - rect.left) / rect.width) * 24, 0, 24);
     const snap = snapToGrid(h);
+    // Locate the dragged block by reference: its index can shift between moves
+    // because the parent sorts blocks by `start` after each blocks-changed.
+    const curIdx = this.blocks.indexOf(this._drag.ref);
+    if (curIdx < 0) return;
     const next = [...this.blocks];
-    const b: any = { ...next[this._drag.idx] };
+    const b: any = { ...next[curIdx] };
     if (this._drag.handle === "l") {
       const newStart = clamp(snap, 0, resolveBlockTime(b, "end") - 0.25);
       b.start = newStart;
-      // Drag breaks the anchor on this edge
       delete b.start_anchor;
       delete b.start_offset;
     } else if (this._drag.handle === "r") {
@@ -412,7 +421,8 @@ export class ChronosTimeline extends LitElement {
       delete b.end_anchor;
       delete b.end_offset;
     }
-    next[this._drag.idx] = b;
+    next[curIdx] = b;
+    this._drag.ref = b;
     this._fireBlocksChanged(next);
   }
 
@@ -448,11 +458,20 @@ export class ChronosTimeline extends LitElement {
     const origStart = resolveBlockTime(b, "start");
     const origEnd = resolveBlockTime(b, "end");
 
+    // Track the dragged block by reference: the parent sorts blocks by `start`
+    // after every blocks-changed event, so the original `idx` would point to
+    // a different (sibling) block once the drag crosses it. Without this
+    // reference tracking, the sibling block gets overwritten and visually
+    // disappears when one block is dragged onto another.
+    let draggedRef: Block = b;
+
     const onMove = (ev: MouseEvent) => {
       const h = hoursFromEvent(ev);
       const snap = snapToGrid(h);
+      const curIdx = this.blocks.indexOf(draggedRef);
+      if (curIdx < 0) return;
       const next = [...this.blocks];
-      const block: any = { ...next[idx] };
+      const block: any = { ...next[curIdx] };
       if (handle === "l") {
         block.start = clamp(snap, 0, resolveBlockTime(block, "end") - 0.25);
         delete block.start_anchor;
@@ -474,7 +493,8 @@ export class ChronosTimeline extends LitElement {
         delete block.end_anchor;
         delete block.end_offset;
       }
-      next[idx] = block;
+      next[curIdx] = block;
+      draggedRef = block;
       this._fireBlocksChanged(next);
     };
 
