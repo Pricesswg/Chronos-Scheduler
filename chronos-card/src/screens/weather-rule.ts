@@ -36,6 +36,10 @@ export class ChronosWeatherRule extends LitElement {
   @state() private _blockIndex: number | null = null; // null = all blocks
   @state() private _effect: RuleEffect = "skip";
 
+  /** Free-text filter applied to the sensor dropdown(s). Shared across clauses
+   * because the user only types into one at a time anyway. */
+  @state() private _sensorSearch = "";
+
   // IF condition (used by all except scale_*). Multi-clause AND composition
   // since v1.10: each clause is a single comparison; all must be true for the
   // rule to fire. Clause variables can be weather attribute keys (temperature,
@@ -271,22 +275,7 @@ export class ChronosWeatherRule extends LitElement {
               </button>
             `)}
           </div>
-          <div class="field">
-            <label class="field__label">${t("wr.if.sensor.label")}</label>
-            <select class="select mono"
-              @change=${(e: Event) => {
-                const v = (e.target as HTMLSelectElement).value;
-                if (v) this._setClauseVariable(idx, v);
-              }}>
-              <option value="" ?selected=${!isSensorRef}>${t("wr.if.sensor.none")}</option>
-              ${sensors.map((s: any) => html`
-                <option value="${s.entity_id}" ?selected=${c.variable === s.entity_id}>
-                  ${s.friendly_name || s.entity_id}${s.unit_of_measurement ? ` (${s.unit_of_measurement})` : ""} — ${s.entity_id}
-                </option>
-              `)}
-            </select>
-            <span class="field__hint">${t("wr.if.sensor.hint")}</span>
-          </div>
+          ${this._renderSensorSelect(c, idx, sensors, isSensorRef)}
           <div class="grid-2">
             <div class="field">
               <label class="field__label">${t("wr.op")}</label>
@@ -315,6 +304,51 @@ export class ChronosWeatherRule extends LitElement {
             </div>
           </div>
         </div>
+      </div>
+    `;
+  }
+
+  private _renderSensorSelect(c: { variable: string; op: string; value: string }, idx: number, sensors: any[], isSensorRef: boolean) {
+    const q = this._sensorSearch.trim().toLowerCase();
+    // Always include the currently selected sensor (if any) so it stays
+    // visible after the user typed something else; everything else gets
+    // filtered by the query.
+    const visible = q
+      ? sensors.filter((s: any) => {
+          if (s.entity_id === c.variable) return true;
+          const haystack = `${s.friendly_name || ""} ${s.entity_id || ""} ${s.unit_of_measurement || ""}`.toLowerCase();
+          return haystack.includes(q);
+        })
+      : sensors;
+    return html`
+      <div class="field">
+        <label class="field__label">${t("wr.if.sensor.label")}</label>
+        <div class="row" style="gap:6px;align-items:center">
+          <input class="input" type="search" .value=${this._sensorSearch}
+            placeholder="${t("wr.if.sensor.search")}"
+            @input=${(e: InputEvent) => { this._sensorSearch = (e.target as HTMLInputElement).value; }}
+            style="flex:1"/>
+          ${this._sensorSearch ? html`
+            <button class="btn btn--icon btn--ghost btn--sm" title="${t("common.remove")}"
+              @click=${() => { this._sensorSearch = ""; }}>
+              ${icon("close", 12)}
+            </button>
+          ` : nothing}
+        </div>
+        <select class="select mono" style="margin-top:6px"
+          @change=${(e: Event) => {
+            const v = (e.target as HTMLSelectElement).value;
+            if (v) this._setClauseVariable(idx, v);
+          }}>
+          <option value="" ?selected=${!isSensorRef}>${t("wr.if.sensor.none")}</option>
+          ${visible.map((s: any) => html`
+            <option value="${s.entity_id}" ?selected=${c.variable === s.entity_id}>
+              ${s.friendly_name || s.entity_id}${s.unit_of_measurement ? ` (${s.unit_of_measurement})` : ""} — ${s.entity_id}
+            </option>
+          `)}
+          ${q && !visible.length ? html`<option disabled>${t("wr.if.sensor.no_match")}</option>` : nothing}
+        </select>
+        <span class="field__hint">${t("wr.if.sensor.hint")}</span>
       </div>
     `;
   }

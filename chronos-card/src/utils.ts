@@ -71,6 +71,7 @@ export const DEVICE_TYPES: Record<string, { label: string; domain: string; capab
   vacuum: { label: "Robot aspirapolvere", domain: "vacuum", capabilities: ["start", "pause", "return_to_base", "fan_speed"] },
   scene: { label: "Scena", domain: "scene", capabilities: ["turn_on"] },
   automation: { label: "Automazione", domain: "automation", capabilities: ["turn_on", "turn_off", "trigger"] },
+  alarm: { label: "Allarme", domain: "alarm_control_panel", capabilities: ["arm_home", "arm_away", "arm_night", "arm_vacation", "disarm", "trigger"] },
 };
 
 export function computeRepeat(days: number[]): string {

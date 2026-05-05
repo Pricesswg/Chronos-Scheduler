@@ -81,6 +81,8 @@ export function icon(name: string, size = 16, stroke = 1.6): SVGTemplateResult {
       return svg`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v9M6 6a8 8 0 1 0 12 0"/></svg>`;
     case "moon":
       return svg`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"><path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z"/></svg>`;
+    case "shield":
+      return svg`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 4.5 3.4 8.6 8 9 4.6-.4 8-4.5 8-9V6z"/></svg>`;
     default:
       return svg`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/></svg>`;
   }
@@ -98,6 +100,7 @@ const DEVICE_TYPE_ICONS: Record<DeviceType, string> = {
   vacuum: "vacuum",
   scene: "wand",
   automation: "wand",
+  alarm: "shield",
 };
 
 export function deviceIcon(type: DeviceType, size = 16): SVGTemplateResult {

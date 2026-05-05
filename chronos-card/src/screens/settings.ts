@@ -360,7 +360,7 @@ export class ChronosSettingsScreen extends LitElement {
     // Confronta unit_of_measurement (se nota) e device_class
     const expectedUnit = (attr.unit || "").trim();
     const sensorUnit = (sensor.unit_of_measurement || "").trim();
-    const expectedDC = this._matchingDeviceClass(attr.key);
+    const expectedDCs = this._matchingDeviceClasses(attr.key);
     const sensorDC = sensor.device_class || "";
 
     // Enum-typed attributes (condition, rain_state, sun.state) accept any
@@ -388,10 +388,13 @@ export class ChronosSettingsScreen extends LitElement {
       });
     }
 
-    // device_class mismatch (warning soft)
-    if (expectedDC && sensorDC && expectedDC !== sensorDC) {
+    // device_class mismatch (warning soft). Multiple expected DCs are
+    // accepted: e.g. pressure can be tagged as either `atmospheric_pressure`
+    // (HA modern device_class) or `pressure` (legacy / generic) — both are
+    // valid sources.
+    if (expectedDCs.length && sensorDC && !expectedDCs.includes(sensorDC)) {
       return t("settings.weather.overrides.warn.class_mismatch", {
-        expected: expectedDC,
+        expected: expectedDCs.join(" / "),
         got: sensorDC,
       });
     }
@@ -409,11 +412,14 @@ export class ChronosSettingsScreen extends LitElement {
   }
 
   private _renderSensorOptions(groups: Record<string, any[]>, attr: any, current: string) {
-    const hint = this._matchingDeviceClass(attr.key);
-    const order = hint && groups[hint] ? [hint, ...Object.keys(groups).filter((k) => k !== hint).sort()] : Object.keys(groups).sort();
+    const hints = this._matchingDeviceClasses(attr.key);
+    // Place all hinted device_classes (in order) first, then the rest sorted.
+    const present = hints.filter((h) => groups[h]);
+    const rest = Object.keys(groups).filter((k) => !present.includes(k)).sort();
+    const order = [...present, ...rest];
 
     return order.map((dc) => html`
-      <optgroup label="${dc === "other" ? t("settings.weather.overrides.others") : dc}${dc === hint ? " · " + t("settings.weather.overrides.suggested") : ""}">
+      <optgroup label="${dc === "other" ? t("settings.weather.overrides.others") : dc}${hints.includes(dc) ? " · " + t("settings.weather.overrides.suggested") : ""}">
         ${groups[dc].map((sen: any) => html`
           <option value="${sen.entity_id}" ?selected=${current === sen.entity_id}>
             ${sen.entity_id}${sen.unit_of_measurement ? ` (${sen.unit_of_measurement})` : ""} — ${sen.friendly_name}
@@ -423,24 +429,28 @@ export class ChronosSettingsScreen extends LitElement {
     `);
   }
 
-  private _matchingDeviceClass(key: string): string | null {
-    // HA device_class hints. Used to pre-rank candidates in the sensor picker
-    // and to flag soft "class mismatch" warnings. Keys without a canonical
-    // device_class (rain_state for example) are intentionally absent.
-    const map: Record<string, string> = {
-      temperature: "temperature",
-      feels_like: "temperature",
-      dew_point: "temperature",
-      humidity: "humidity",
-      wind_speed: "wind_speed",
-      wind_gust: "wind_speed",
-      wind_bearing: "wind_direction",
-      pressure: "atmospheric_pressure",
-      uv_index: "uv_index",
-      solar_radiation: "irradiance",
-      rain_rate: "precipitation_intensity",
+  /** HA device_class hints. Returns one or more device_classes treated as
+   * compatible — the first is the preferred (modern) one, additional entries
+   * are legacy / synonyms also accepted without warning. Used to pre-rank
+   * candidates in the sensor picker and to flag soft class-mismatch warnings.
+   * Keys without a canonical device_class are intentionally absent. */
+  private _matchingDeviceClasses(key: string): string[] {
+    const map: Record<string, string[]> = {
+      temperature: ["temperature"],
+      feels_like: ["temperature"],
+      dew_point: ["temperature"],
+      humidity: ["humidity"],
+      wind_speed: ["wind_speed"],
+      wind_gust: ["wind_speed"],
+      wind_bearing: ["wind_direction"],
+      // Modern HA uses atmospheric_pressure; many existing sensors (and older
+      // integrations) still expose pressure. Both are acceptable here.
+      pressure: ["atmospheric_pressure", "pressure"],
+      uv_index: ["uv_index"],
+      solar_radiation: ["irradiance"],
+      rain_rate: ["precipitation_intensity"],
     };
-    return map[key] || null;
+    return map[key] || [];
   }
 
   private _updateSensorOverride(attrKey: string, sensorId: string) {

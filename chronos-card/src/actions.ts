@@ -93,6 +93,14 @@ const FALLBACK_ACTIONS: Record<string, ActionDef[]> = {
     { id: "pause", label: "Pausa", kind: "cmd", service: "vacuum.pause" },
     { id: "return_to_base", label: "Torna in base", kind: "off", service: "vacuum.return_to_base" },
   ],
+  alarm: [
+    { id: "arm_home", label: "Inserisci (home)", kind: "on", service: "alarm_control_panel.alarm_arm_home" },
+    { id: "arm_away", label: "Inserisci (away)", kind: "on", service: "alarm_control_panel.alarm_arm_away" },
+    { id: "arm_night", label: "Inserisci (notte)", kind: "on", service: "alarm_control_panel.alarm_arm_night" },
+    { id: "arm_vacation", label: "Inserisci (vacanza)", kind: "on", service: "alarm_control_panel.alarm_arm_vacation" },
+    { id: "disarm", label: "Disinserisci", kind: "off", service: "alarm_control_panel.alarm_disarm" },
+    { id: "trigger", label: "Attiva sirena", kind: "cmd", service: "alarm_control_panel.alarm_trigger" },
+  ],
 };
 
 let _serverActions: Record<string, ActionDef[]> = {};

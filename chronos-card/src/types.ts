@@ -9,7 +9,8 @@ export type DeviceType =
   | "mower"
   | "vacuum"
   | "scene"
-  | "automation";
+  | "automation"
+  | "alarm";
 
 export interface ChronosDevice {
   id: string;

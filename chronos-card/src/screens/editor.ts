@@ -19,6 +19,9 @@ export class ChronosEditor extends LitElement {
   @state() private _selectedBlockIdx = 0;
   @state() private _selectedRuleIdx: number = -1;
   @state() private _confirmDelete = false;
+  /** Free-text filter applied to the entity multi-select chip grid. Kept on
+   * the editor instance so the search box doesn't lose focus across re-renders. */
+  @state() private _entitySearch = "";
 
   render() {
     const schedule = this.card._schedules.find((s) => s.id === this.card._selectedId) || this.card._schedules[0];
@@ -542,10 +545,27 @@ export class ChronosEditor extends LitElement {
       `;
     }
 
+    // Filter the pool by the search query (matches friendly_name or entity_id).
+    // Already-selected entities are kept visible regardless of the query so the
+    // user can always deselect them without resetting the search.
+    const q = this._entitySearch.trim().toLowerCase();
+    const visible = q
+      ? pool.filter((s: any) => {
+          if (selected.includes(s.entity_id)) return true;
+          const haystack = `${s.friendly_name || ""} ${s.entity_id || ""}`.toLowerCase();
+          return haystack.includes(q);
+        })
+      : pool;
+
     return html`
-      <div class="col" style="gap:6px">
+      <div class="col" style="gap:8px">
+        ${pool.length > 6 ? html`
+          <input class="input" type="search" .value=${this._entitySearch}
+            placeholder="${t("editor.entity.search")}"
+            @input=${(e: InputEvent) => { this._entitySearch = (e.target as HTMLInputElement).value; }}/>
+        ` : nothing}
         <div class="row" style="gap:6px;flex-wrap:wrap">
-          ${pool.length ? pool.map((s: any) => {
+          ${visible.length ? visible.map((s: any) => {
             const id = s.entity_id;
             const on = selected.includes(id);
             return html`
@@ -555,7 +575,7 @@ export class ChronosEditor extends LitElement {
                 ${on ? icon("check", 11) : nothing} ${s.friendly_name || id}
               </button>
             `;
-          }) : html`<span class="text-xs text-mute">${t("editor.entity.empty")}</span>`}
+          }) : html`<span class="text-xs text-mute">${pool.length ? t("editor.entity.no_match") : t("editor.entity.empty")}</span>`}
         </div>
         ${selected.length === 0 ? html`<span class="field__hint" style="color:var(--warn)">${warnText}</span>` : html`<span class="field__hint">${t("editor.entity.count", { n: selected.length })}</span>`}
       </div>

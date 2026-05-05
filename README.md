@@ -4,7 +4,7 @@
 ![hass](https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue.svg)
 ![license](https://img.shields.io/badge/license-MIT-green.svg)
 
-**Chronos** is an advanced scheduler for Home Assistant. It manages thermostats, lights, blinds, irrigation, switches, fans, water heaters, mowers, vacuums, scenes and automations through daily time slots with **conditional weather rules**.
+**Chronos** is an advanced scheduler for Home Assistant. It manages thermostats, lights, blinds, irrigation, switches, fans, water heaters, mowers, vacuums, scenes, automations and alarm panels through daily time slots with **conditional weather rules**.
 
 A single Lovelace card provides:
 
@@ -108,6 +108,7 @@ All schedule, device and weather-rule data is persisted by the integration via W
 | `lawn_mower.*`   | Mower           | start_mowing, dock, pause                  |
 | `water_heater.*` | Water heater    | set_temperature, set_operation_mode        |
 | `valve.*`        | Irrigation      | open_valve, close_valve                    |
+| `alarm_control_panel.*` | Alarm    | arm_home, arm_away, arm_night, arm_vacation, disarm, trigger |
 | `scene.*`        | Scene           | turn_on (multi-select per block, see below) |
 | `automation.*`   | Automation      | turn_on, turn_off, trigger (multi-select per block) |
 

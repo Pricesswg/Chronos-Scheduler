@@ -94,6 +94,58 @@ const RECIPES: Recipe[] = [
     ],
     weather_rules: [],
   },
+  {
+    id: "scene_routine",
+    device_type: "scene",
+    default_name_key: "recipe.scene_routine.preset_name",
+    days: [1, 1, 1, 1, 1, 1, 1],
+    blocks: [
+      // Each block fires "activate" — the user picks the actual scene(s) per
+      // block in the editor's multi-select after creating the recipe.
+      { start: 7, end: 8, action: { id: "activate" } },
+      { start: 19, end: 20, action: { id: "activate" } },
+      { start: 22, end: 23, action: { id: "activate" } },
+    ],
+    weather_rules: [],
+  },
+  {
+    id: "alarm_arm_night",
+    device_type: "alarm",
+    default_name_key: "recipe.alarm_arm_night.preset_name",
+    days: [1, 1, 1, 1, 1, 1, 1],
+    blocks: [
+      { start: 0, end: 7, action: { id: "arm_night" } },
+      { start: 7, end: 23, action: { id: "disarm" } },
+      { start: 23, end: 24, action: { id: "arm_night" } },
+    ],
+    weather_rules: [],
+  },
+  {
+    id: "boiler_offgrid_soc",
+    device_type: "boiler",
+    default_name_key: "recipe.boiler_offgrid_soc.preset_name",
+    days: [1, 1, 1, 1, 1, 1, 1],
+    blocks: [
+      // Baseline minimum temperature; the rule below boosts it whenever the
+      // off-grid battery is full and there's still daylight to keep recharging.
+      { start: 0, end: 24, action: { id: "set_temperature", value: 35 } },
+    ],
+    weather_rules: [
+      {
+        // The user MUST replace `sensor.battery_soc` with their actual SOC
+        // entity in the rule editor after creating the recipe; the rest of
+        // the expression (sun.minutes_until_sunset > 120) is generic.
+        if: "sensor.battery_soc > 96 AND sun.minutes_until_sunset > 120",
+        then: "Boost",
+        active: true,
+        effect: "force_action",
+        block_index: null,
+        action_id: "set_temperature",
+        action_value: 60,
+        fire_mode: "once_per_daytime",
+      },
+    ],
+  },
 ];
 
 @customElement("chronos-help-screen")

@@ -1,5 +1,5 @@
 DOMAIN = "chronos"
-VERSION = "1.10.1"
+VERSION = "1.10.2"
 STORAGE_VERSION = 1
 STORAGE_KEY_DEVICES = f"{DOMAIN}.devices"
 STORAGE_KEY_SCHEDULES = f"{DOMAIN}.schedules"
@@ -15,6 +15,7 @@ DOMAIN_TO_TYPE = {
     "lawn_mower": "mower",
     "water_heater": "boiler",
     "valve": "irrigation",
+    "alarm_control_panel": "alarm",
     # Note: "scene" and "automation" are intentionally NOT here. They are not
     # imported as devices; instead, schedules of type "scene" / "automation"
     # pick the target entities per block via the action's `value` field
@@ -148,6 +149,19 @@ ACTIONS_BY_TYPE = {
         {"id": "start", "label": "Avvia pulizia", "kind": "on", "service": "vacuum.start"},
         {"id": "pause", "label": "Pausa", "kind": "cmd", "service": "vacuum.pause"},
         {"id": "return_to_base", "label": "Torna in base", "kind": "off", "service": "vacuum.return_to_base"},
+    ],
+    "alarm": [
+        # All alarm_control_panel services accept an optional `code`. The
+        # frontend doesn't currently expose a string-typed extras field for
+        # it (most HA alarm panels don't require a code at the service-call
+        # level), so this is omitted intentionally. Add via extras of type
+        # "string" when needed.
+        {"id": "arm_home", "label": "Inserisci (home)", "kind": "on", "service": "alarm_control_panel.alarm_arm_home"},
+        {"id": "arm_away", "label": "Inserisci (away)", "kind": "on", "service": "alarm_control_panel.alarm_arm_away"},
+        {"id": "arm_night", "label": "Inserisci (notte)", "kind": "on", "service": "alarm_control_panel.alarm_arm_night"},
+        {"id": "arm_vacation", "label": "Inserisci (vacanza)", "kind": "on", "service": "alarm_control_panel.alarm_arm_vacation"},
+        {"id": "disarm", "label": "Disinserisci", "kind": "off", "service": "alarm_control_panel.alarm_disarm"},
+        {"id": "trigger", "label": "Attiva sirena", "kind": "cmd", "service": "alarm_control_panel.alarm_trigger"},
     ],
 }
 

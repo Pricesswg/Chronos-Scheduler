@@ -53,7 +53,19 @@ LOCAL_AHEAD="$(git rev-list --count origin/main..main 2>/dev/null || echo 0)"
 REMOTE_AHEAD="$(git rev-list --count main..origin/main 2>/dev/null || echo 0)"
 if [ "$REMOTE_AHEAD" -gt 0 ]; then
   echo "==> Remote ha $REMOTE_AHEAD commit nuovi, rebase in corso"
+  # `git pull --rebase` rifiuta unstaged changes. Se ce ne sono — è il caso
+  # tipico, dato che lo script committa il working tree subito dopo — le
+  # stashiamo, rebasiamo, e ripristiniamo. Solo se lo stash crea davvero
+  # un commit (cioè c'erano modifiche).
+  STASHED=0
+  if ! git diff --quiet || ! git diff --cached --quiet; then
+    git stash push -u -m "release.sh auto-stash v$VERSION"
+    STASHED=1
+  fi
   git pull --rebase origin main
+  if [ "$STASHED" -eq 1 ]; then
+    git stash pop
+  fi
 fi
 if [ "$LOCAL_AHEAD" -gt 0 ]; then
   echo "Hai $LOCAL_AHEAD commit locali non pushati. Pusha prima, poi rilancia."
