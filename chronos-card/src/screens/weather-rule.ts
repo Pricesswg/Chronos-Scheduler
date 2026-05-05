@@ -36,10 +36,14 @@ export class ChronosWeatherRule extends LitElement {
   @state() private _blockIndex: number | null = null; // null = all blocks
   @state() private _effect: RuleEffect = "skip";
 
-  // IF condition (used by all except scale_*)
-  @state() private _variable = "temperature";
-  @state() private _op = ">";
-  @state() private _value = "22";
+  // IF condition (used by all except scale_*). Multi-clause AND composition
+  // since v1.10: each clause is a single comparison; all must be true for the
+  // rule to fire. Clause variables can be weather attribute keys (temperature,
+  // sun.minutes_until_sunset, …) or arbitrary HA entity_ids that the backend
+  // reads directly (sensor.battery_soc, binary_sensor.X, …).
+  @state() private _clauses: { variable: string; op: string; value: string }[] = [
+    { variable: "temperature", op: ">", value: "22" },
+  ];
 
   // Delta-based effects (shift/extend/shrink)
   @state() private _deltaMin = 30;
@@ -73,7 +77,6 @@ export class ChronosWeatherRule extends LitElement {
     const deviceType = schedule.device_type;
     const typeActions = getActionsForType(deviceType);
     const weatherAttrs = this.card._weatherAttributes;
-    const varDef = weatherAttrs.find((v) => v.key === this._variable) || weatherAttrs[0];
     const effectMeta = EFFECTS.find((e) => e.key === this._effect)!;
     const targetBlock = this._blockIndex !== null && this._blockIndex >= 0 && this._blockIndex < schedule.blocks.length
       ? schedule.blocks[this._blockIndex]
@@ -159,11 +162,11 @@ export class ChronosWeatherRule extends LitElement {
           </div>
         </div>
 
-        ${effectMeta.needsIf ? this._renderIfSection(weatherAttrs, varDef) : this._renderScaleVarSection(weatherAttrs)}
+        ${effectMeta.needsIf ? this._renderIfSection(weatherAttrs) : this._renderScaleVarSection(weatherAttrs)}
 
         <div class="row" style="justify-content:flex-end;gap:8px">
           <button class="btn" @click=${() => this.card.navigate("editor")}>${t("common.cancel")}</button>
-          <button class="btn btn--primary" @click=${() => this._saveRule(schedule, varDef, typeActions)}>
+          <button class="btn btn--primary" @click=${() => this._saveRule(schedule, typeActions)}>
             ${icon("check", 14)} ${t("common.save")}
           </button>
         </div>
@@ -178,11 +181,14 @@ export class ChronosWeatherRule extends LitElement {
       : t("wr.target.all_blocks");
     return html`
       <div class="card" style="padding:14px 18px;background:var(--bg-sunken)">
-        <div class="rule-block" style="background:var(--surface);border:2px dashed var(--border)">
+        <div class="rule-block" style="background:var(--surface);border:2px dashed var(--border);flex-wrap:wrap">
           <span class="rule-block__label rule-block__label--if">${tgt}</span>
           ${EFFECTS.find((e) => e.key === this._effect)?.needsIf ? html`
             <span class="rule-token mono text-xs">if</span>
-            <span class="rule-token rule-token--weather">${attrLabel(this._variable)} ${this._op} ${this._value}${(this.card._weatherAttributes.find((v) => v.key === this._variable)?.unit) || ""}</span>
+            ${this._clauses.map((c, i) => html`
+              ${i > 0 ? html`<span class="rule-token mono text-xs" style="opacity:0.6">AND</span>` : nothing}
+              <span class="rule-token rule-token--weather">${this._clauseLabel(c)}</span>
+            `)}
           ` : nothing}
           <span class="rule-block__label rule-block__label--then">${t("wr.effect." + this._effect)}</span>
           <span class="rule-token rule-token--accent">${summary}</span>
@@ -191,56 +197,140 @@ export class ChronosWeatherRule extends LitElement {
     `;
   }
 
-  private _renderIfSection(weatherAttrs: any[], varDef: any) {
+  /** Compact label for a single clause used in the preview banner. */
+  private _clauseLabel(c: { variable: string; op: string; value: string }): string {
+    const wa = this.card._weatherAttributes.find((v) => v.key === c.variable);
+    const label = wa ? attrLabel(c.variable) : this._sensorFriendlyName(c.variable);
+    const unit = wa?.unit || "";
+    return `${label} ${c.op} ${c.value}${unit}`;
+  }
+
+  private _sensorFriendlyName(entityId: string): string {
+    const s = this.card._sensorEntities?.find((e: any) => e.entity_id === entityId);
+    return s?.friendly_name || entityId;
+  }
+
+  /** Numeric sensor entities, derived from _sensorEntities. We keep the list
+   * filtered to entities whose state parses as a finite number (or whose
+   * device_class hints "numeric"). Pure boolean/enum sensors don't make sense
+   * as IF threshold operands so we skip them. */
+  private _numericSensors(): any[] {
+    const all = this.card._sensorEntities || [];
+    return all.filter((s: any) => {
+      if (s.unit_of_measurement) return true;
+      const f = parseFloat(s.state);
+      return Number.isFinite(f);
+    });
+  }
+
+  private _renderIfSection(weatherAttrs: any[]) {
     return html`
       <div class="grid-2">
         <div class="card">
-          <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("wr.if.title")}</h3><p class="card__sub">${t("wr.if.subtitle")}</p></div></div>
-          <div class="col" style="gap:12px">
-            <div class="grid-2 wr-vars">
-              ${weatherAttrs.map((v) => html`
-                <button class="tile-pick" data-selected="${this._variable === v.key}" @click=${() => { this._variable = v.key; }} style="padding:10px">
-                  <div class="row" style="gap:8px">
-                    <div class="tile-pick__icon" style="width:28px;height:28px">${icon(v.icon, 14)}</div>
-                    <div style="min-width:0;flex:1">
-                      <div class="tile-pick__name" style="font-size:12.5px">${attrLabel(v.key, v.label)}</div>
-                      <div class="tile-pick__desc mono" style="font-size:10.5px">${v.key}${v.unit ? ` · ${v.unit}` : ""}</div>
-                    </div>
-                  </div>
-                </button>
-              `)}
-            </div>
-            <div class="grid-2">
-              <div class="field">
-                <label class="field__label">${t("wr.op")}</label>
-                <select class="select mono" @change=${(e: Event) => { this._op = (e.target as HTMLSelectElement).value; }}>
-                  ${varDef?.type === "enum"
-                    ? html`
-                        <option value="==" ?selected=${this._op === "=="}>uguale a (==)</option>
-                        <option value="!=" ?selected=${this._op === "!="}>diverso da (!=)</option>`
-                    : html`
-                        <option value=">" ?selected=${this._op === ">"}>&gt;</option>
-                        <option value=">=" ?selected=${this._op === ">="}>&ge;</option>
-                        <option value="<" ?selected=${this._op === "<"}>&lt;</option>
-                        <option value="<=" ?selected=${this._op === "<="}>&le;</option>
-                        <option value="==" ?selected=${this._op === "=="}>=</option>
-                        <option value="!=" ?selected=${this._op === "!="}>≠</option>`}
-                </select>
-              </div>
-              <div class="field">
-                <label class="field__label">${t("wr.threshold")}</label>
-                ${varDef?.type === "enum"
-                  ? html`<select class="select" @change=${(e: Event) => { this._value = (e.target as HTMLSelectElement).value; }}>
-                      ${(varDef.options || []).map((o: string) => html`<option value="${o}" ?selected=${this._value === o}>${o}</option>`)}
-                    </select>`
-                  : html`<input class="input mono" .value=${this._value} @input=${(e: InputEvent) => { this._value = (e.target as HTMLInputElement).value; }}/>`}
-              </div>
-            </div>
+          <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("wr.if.title")}</h3><p class="card__sub">${t("wr.if.subtitle.and")}</p></div></div>
+          <div class="col" style="gap:14px">
+            ${this._clauses.map((c, idx) => this._renderClause(c, idx, weatherAttrs))}
+            <button class="btn btn--sm" style="align-self:flex-start"
+              @click=${() => { this._clauses = [...this._clauses, { variable: "temperature", op: ">", value: "22" }]; }}>
+              ${icon("plus", 12)} ${t("wr.if.add_and")}
+            </button>
           </div>
         </div>
         ${this._renderEffectCard()}
       </div>
     `;
+  }
+
+  private _renderClause(c: { variable: string; op: string; value: string }, idx: number, weatherAttrs: any[]) {
+    const varDef = weatherAttrs.find((v) => v.key === c.variable);
+    const sensors = this._numericSensors();
+    const isSensorRef = !varDef && /^[\w]+\./.test(c.variable);
+    return html`
+      <div class="card card--ghost" style="padding:12px 14px">
+        <div class="sp-between" style="margin-bottom:10px">
+          <span class="text-xs text-mute mono">${idx === 0 ? t("wr.if.first") : t("wr.if.and")}</span>
+          ${this._clauses.length > 1 ? html`
+            <button class="btn btn--icon btn--ghost btn--sm" title="${t("common.remove")}"
+              @click=${() => { this._clauses = this._clauses.filter((_, i) => i !== idx); }}>
+              ${icon("close", 12)}
+            </button>
+          ` : nothing}
+        </div>
+        <div class="col" style="gap:10px">
+          <div class="grid-2 wr-vars">
+            ${weatherAttrs.map((v) => html`
+              <button class="tile-pick" data-selected="${c.variable === v.key}"
+                @click=${() => this._setClauseVariable(idx, v.key)} style="padding:10px">
+                <div class="row" style="gap:8px">
+                  <div class="tile-pick__icon" style="width:28px;height:28px">${icon(v.icon, 14)}</div>
+                  <div style="min-width:0;flex:1">
+                    <div class="tile-pick__name" style="font-size:12.5px">${attrLabel(v.key, v.label)}</div>
+                    <div class="tile-pick__desc mono" style="font-size:10.5px">${v.key}${v.unit ? ` · ${v.unit}` : ""}</div>
+                  </div>
+                </div>
+              </button>
+            `)}
+          </div>
+          <div class="field">
+            <label class="field__label">${t("wr.if.sensor.label")}</label>
+            <select class="select mono"
+              @change=${(e: Event) => {
+                const v = (e.target as HTMLSelectElement).value;
+                if (v) this._setClauseVariable(idx, v);
+              }}>
+              <option value="" ?selected=${!isSensorRef}>${t("wr.if.sensor.none")}</option>
+              ${sensors.map((s: any) => html`
+                <option value="${s.entity_id}" ?selected=${c.variable === s.entity_id}>
+                  ${s.friendly_name || s.entity_id}${s.unit_of_measurement ? ` (${s.unit_of_measurement})` : ""} — ${s.entity_id}
+                </option>
+              `)}
+            </select>
+            <span class="field__hint">${t("wr.if.sensor.hint")}</span>
+          </div>
+          <div class="grid-2">
+            <div class="field">
+              <label class="field__label">${t("wr.op")}</label>
+              <select class="select mono" @change=${(e: Event) => this._patchClause(idx, { op: (e.target as HTMLSelectElement).value })}>
+                ${varDef?.type === "enum"
+                  ? html`
+                      <option value="==" ?selected=${c.op === "=="}>uguale a (==)</option>
+                      <option value="!=" ?selected=${c.op === "!="}>diverso da (!=)</option>`
+                  : html`
+                      <option value=">" ?selected=${c.op === ">"}>&gt;</option>
+                      <option value=">=" ?selected=${c.op === ">="}>&ge;</option>
+                      <option value="<" ?selected=${c.op === "<"}>&lt;</option>
+                      <option value="<=" ?selected=${c.op === "<="}>&le;</option>
+                      <option value="==" ?selected=${c.op === "=="}>=</option>
+                      <option value="!=" ?selected=${c.op === "!="}>≠</option>`}
+              </select>
+            </div>
+            <div class="field">
+              <label class="field__label">${t("wr.threshold")}</label>
+              ${varDef?.type === "enum"
+                ? html`<select class="select" @change=${(e: Event) => this._patchClause(idx, { value: (e.target as HTMLSelectElement).value })}>
+                    ${(varDef.options || []).map((o: string) => html`<option value="${o}" ?selected=${c.value === o}>${o}</option>`)}
+                  </select>`
+                : html`<input class="input mono" .value=${c.value}
+                    @input=${(e: InputEvent) => this._patchClause(idx, { value: (e.target as HTMLInputElement).value })}/>`}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  private _setClauseVariable(idx: number, variable: string) {
+    this._patchClause(idx, { variable });
+    // If switching to/from an enum-typed weather attribute, normalise the op.
+    const wa = this.card._weatherAttributes.find((v) => v.key === variable);
+    if (wa?.type === "enum") {
+      const cur = this._clauses[idx];
+      if (cur.op !== "==" && cur.op !== "!=") this._patchClause(idx, { op: "==" });
+    }
+  }
+
+  private _patchClause(idx: number, patch: Partial<{ variable: string; op: string; value: string }>) {
+    this._clauses = this._clauses.map((c, i) => (i === idx ? { ...c, ...patch } : c));
   }
 
   private _renderScaleVarSection(weatherAttrs: any[]) {
@@ -483,8 +573,8 @@ export class ChronosWeatherRule extends LitElement {
     return "";
   }
 
-  private async _saveRule(schedule: any, varDef: any, typeActions: any[]) {
-    const ifText = this._buildIfText(varDef);
+  private async _saveRule(schedule: any, typeActions: any[]) {
+    const ifText = this._buildIfText();
     const thenText = this._buildThenText();
     const editingIdx = this.card._editingRuleIdx;
     // Preserve `active` flag when editing; default true on create.
@@ -540,9 +630,7 @@ export class ChronosWeatherRule extends LitElement {
       // different schedule doesn't carry stale state from a prior edit.
       this._blockIndex = null;
       this._effect = "skip";
-      this._variable = "temperature";
-      this._op = ">";
-      this._value = "22";
+      this._clauses = [{ variable: "temperature", op: ">", value: "22" }];
       this._deltaMin = 30;
       this._direction = "forward";
       this._actionId = "";
@@ -561,13 +649,8 @@ export class ChronosWeatherRule extends LitElement {
     this._effect = r.effect || "skip";
     this._blockIndex = (r.block_index === undefined ? null : r.block_index);
     if (r.if) {
-      // Best-effort parse of the legacy human-readable expression
-      const m = String(r.if).match(/^([\w.]+)\s*(>=|<=|!=|==|>|<)\s*(.*?)$/);
-      if (m) {
-        this._variable = m[1];
-        this._op = m[2];
-        this._value = m[3].replace(/[^0-9.\-+a-zA-Z]/g, "");
-      }
+      const parsed = this._parseIfExpression(String(r.if));
+      if (parsed.length) this._clauses = parsed;
     }
     if (r.delta_minutes !== undefined) this._deltaMin = r.delta_minutes;
     if (r.direction) this._direction = r.direction;
@@ -581,8 +664,30 @@ export class ChronosWeatherRule extends LitElement {
     if (r.scale_out_max !== undefined) this._scaleOutMax = r.scale_out_max;
   }
 
-  private _buildIfText(varDef: any): string {
+  /** Parse an `if` string written by `_buildIfText` (or hand-rolled in YAML) and
+   * return the structured clauses. Mirrors the backend `_split_and` + single-
+   * comparison parser; we keep the value as a raw string (units stripped). */
+  private _parseIfExpression(expr: string): { variable: string; op: string; value: string }[] {
+    const out: { variable: string; op: string; value: string }[] = [];
+    const parts = expr.split(/\s+AND\s+/i);
+    for (const raw of parts) {
+      const m = raw.trim().match(/^([\w.]+)\s*(>=|<=|!=|==|>|<)\s*(.*?)$/);
+      if (!m) continue;
+      const value = m[3].replace(/[^0-9.\-+a-zA-Z_]/g, "");
+      out.push({ variable: m[1], op: m[2], value });
+    }
+    return out;
+  }
+
+  private _buildIfText(): string {
     if (!EFFECTS.find((e) => e.key === this._effect)?.needsIf) return "";
-    return `${this._variable} ${this._op} ${this._value}${varDef?.unit || ""}`;
+    return this._clauses
+      .filter((c) => c.variable && c.op && c.value !== "")
+      .map((c) => {
+        const wa = this.card._weatherAttributes.find((v) => v.key === c.variable);
+        const unit = wa?.unit || "";
+        return `${c.variable} ${c.op} ${c.value}${unit}`;
+      })
+      .join(" AND ");
   }
 }

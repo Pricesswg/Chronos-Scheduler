@@ -115,7 +115,11 @@ All schedule, device and weather-rule data is persisted by the integration via W
 
 A schedule can have any number of weather rules. Each rule has:
 
-- **IF** condition: weather attribute compared with operator and threshold (e.g. `temperature > 22`, `wind_speed > 30`, `sun.minutes_until_sunset < 30`)
+- **IF** condition: one or more comparisons combined with **AND**. Each comparison is `<key> <op> <threshold>`, where the key can be:
+    - a weather attribute (`temperature`, `humidity`, `wind_speed`, `pressure`, `uv_index`, `condition`, …)
+    - a sun attribute (`sun.elevation`, `sun.minutes_until_sunrise`, `sun.minutes_until_sunset`, `sun.state`)
+    - a forecast attribute (`forecast.temp_max_today`, `forecast.rain_6h`, `forecast.condition_6h`, …)
+    - any HA entity_id whose state is read directly: `sensor.*`, `binary_sensor.*`, `number.*`, `input_number.*` (introduced in v1.10 — useful for off-grid setups, battery SOC, PV forecast aggregators, instantaneous power, etc.)
 - **THEN** action: skip the block, shift the start time, force a specific action, or change duration
 - **Fire mode** (when the THEN is "force"):
     - `every` — fires on every false→true transition (use only when desired oscillation is acceptable)
@@ -123,7 +127,17 @@ A schedule can have any number of weather rules. Each rule has:
     - `once_per_daytime` — at most once between sunrise and sunset, re-arms at next sunrise
     - `once_per_nighttime` — at most once between sunset and sunrise, re-arms at next sunset
 
-Rules can be attached to schedules with time blocks (the rule modifies block behaviour) or to schedules with no time blocks at all (pure weather-triggered automation).
+Rules can be attached to schedules with time blocks (the rule modifies block behaviour) or to schedules with no time blocks at all (pure weather-/sensor-triggered automation).
+
+### Compound conditions (AND)
+
+Add as many AND clauses as you need from the rule builder. All clauses must be true for the rule to fire. Examples:
+
+- `sensor.battery_soc > 96 AND sun.minutes_until_sunset > 120` — turn on the second water heater when the off-grid battery is near full and there are at least two hours of sunlight left to keep replenishing it.
+- `sensor.battery_soc < 40 AND sensor.pv_forecast_tomorrow_kwh < 8` — switch outdoor lights to low-power mode when the battery is below 40% and the next-day solar forecast is poor.
+- `temperature > 28 AND humidity > 70` — extend a fan schedule when both heat and humidity are high.
+
+OR composition is not supported yet — split into two separate rules with the same effect to emulate it.
 
 ## Scene and automation schedules
 

@@ -47,6 +47,18 @@ def _parse_expression(expr: str) -> tuple[str, str, str] | None:
     return None
 
 
+_AND_SPLIT = re.compile(r"\s+AND\s+", re.IGNORECASE)
+
+
+def _split_and(expr: str) -> list[str]:
+    """Split a compound IF expression on ' AND ' (case-insensitive). The
+    delimiter requires whitespace on both sides so it cannot accidentally
+    chop substrings inside entity_ids or attribute names."""
+    if not expr:
+        return []
+    return [p.strip() for p in _AND_SPLIT.split(expr) if p.strip()]
+
+
 def _get_action_def(device_type: str, action_id: str) -> dict[str, Any] | None:
     actions = ACTIONS_BY_TYPE.get(device_type, [])
     return next((a for a in actions if a["id"] == action_id), None)
@@ -225,7 +237,23 @@ class ChronosScheduler:
         return blocks
 
     def _evaluate_if(self, expr: str) -> bool:
-        """Sync wrapper for rule IF parsing+eval (read attribute via store)."""
+        """Sync wrapper for rule IF parsing+eval (read attribute via store).
+
+        Supports a flat AND-conjunction of single comparisons, separated by
+        ' AND ' (case-insensitive). Every clause must be true for the rule
+        to fire. forecast.* clauses are not evaluated synchronously — when
+        present they make the whole expression false here; the async path
+        in _evaluate_rule handles them properly.
+        """
+        clauses = _split_and(expr)
+        if not clauses:
+            return False
+        for clause in clauses:
+            if not self._evaluate_single_clause(clause):
+                return False
+        return True
+
+    def _evaluate_single_clause(self, expr: str) -> bool:
         parsed = _parse_expression(expr)
         if parsed is None:
             return False
@@ -234,7 +262,7 @@ class ChronosScheduler:
         if op_fn is None:
             return False
         if key.startswith("forecast."):
-            return False  # forecast needs async; handled only by _evaluate_rule
+            return False  # forecast needs async
         actual = self._read_attribute(key)
         if actual is None:
             return False
@@ -716,16 +744,27 @@ class ChronosScheduler:
         await self._dispatch_action(sched, block)
 
     async def _evaluate_rule(self, rule: dict) -> bool:
-        parsed = _parse_expression(rule.get("if", ""))
-        if parsed is None:
-            _LOGGER.warning("Cannot parse rule expression: %s", rule.get("if"))
+        """Async rule eval: handles forecast.* clauses (which need a service
+        call) plus the same flat AND-conjunction supported by _evaluate_if."""
+        expr = rule.get("if", "")
+        clauses = _split_and(expr)
+        if not clauses:
+            _LOGGER.warning("Cannot parse rule expression: %s", expr)
             return False
+        for clause in clauses:
+            if not await self._evaluate_single_clause_async(clause):
+                return False
+        return True
 
+    async def _evaluate_single_clause_async(self, expr: str) -> bool:
+        parsed = _parse_expression(expr)
+        if parsed is None:
+            _LOGGER.warning("Cannot parse rule clause: %s", expr)
+            return False
         key, op_str, threshold_str = parsed
         op_fn = OPS.get(op_str)
         if op_fn is None:
             return False
-
         if key.startswith("forecast."):
             weather_entity = self._store.settings.get("weather_entity", "")
             if not weather_entity:
@@ -733,19 +772,26 @@ class ChronosScheduler:
             actual = await self._get_forecast_value(weather_entity, key)
         else:
             actual = self._read_attribute(key)
-
         if actual is None:
             return False
-
         try:
             return op_fn(float(actual), float(threshold_str))
         except (ValueError, TypeError):
             return op_fn(str(actual), threshold_str)
 
+    # Domains accepted as direct entity references in IF expressions.
+    # Anything starting with "sensor.<X>", "binary_sensor.<X>", … is read
+    # directly from hass.states bypassing the weather/sun resolver. This
+    # lets users build rules on arbitrary HA sensors (e.g. battery SOC,
+    # PV forecast aggregators), introduced in v1.10.
+    _DIRECT_DOMAINS = {"sensor", "binary_sensor", "number", "input_number"}
+
     def _read_attribute(self, key: str) -> Any:
         """Legge un attributo meteo. Se l'utente ha mappato il key a un'entità
         sensor specifica (override), legge da quella; altrimenti dal weather.*
-        principale. Per le chiavi sun.* legge dall'entità sun.sun di HA."""
+        principale. Per le chiavi sun.* legge dall'entità sun.sun di HA.
+        Per chiavi che assomigliano a entity_ids (sensor.X, binary_sensor.X,
+        number.X, input_number.X) legge direttamente da hass.states."""
         overrides = self._store.settings.get("weather_sensor_map") or {}
         sensor_id = overrides.get(key)
         if sensor_id:
@@ -755,6 +801,19 @@ class ChronosScheduler:
             if state.state in (None, "unknown", "unavailable"):
                 return None
             return state.state
+
+        # Direct entity reference: keys like "sensor.battery_soc" go straight
+        # to hass.states. Keep this BEFORE the sun.* check so future "sensor.*"
+        # weather attributes (none today) couldn't accidentally shadow sensors.
+        if "." in key:
+            domain, _ = key.split(".", 1)
+            if domain in self._DIRECT_DOMAINS:
+                state = self._hass.states.get(key)
+                if state is None:
+                    return None
+                if state.state in (None, "unknown", "unavailable"):
+                    return None
+                return state.state
 
         # Sun attributes vengono dall'entità sun.sun (sempre presente in HA)
         if key.startswith("sun."):

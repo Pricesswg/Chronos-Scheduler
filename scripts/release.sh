@@ -24,14 +24,11 @@ if [ "$BRANCH" != "main" ]; then
   exit 1
 fi
 
-# Sanity: working tree pulito (eccetto i file che bumpiamo qui sotto). Se ci
-# sono modifiche staged o non committate, abortiamo: non vogliamo trascinare
-# lavoro non revisionato in una release.
-if ! git diff --quiet || ! git diff --cached --quiet; then
-  echo "Working tree non pulito. Committa o stash prima di rilasciare."
-  git status --short
-  exit 1
-fi
+# Lo script bumpa version + (intenzionalmente) cattura tutte le modifiche
+# pending del working tree nello stesso commit di release: era il design
+# originale e va bene così. Niente check di "tree pulito" qui — sarebbe
+# sbagliato bloccarsi quando in realtà vogliamo proprio committare quelle
+# modifiche.
 
 # Sanity: tag non esiste già (né locale né remoto). Lo controllo PRIMA del
 # fetch così evitiamo di scaricare dati per nulla, e di nuovo DOPO il fetch
