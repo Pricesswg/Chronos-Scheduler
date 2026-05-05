@@ -363,9 +363,10 @@ export class ChronosSettingsScreen extends LitElement {
     const expectedDC = this._matchingDeviceClass(attr.key);
     const sensorDC = sensor.device_class || "";
 
-    // condition è enum (string), tipicamente da sensor.* o weather entity
-    if (attr.key === "condition") {
-      // Validazione minimale: deve avere uno stato non numerico
+    // Enum-typed attributes (condition, rain_state, sun.state) accept any
+    // non-numeric string state. We just warn if the user picked a sensor
+    // that returns a number — that wouldn't compare meaningfully.
+    if (attr.type === "enum") {
       const v = String(sensor.state || "");
       if (v && !isNaN(parseFloat(v))) {
         return t("settings.weather.overrides.warn.numeric_for_condition", { state: v });
@@ -423,13 +424,21 @@ export class ChronosSettingsScreen extends LitElement {
   }
 
   private _matchingDeviceClass(key: string): string | null {
+    // HA device_class hints. Used to pre-rank candidates in the sensor picker
+    // and to flag soft "class mismatch" warnings. Keys without a canonical
+    // device_class (rain_state for example) are intentionally absent.
     const map: Record<string, string> = {
       temperature: "temperature",
+      feels_like: "temperature",
+      dew_point: "temperature",
       humidity: "humidity",
       wind_speed: "wind_speed",
+      wind_gust: "wind_speed",
       wind_bearing: "wind_direction",
       pressure: "atmospheric_pressure",
       uv_index: "uv_index",
+      solar_radiation: "irradiance",
+      rain_rate: "precipitation_intensity",
     };
     return map[key] || null;
   }

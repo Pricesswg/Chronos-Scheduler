@@ -526,11 +526,17 @@ const STRINGS: Record<string, Record<Lang, string>> = {
 
   // Weather attributes (override + rule builder)
   "weather.attr.temperature": { it: "Temperatura attuale", en: "Current temperature", fr: "Température actuelle", de: "Aktuelle Temperatur" },
+  "weather.attr.feels_like": { it: "Temperatura percepita", en: "Apparent temperature", fr: "Température ressentie", de: "Gefühlte Temperatur" },
   "weather.attr.humidity": { it: "Umidità", en: "Humidity", fr: "Humidité", de: "Luftfeuchtigkeit" },
+  "weather.attr.dew_point": { it: "Punto di rugiada", en: "Dew point", fr: "Point de rosée", de: "Taupunkt" },
   "weather.attr.wind_speed": { it: "Velocità vento", en: "Wind speed", fr: "Vitesse du vent", de: "Windgeschwindigkeit" },
+  "weather.attr.wind_gust": { it: "Raffica vento", en: "Wind gust", fr: "Rafale de vent", de: "Windböe" },
   "weather.attr.wind_bearing": { it: "Direzione vento", en: "Wind bearing", fr: "Direction du vent", de: "Windrichtung" },
   "weather.attr.pressure": { it: "Pressione atmosferica", en: "Atmospheric pressure", fr: "Pression atmosphérique", de: "Luftdruck" },
   "weather.attr.uv_index": { it: "Indice UV", en: "UV index", fr: "Indice UV", de: "UV-Index" },
+  "weather.attr.solar_radiation": { it: "Irradianza solare", en: "Solar irradiance", fr: "Irradiance solaire", de: "Sonneneinstrahlung" },
+  "weather.attr.rain_rate": { it: "Pioggia istantanea", en: "Instantaneous rain rate", fr: "Pluie instantanée", de: "Aktuelle Regenrate" },
+  "weather.attr.rain_state": { it: "Stato pioggia (sta piovendo)", en: "Rain state (is raining)", fr: "État de pluie (il pleut)", de: "Regenzustand (regnet es)" },
   "weather.attr.condition": { it: "Condizione attuale", en: "Current condition", fr: "Condition actuelle", de: "Aktuelle Bedingung" },
   "weather.attr.forecast.temp_max_today": { it: "Temp. max oggi (forecast)", en: "Today max temp (forecast)", fr: "Temp. max aujourd'hui (prévision)", de: "Heute Höchsttemperatur (Vorhersage)" },
   "weather.attr.forecast.temp_min_today": { it: "Temp. min oggi (forecast)", en: "Today min temp (forecast)", fr: "Temp. min aujourd'hui (prévision)", de: "Heute Tiefsttemperatur (Vorhersage)" },

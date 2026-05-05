@@ -116,10 +116,12 @@ All schedule, device and weather-rule data is persisted by the integration via W
 A schedule can have any number of weather rules. Each rule has:
 
 - **IF** condition: one or more comparisons combined with **AND**. Each comparison is `<key> <op> <threshold>`, where the key can be:
-    - a weather attribute (`temperature`, `humidity`, `wind_speed`, `pressure`, `uv_index`, `condition`, …)
+    - a weather attribute (`temperature`, `feels_like`, `humidity`, `dew_point`, `wind_speed`, `wind_gust`, `wind_bearing`, `pressure`, `uv_index`, `solar_radiation`, `rain_rate`, `rain_state`, `condition`)
     - a sun attribute (`sun.elevation`, `sun.minutes_until_sunrise`, `sun.minutes_until_sunset`, `sun.state`)
     - a forecast attribute (`forecast.temp_max_today`, `forecast.rain_6h`, `forecast.condition_6h`, …)
     - any HA entity_id whose state is read directly: `sensor.*`, `binary_sensor.*`, `number.*`, `input_number.*` (introduced in v1.10 — useful for off-grid setups, battery SOC, PV forecast aggregators, instantaneous power, etc.)
+
+Each weather attribute can be sourced from the configured weather entity OR overridden per-attribute in Settings → Weather source → sensor overrides. Useful when you have a local weather station (Ecowitt, WeatherFlow, Davis) with sensors more accurate than the cloud weather provider — point each attribute at its corresponding `sensor.*` entity.
 - **THEN** action: skip the block, shift the start time, force a specific action, or change duration
 - **Fire mode** (when the THEN is "force"):
     - `every` — fires on every false→true transition (use only when desired oscillation is acceptable)

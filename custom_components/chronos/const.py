@@ -1,5 +1,5 @@
 DOMAIN = "chronos"
-VERSION = "1.10.0"
+VERSION = "1.10.1"
 STORAGE_VERSION = 1
 STORAGE_KEY_DEVICES = f"{DOMAIN}.devices"
 STORAGE_KEY_SCHEDULES = f"{DOMAIN}.schedules"
@@ -153,11 +153,24 @@ ACTIONS_BY_TYPE = {
 
 WEATHER_ATTRIBUTES = [
     {"key": "temperature", "label": "Temperatura attuale", "unit": "°C", "icon": "temp", "type": "number"},
+    {"key": "feels_like", "label": "Temperatura percepita", "unit": "°C", "icon": "temp", "type": "number"},
     {"key": "humidity", "label": "Umidità", "unit": "%", "icon": "droplet", "type": "number"},
+    {"key": "dew_point", "label": "Punto di rugiada", "unit": "°C", "icon": "droplet", "type": "number"},
     {"key": "wind_speed", "label": "Velocità vento", "unit": "km/h", "icon": "wind", "type": "number"},
+    {"key": "wind_gust", "label": "Raffica vento", "unit": "km/h", "icon": "wind", "type": "number"},
     {"key": "wind_bearing", "label": "Direzione vento", "unit": "°", "icon": "wind", "type": "number"},
     {"key": "pressure", "label": "Pressione atmosferica", "unit": "hPa", "icon": "cloud", "type": "number"},
     {"key": "uv_index", "label": "Indice UV", "unit": "", "icon": "sun", "type": "number"},
+    {"key": "solar_radiation", "label": "Irradianza solare", "unit": "W/m²", "icon": "sun", "type": "number"},
+    {"key": "rain_rate", "label": "Pioggia istantanea", "unit": "mm/h", "icon": "rain", "type": "number"},
+    {
+        "key": "rain_state",
+        "label": "Stato pioggia",
+        "unit": "",
+        "icon": "rain",
+        "type": "enum",
+        "options": ["on", "off"],
+    },
     {"key": "sun.elevation", "label": "Elevazione sole", "unit": "°", "icon": "sun", "type": "number"},
     {"key": "sun.minutes_until_sunrise", "label": "Minuti all'alba", "unit": "min", "icon": "sun", "type": "number"},
     {"key": "sun.minutes_until_sunset", "label": "Minuti al tramonto", "unit": "min", "icon": "sun", "type": "number"},
