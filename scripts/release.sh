@@ -24,9 +24,43 @@ if [ "$BRANCH" != "main" ]; then
   exit 1
 fi
 
-# Sanity: tag non esiste già
+# Sanity: working tree pulito (eccetto i file che bumpiamo qui sotto). Se ci
+# sono modifiche staged o non committate, abortiamo: non vogliamo trascinare
+# lavoro non revisionato in una release.
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  echo "Working tree non pulito. Committa o stash prima di rilasciare."
+  git status --short
+  exit 1
+fi
+
+# Sanity: tag non esiste già (né locale né remoto). Lo controllo PRIMA del
+# fetch così evitiamo di scaricare dati per nulla, e di nuovo DOPO il fetch
+# per intercettare tag pubblicati dal collaboratore mentre stavamo lavorando.
 if git rev-parse "v$VERSION" >/dev/null 2>&1; then
-  echo "Tag v$VERSION esiste già."
+  echo "Tag v$VERSION esiste già localmente."
+  exit 1
+fi
+
+echo "==> Sincronizzo con il remote"
+git fetch origin
+if git rev-parse "origin/v$VERSION" >/dev/null 2>&1 || git ls-remote --tags origin "v$VERSION" | grep -q "v$VERSION"; then
+  echo "Tag v$VERSION esiste già sul remote. Aborto."
+  exit 1
+fi
+
+# Se il remote ha commit nuovi (es. README/funding edits dal browser GitHub),
+# li integriamo prima di partire con il bump. Rebase invece di merge per
+# tenere la storia lineare. Senza questo step lo script genera un commit di
+# release che poi non riesce a pushare e va sistemato a mano.
+LOCAL_AHEAD="$(git rev-list --count origin/main..main 2>/dev/null || echo 0)"
+REMOTE_AHEAD="$(git rev-list --count main..origin/main 2>/dev/null || echo 0)"
+if [ "$REMOTE_AHEAD" -gt 0 ]; then
+  echo "==> Remote ha $REMOTE_AHEAD commit nuovi, rebase in corso"
+  git pull --rebase origin main
+fi
+if [ "$LOCAL_AHEAD" -gt 0 ]; then
+  echo "Hai $LOCAL_AHEAD commit locali non pushati. Pusha prima, poi rilancia."
+  git log --oneline "origin/main..main"
   exit 1
 fi
 
