@@ -170,8 +170,8 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "month.10": { it: "Ottobre", en: "October", fr: "Octobre", de: "Oktober" },
   "month.11": { it: "Novembre", en: "November", fr: "Novembre", de: "November" },
   "month.12": { it: "Dicembre", en: "December", fr: "Décembre", de: "Dezember" },
-  "editor.dirty.unsaved": { it: "Modifiche non salvate", en: "Unsaved changes", fr: "Modifications non enregistrées", de: "Ungespeicherte Änderungen" },
-  "editor.dirty.saved": { it: "Tutto salvato", en: "All saved", fr: "Tout enregistré", de: "Alles gespeichert" },
+  "editor.dirty.unsaved": { it: "Salva le modifiche", en: "Save changes", fr: "Enregistrer les modifications", de: "Änderungen speichern" },
+  "editor.dirty.saved": { it: "Modifiche salvate", en: "Changes saved", fr: "Modifications enregistrées", de: "Änderungen gespeichert" },
 
   // Wizard
   "wizard.title": { it: "Crea schedulazione", en: "Create schedule", fr: "Créer une planification", de: "Zeitplan erstellen" },

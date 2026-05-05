@@ -62,9 +62,9 @@ export class ChronosEditor extends LitElement {
               <span class="switch__thumb"></span>
             </label>
             <button class="btn" style="color:var(--danger)" @click=${() => { this._confirmDelete = true; }} title="${t("common.delete")}">${icon("trash", 14)}</button>
-            <button class="btn btn--primary" ?disabled=${!isDirty}
-              style="opacity:${isDirty ? 1 : 0.5};cursor:${isDirty ? "pointer" : "not-allowed"}"
-              @click=${() => this.card.saveCurrentSchedule()}>
+            <button class="btn"
+              style="background:${isDirty ? "var(--warn)" : "var(--ok)"};color:white;border-color:transparent;cursor:${isDirty ? "pointer" : "default"};font-weight:600"
+              @click=${() => { if (isDirty) this.card.saveCurrentSchedule(); }}>
               ${icon("check", 14)} ${isDirty ? t("editor.dirty.unsaved") : t("editor.dirty.saved")}
             </button>
           </div>
