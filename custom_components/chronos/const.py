@@ -1,5 +1,5 @@
 DOMAIN = "chronos"
-VERSION = "1.8.3"
+VERSION = "1.9.0"
 STORAGE_VERSION = 1
 STORAGE_KEY_DEVICES = f"{DOMAIN}.devices"
 STORAGE_KEY_SCHEDULES = f"{DOMAIN}.schedules"
@@ -15,9 +15,10 @@ DOMAIN_TO_TYPE = {
     "lawn_mower": "mower",
     "water_heater": "boiler",
     "valve": "irrigation",
-    # Note: "scene" is intentionally NOT here. Scenes are not imported as
-    # devices; instead, scene-type schedules pick a scene entity per block
-    # via the action's `value` field (resolved by the scene picker UI).
+    # Note: "scene" and "automation" are intentionally NOT here. They are not
+    # imported as devices; instead, schedules of type "scene" / "automation"
+    # pick the target entities per block via the action's `value` field
+    # (resolved by the multi-entity picker UI).
 }
 
 SUPPORTED_DOMAINS = set(DOMAIN_TO_TYPE.keys())
@@ -83,10 +84,24 @@ ACTIONS_BY_TYPE = {
     "scene": [
         {
             "id": "activate", "label": "Attiva scena", "kind": "on", "service": "scene.turn_on",
-            # value holds the scene entity_id to activate; the UI renders an
-            # entity picker (domain=scene). The scheduler uses this value as
-            # the entity_id for the service call (no device list needed).
-            "value": {"type": "entity", "domain": "scene", "label": "Scena"},
+            # value holds the scene entity_id(s) to activate. Backend dispatch
+            # accepts either a single string (legacy v1.8.x) or a list of
+            # entity_ids (v1.9+). One service call per entity.
+            "value": {"type": "entity", "domain": "scene", "label": "Scena", "multi": True},
+        },
+    ],
+    "automation": [
+        {
+            "id": "turn_on", "label": "Attiva automazione", "kind": "on", "service": "automation.turn_on",
+            "value": {"type": "entity", "domain": "automation", "label": "Automazione", "multi": True},
+        },
+        {
+            "id": "turn_off", "label": "Disattiva automazione", "kind": "off", "service": "automation.turn_off",
+            "value": {"type": "entity", "domain": "automation", "label": "Automazione", "multi": True},
+        },
+        {
+            "id": "trigger", "label": "Trigger automazione", "kind": "cmd", "service": "automation.trigger",
+            "value": {"type": "entity", "domain": "automation", "label": "Automazione", "multi": True},
         },
     ],
     "blind": [

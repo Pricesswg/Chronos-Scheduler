@@ -49,7 +49,21 @@ const FALLBACK_ACTIONS: Record<string, ActionDef[]> = {
   scene: [
     {
       id: "activate", label: "Attiva scena", kind: "on", service: "scene.turn_on",
-      value: { type: "entity", domain: "scene", label: "Scena" },
+      value: { type: "entity", domain: "scene", label: "Scena", multi: true },
+    },
+  ],
+  automation: [
+    {
+      id: "turn_on", label: "Attiva automazione", kind: "on", service: "automation.turn_on",
+      value: { type: "entity", domain: "automation", label: "Automazione", multi: true },
+    },
+    {
+      id: "turn_off", label: "Disattiva automazione", kind: "off", service: "automation.turn_off",
+      value: { type: "entity", domain: "automation", label: "Automazione", multi: true },
+    },
+    {
+      id: "trigger", label: "Trigger automazione", kind: "cmd", service: "automation.trigger",
+      value: { type: "entity", domain: "automation", label: "Automazione", multi: true },
     },
   ],
   blind: [
@@ -115,9 +129,20 @@ export function actionLabel(type: DeviceType, action?: BlockAction): string {
   const def = getActionDef(type, action.id);
   if (!def) return action.id;
   if (def.value && action.value !== undefined && action.value !== null && action.value !== "") {
+    if (def.value.type === "entity") {
+      const list = Array.isArray(action.value) ? action.value : [String(action.value)];
+      if (!list.length) return def.label;
+      if (list.length === 1) return `${def.label}: ${shortEntity(list[0])}`;
+      return `${def.label} ×${list.length}`;
+    }
     return `${action.value}${def.value.unit || ""}`;
   }
   return def.label;
+}
+
+function shortEntity(eid: string): string {
+  const dot = eid.indexOf(".");
+  return dot >= 0 ? eid.slice(dot + 1) : eid;
 }
 
 export function actionColor(type: DeviceType, action?: BlockAction): string {

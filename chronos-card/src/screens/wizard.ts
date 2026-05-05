@@ -21,7 +21,10 @@ export class ChronosWizard extends LitElement {
   @state() private _step = 0;
   @state() private _name = "";
   @state() private _pickedDevices: string[] = [];
-  @state() private _sceneMode = false;
+  /** "" = device-mode (default), "scene" = scene-mode, "automation" = automation-mode.
+   * The two non-device modes drop the device step semantically and route to a
+   * type-specific schedule on save. */
+  @state() private _specialMode: "" | "scene" | "automation" = "";
   @state() private _days = [1, 1, 1, 1, 1, 1, 1];
   @state() private _weatherEnabled = true;
   @state() private _blocks: Block[] = [];
@@ -94,26 +97,37 @@ export class ChronosWizard extends LitElement {
           </div>
         `;
       case 1: {
-        // Filter out legacy scene-type devices (imported under v1.8.0). Scenes
-        // are now picked per-block via the generic "Activate scene" tile.
-        const realDevices = this.card._devices.filter((d) => d.type !== "scene");
+        // Filter out legacy scene/automation-type devices: those entity kinds
+        // are picked per-block via the generic tiles, never as devices.
+        const realDevices = this.card._devices.filter((d) => d.type !== "scene" && d.type !== "automation");
         return html`
           <div class="col" style="gap:14px">
             <h3 style="margin:0">${t("wizard.devices.heading")}</h3>
             <p class="text-mute text-sm" style="margin:0">${t("wizard.devices.hint")}</p>
             <div class="grid-auto" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">
-              <button class="tile-pick" data-selected="${this._sceneMode}"
-                @click=${() => this._toggleSceneMode()}>
+              <button class="tile-pick" data-selected="${this._specialMode === "scene"}"
+                @click=${() => this._toggleSpecialMode("scene")}>
                 <div class="row" style="gap:10px">
                   <div class="tile-pick__icon">${icon("sun", 16)}</div>
                   <div style="min-width:0;flex:1">
                     <div class="tile-pick__name truncate">${t("wizard.devices.scene_tile")}</div>
                     <div class="tile-pick__desc">${t("wizard.devices.scene_tile.desc")}</div>
                   </div>
-                  ${this._sceneMode ? icon("check", 16) : nothing}
+                  ${this._specialMode === "scene" ? icon("check", 16) : nothing}
                 </div>
               </button>
-              ${this._sceneMode ? nothing : realDevices.map((d) => html`
+              <button class="tile-pick" data-selected="${this._specialMode === "automation"}"
+                @click=${() => this._toggleSpecialMode("automation")}>
+                <div class="row" style="gap:10px">
+                  <div class="tile-pick__icon">${icon("wand", 16)}</div>
+                  <div style="min-width:0;flex:1">
+                    <div class="tile-pick__name truncate">${t("wizard.devices.automation_tile")}</div>
+                    <div class="tile-pick__desc">${t("wizard.devices.automation_tile.desc")}</div>
+                  </div>
+                  ${this._specialMode === "automation" ? icon("check", 16) : nothing}
+                </div>
+              </button>
+              ${this._specialMode ? nothing : realDevices.map((d) => html`
                 <button class="tile-pick" data-selected="${this._pickedDevices.includes(d.id)}"
                   @click=${() => this._togglePick(d.id)}>
                   <div class="row" style="gap:10px">
@@ -271,7 +285,11 @@ export class ChronosWizard extends LitElement {
             <div class="card card--ghost" style="padding:14px">
               <div class="col" style="gap:10px">
                 <div class="sp-between"><span class="text-mute text-sm">${t("editor.field.name")}</span><strong>${this._name || t("nav.new_schedule")}</strong></div>
-                <div class="sp-between"><span class="text-mute text-sm">${t("nav.devices")}</span><strong>${this._sceneMode ? t("wizard.review.scene_mode") : t("wizard.review.devices", { n: this._pickedDevices.length })}</strong></div>
+                <div class="sp-between"><span class="text-mute text-sm">${t("nav.devices")}</span><strong>${
+                  this._specialMode === "scene" ? t("wizard.review.scene_mode")
+                    : this._specialMode === "automation" ? t("wizard.review.automation_mode")
+                    : t("wizard.review.devices", { n: this._pickedDevices.length })
+                }</strong></div>
                 <div class="sp-between"><span class="text-mute text-sm">${t("editor.days.repeat")}</span><strong>${this._days.filter(Boolean).length}/7</strong></div>
                 <div class="sp-between"><span class="text-mute text-sm">${t("wizard.weather.heading")}</span><strong>${this._weatherEnabled ? t("wizard.review.weather_on") : t("wizard.review.weather_off")}</strong></div>
                 <div class="sp-between"><span class="text-mute text-sm">${t("wizard.step.time")}</span><strong>${this._blocks.length}</strong></div>
@@ -286,7 +304,7 @@ export class ChronosWizard extends LitElement {
   }
 
   private _togglePick(id: string) {
-    if (this._sceneMode) return;
+    if (this._specialMode) return;
     if (this._pickedDevices.includes(id)) {
       this._pickedDevices = this._pickedDevices.filter((x) => x !== id);
     } else {
@@ -294,15 +312,13 @@ export class ChronosWizard extends LitElement {
     }
   }
 
-  private _toggleSceneMode() {
-    this._sceneMode = !this._sceneMode;
-    if (this._sceneMode) {
-      this._pickedDevices = [];
-    }
+  private _toggleSpecialMode(mode: "scene" | "automation") {
+    this._specialMode = this._specialMode === mode ? "" : mode;
+    if (this._specialMode) this._pickedDevices = [];
   }
 
   private _inferDeviceType(): DeviceType {
-    if (this._sceneMode) return "scene";
+    if (this._specialMode) return this._specialMode as DeviceType;
     if (!this._pickedDevices.length) return "thermostat";
     const first = this.card._devices.find((d) => d.id === this._pickedDevices[0]);
     return (first?.type as DeviceType) || "thermostat";
@@ -310,7 +326,7 @@ export class ChronosWizard extends LitElement {
 
   private _defaultBlocks(deviceType: DeviceType): Block[] {
     const da = defaultAction(deviceType);
-    if (deviceType === "scene") {
+    if (deviceType === "scene" || deviceType === "automation") {
       return [{ start: 8, end: 9, action: { ...da } }];
     }
     return [
@@ -406,7 +422,7 @@ export class ChronosWizard extends LitElement {
       id: "",
       name: this._name,
       device_type: deviceType,
-      device_ids: this._sceneMode ? [] : this._pickedDevices,
+      device_ids: this._specialMode ? [] : this._pickedDevices,
       days: this._days,
       enabled: true,
       blocks: [...this._blocks].sort((a, b) => a.start - b.start),

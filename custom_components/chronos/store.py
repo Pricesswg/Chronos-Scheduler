@@ -62,9 +62,18 @@ class ChronosStore:
         stored_settings = (await self._store_settings.async_load()) or {}
         self.settings = {**DEFAULT_SETTINGS, **stored_settings}
 
+        # v1.9 migration: drop legacy scene-as-device entries from v1.8.0.
+        # Scenes are now selected per-block via the action's value field; the
+        # generic dispatcher iterates over the entity_id list. Any remaining
+        # device with type=="scene" is dead data — remove it and clean up
+        # references in schedules.
+        dropped_scene_ids = {d["id"] for d in self.devices if d.get("type") == "scene"}
+        dirty_devices = bool(dropped_scene_ids)
+        if dropped_scene_ids:
+            self.devices = [d for d in self.devices if d.get("type") != "scene"]
+
         # Normalizza gli id a stringa: in passato alcuni potrebbero essere stati
         # salvati come int (171, 42, …), oggi le WS richiedono str.
-        dirty_devices = False
         for d in self.devices:
             if not isinstance(d.get("id"), str):
                 d["id"] = str(d.get("id", ""))
@@ -78,6 +87,22 @@ class ChronosStore:
             if any(not isinstance(x, str) for x in ids):
                 s["device_ids"] = [str(x) for x in ids]
                 dirty_schedules = True
+            # Drop references to legacy scene-as-device ids removed above.
+            if dropped_scene_ids:
+                cleaned = [x for x in (s.get("device_ids") or []) if x not in dropped_scene_ids]
+                if len(cleaned) != len(s.get("device_ids") or []):
+                    s["device_ids"] = cleaned
+                    dirty_schedules = True
+            # Same purge for any block-level device_ids overrides (v1.9+).
+            for blk in s.get("blocks") or []:
+                if not isinstance(blk, dict):
+                    continue
+                blk_ids = blk.get("device_ids")
+                if isinstance(blk_ids, list) and dropped_scene_ids:
+                    cleaned = [x for x in blk_ids if x not in dropped_scene_ids]
+                    if len(cleaned) != len(blk_ids):
+                        blk["device_ids"] = cleaned
+                        dirty_schedules = True
             # Migra le weather_rules al nuovo schema (v1.7+)
             for rule in s.get("weather_rules") or []:
                 if _migrate_rule(rule):

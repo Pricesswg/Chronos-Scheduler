@@ -97,6 +97,7 @@ const DEVICE_TYPE_ICONS: Record<DeviceType, string> = {
   mower: "mower",
   vacuum: "vacuum",
   scene: "wand",
+  automation: "wand",
 };
 
 export function deviceIcon(type: DeviceType, size = 16): SVGTemplateResult {

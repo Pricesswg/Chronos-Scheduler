@@ -70,6 +70,7 @@ export const DEVICE_TYPES: Record<string, { label: string; domain: string; capab
   mower: { label: "Tosaerba", domain: "lawn_mower", capabilities: ["start_mowing", "pause", "dock"] },
   vacuum: { label: "Robot aspirapolvere", domain: "vacuum", capabilities: ["start", "pause", "return_to_base", "fan_speed"] },
   scene: { label: "Scena", domain: "scene", capabilities: ["turn_on"] },
+  automation: { label: "Automazione", domain: "automation", capabilities: ["turn_on", "turn_off", "trigger"] },
 };
 
 export function computeRepeat(days: number[]): string {

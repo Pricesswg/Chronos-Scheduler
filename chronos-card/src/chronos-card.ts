@@ -26,6 +26,7 @@ import {
   fetchWeatherEntities,
   fetchSensorEntities,
   fetchSceneEntities,
+  fetchAutomationEntities,
   saveSchedule as wsSaveSchedule,
   toggleSchedule as wsToggleSchedule,
   addDevice as wsAddDevice,
@@ -47,6 +48,7 @@ import "./screens/wizard";
 import "./screens/devices";
 import "./screens/settings";
 import "./screens/help";
+import "./screens/card-editor";
 
 const TITLE_KEYS: Record<Screen, [string, string]> = {
   overview: ["screen.overview.title", "chronos / overview"],
@@ -87,6 +89,7 @@ export class ChronosCard extends LitElement {
   @state() _weatherEntities: any[] = [];
   @state() _sensorEntities: any[] = [];
   @state() _sceneEntities: any[] = [];
+  @state() _automationEntities: any[] = [];
   @state() _mobile = false;
   @state() _drawerOpen = false;
   @state() _desktopCollapsed = false;
@@ -97,18 +100,38 @@ export class ChronosCard extends LitElement {
   private _resizeObserver?: ResizeObserver;
 
   setConfig(config: ChronosCardConfig) {
-    this.config = config;
+    this.config = config || ({} as ChronosCardConfig);
+    if (config?.default_screen && !this._screenInitialised) {
+      this._screen = config.default_screen;
+      this._screenInitialised = true;
+    }
+    if (config?.collapse_sidebar !== undefined) {
+      this._desktopCollapsed = !!config.collapse_sidebar;
+    }
   }
 
   static getStubConfig() {
     return { type: "custom:chronos-card" };
   }
 
+  /** Returns the GUI editor element for the Lovelace dashboard's "Edit card"
+   * dialog. Without this, HA falls back to YAML-only editing. */
+  static getConfigElement(): HTMLElement {
+    return document.createElement("chronos-card-editor");
+  }
+
+  /** True after we've applied `default_screen` from config — prevents config
+   * reloads (e.g. via the visual editor) from yanking the user back to the
+   * default screen mid-session. */
+  private _screenInitialised = false;
+
   connectedCallback() {
     super.connectedCallback();
     this._resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        this._mobile = entry.contentRect.width < 700;
+        const threshold = this.config?.mobile_threshold;
+        const t = typeof threshold === "number" ? threshold : 700;
+        this._mobile = t > 0 && entry.contentRect.width < t;
       }
     });
     this._resizeObserver.observe(this);
@@ -161,7 +184,7 @@ export class ChronosCard extends LitElement {
     };
 
     try {
-      const [devices, schedules, settings, actionsMap, weatherAttrs, forecast, available, weatherEnt, sensorEnt, sceneEnt] =
+      const [devices, schedules, settings, actionsMap, weatherAttrs, forecast, available, weatherEnt, sensorEnt, sceneEnt, automationEnt] =
         await Promise.all([
           safe(() => fetchDevices(this.hass), [], "devices/list"),
           safe(() => fetchSchedules(this.hass), [], "schedules/list"),
@@ -173,6 +196,7 @@ export class ChronosCard extends LitElement {
           safe(() => fetchWeatherEntities(this.hass), [], "weather/entities"),
           safe(() => fetchSensorEntities(this.hass), [], "sensor/entities"),
           safe(() => fetchSceneEntities(this.hass), [], "scene/entities"),
+          safe(() => fetchAutomationEntities(this.hass), [], "automation/entities"),
         ]);
       this._devices = devices;
       this._schedules = schedules;
@@ -185,6 +209,7 @@ export class ChronosCard extends LitElement {
       this._weatherEntities = weatherEnt;
       this._sensorEntities = sensorEnt;
       this._sceneEntities = sceneEnt;
+      this._automationEntities = automationEnt;
       setActionsMap(actionsMap);
       setColorSettings(settings);
       if (settings?.snap_minutes) setSnapMinutes(settings.snap_minutes);
@@ -333,6 +358,22 @@ export class ChronosCard extends LitElement {
     await this.doAddSchedule(schedule);
   }
 
+  /** Same as createSceneSchedule but for automations: turn on/off or trigger
+   * one or more HA automations per time block. */
+  async createAutomationSchedule() {
+    const schedule: Schedule = {
+      id: "",
+      name: t("overview.new_automation_default_name"),
+      device_type: "automation",
+      device_ids: [],
+      days: [1, 1, 1, 1, 1, 1, 1],
+      enabled: true,
+      blocks: [{ start: 8, end: 9, action: { id: "turn_on" } }],
+      weather_rules: [],
+    };
+    await this.doAddSchedule(schedule);
+  }
+
   async doAddSchedule(schedule: Schedule) {
     try {
       const saved = await wsSaveSchedule(this.hass, schedule);
@@ -401,8 +442,11 @@ export class ChronosCard extends LitElement {
       sidebarMode = this._desktopCollapsed ? "mini" : "full";
     }
 
+    const userTitle = this.config?.title;
+
     return html`
       ${errorBanner}
+      ${userTitle ? html`<div class="card-header" style="padding:14px 18px 6px;font-size:18px;font-weight:600;letter-spacing:-0.01em">${userTitle}</div>` : nothing}
       <div class="app" data-mobile="${this._mobile}" data-drawer="${drawerOpen}">
         ${this._renderSidebar(sidebarMode)}
         ${drawerOpen
@@ -566,4 +610,6 @@ export class ChronosCard extends LitElement {
   type: "chronos-card",
   name: "Chronos Scheduler",
   description: "Advanced scheduler for Home Assistant with weather-based rules",
+  preview: false,
+  documentationURL: "https://github.com/Pricesswg/Chronos-Scheduler",
 });

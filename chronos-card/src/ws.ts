@@ -86,6 +86,10 @@ export async function fetchSceneEntities(hass: HomeAssistant): Promise<any[]> {
   return hass.callWS({ type: "chronos/scene/entities" });
 }
 
+export async function fetchAutomationEntities(hass: HomeAssistant): Promise<any[]> {
+  return hass.callWS({ type: "chronos/automation/entities" });
+}
+
 export async function fetchActions(
   hass: HomeAssistant
 ): Promise<Record<string, ActionDef[]>> {

@@ -8,7 +8,8 @@ export type DeviceType =
   | "fan"
   | "mower"
   | "vacuum"
-  | "scene";
+  | "scene"
+  | "automation";
 
 export interface ChronosDevice {
   id: string;
@@ -20,7 +21,11 @@ export interface ChronosDevice {
 
 export interface BlockAction {
   id: string;
-  value?: number | string;
+  /** For numeric/enum values: a single primitive. For entity-typed actions
+   * (scene/automation), a list of entity_ids — the scheduler invokes the
+   * action's service once per entity. A bare string is also accepted for
+   * backward-compatibility with v1.8 scene schedules. */
+  value?: number | string | string[];
   /** Optional extra params merged into the HA service call (e.g. for lights:
    * rgb_color, color_temp_kelvin, transition). Keys come from the action def's
    * `extras` array exposed by the backend. */
@@ -48,6 +53,10 @@ export interface Block {
   start_offset?: number; // minutes, can be negative
   end_anchor?: TimeAnchor;
   end_offset?: number;
+  /** Optional subset of the schedule's `device_ids` to act on for this block.
+   * When unset or empty, dispatch falls back to all devices on the schedule.
+   * Backend intersects with the schedule's set, so stale references are safe. */
+  device_ids?: string[];
   action: BlockAction;
 }
 
@@ -146,8 +155,11 @@ export interface ActionValueSpec {
   default?: number | string;
   label?: string;
   options?: string[];
-  /** For type="entity": HA domain to filter the picker (e.g. "scene"). */
+  /** For type="entity": HA domain to filter the picker (e.g. "scene", "automation"). */
   domain?: string;
+  /** For type="entity": when true the picker stores a list of entity_ids
+   * and the backend invokes the action's service once per entity. */
+  multi?: boolean;
 }
 
 export interface ActionDef {
@@ -170,6 +182,15 @@ export interface WeatherAttribute {
 
 export interface ChronosCardConfig {
   type: string;
+  /** Optional header text shown above the card. Empty / unset = no header. */
+  title?: string;
+  /** Screen the card opens on first render. Defaults to "overview". */
+  default_screen?: Screen;
+  /** Start with the sidebar collapsed (mini mode) on desktop. */
+  collapse_sidebar?: boolean;
+  /** Force the mobile (drawer) layout below this width in pixels.
+   * Defaults to 700. Set to 0 to never use mobile mode. */
+  mobile_threshold?: number;
 }
 
 export type Screen =

@@ -46,7 +46,7 @@ export class ChronosEditor extends LitElement {
               <span class="chip ${schedule.enabled ? "chip--on" : ""}"><span class="chip__dot"></span>${schedule.enabled ? t("schedule.active") : t("schedule.disabled")}</span>
               <span class="chip">${icon("repeat", 11)} ${computeRepeat(schedule.days)}</span>
               <span class="chip chip--accent">${deviceIcon(deviceType, 11)} ${typeDef.label}</span>
-              ${deviceType !== "scene" ? html`<span class="chip">${icon("device", 11)} ${devices.length}</span>` : nothing}
+              ${deviceType !== "scene" && deviceType !== "automation" ? html`<span class="chip">${icon("device", 11)} ${devices.length}</span>` : nothing}
               ${(schedule.weather_rules || []).filter((r) => r.active).length > 0
                 ? html`<span class="chip chip--weather">${icon("cloud", 11)} ${t("overview.rules_count", { n: (schedule.weather_rules || []).filter((r) => r.active).length })}</span>`
                 : nothing}
@@ -260,23 +260,11 @@ export class ChronosEditor extends LitElement {
                             return html`<option value="${o}" ?selected=${cur === o}>${o}</option>`;
                           })}
                         </select>
-                      ` : currentActionDef.value.type === "entity" ? html`
-                        <select class="input"
-                          @change=${(e: Event) => this._setBlockValue(schedule.id, (e.target as HTMLSelectElement).value)}>
-                          <option value="" ?selected=${!block.action?.value}>${t("editor.scene.pick_placeholder")}</option>
-                          ${this.card._sceneEntities.map((s: any) => html`
-                            <option value="${s.entity_id}" ?selected=${block.action?.value === s.entity_id}>
-                              ${s.friendly_name || s.entity_id}
-                            </option>
-                          `)}
-                        </select>
-                        ${!block.action?.value ? html`
-                          <span class="field__hint" style="color:var(--warn);margin-top:4px">${t("editor.scene.pick_warn")}</span>
-                        ` : nothing}
-                      ` : nothing}
+                      ` : currentActionDef.value.type === "entity" ? this._renderEntityPicker(schedule.id, block, currentActionDef.value) : nothing}
                     </div>
                   ` : nothing}
                   ${currentActionDef?.extras?.length ? this._renderExtras(schedule.id, block, currentActionDef) : nothing}
+                  ${this._renderBlockDeviceSubset(schedule, block)}
                   <button class="btn btn--ghost" style="color:var(--danger)" @click=${() => this._removeBlock(schedule.id)}>
                     ${icon("trash", 14)} ${t("editor.block.delete")}
                   </button>
@@ -284,12 +272,15 @@ export class ChronosEditor extends LitElement {
               ` : nothing}
             </div>
 
-            ${deviceType === "scene" ? html`
+            ${deviceType === "scene" || deviceType === "automation" ? html`
               <div class="card">
                 <div class="card__header">
-                  <div style="flex:1"><h3 class="card__title">${t("editor.scene.section")}</h3><p class="card__sub">${t("editor.scene.section.hint")}</p></div>
+                  <div style="flex:1">
+                    <h3 class="card__title">${deviceType === "automation" ? t("editor.automation.section") : t("editor.scene.section")}</h3>
+                    <p class="card__sub">${deviceType === "automation" ? t("editor.automation.section.hint") : t("editor.scene.section.hint")}</p>
+                  </div>
                 </div>
-                <p class="text-xs text-mute" style="margin:0">${t("editor.scene.no_devices")}</p>
+                <p class="text-xs text-mute" style="margin:0">${deviceType === "automation" ? t("editor.automation.no_devices") : t("editor.scene.no_devices")}</p>
               </div>
             ` : html`
               <div class="card">
@@ -445,6 +436,145 @@ export class ChronosEditor extends LitElement {
     b[`${edge}_offset`] = offset;
     newBlocks[this._selectedBlockIdx] = b;
     this._commitBlocks(schedId, newBlocks, b);
+  }
+
+  /** Per-block device subset: lets the user restrict THIS block to a subset
+   * of the schedule's devices (the rest are not touched at this block's
+   * transition). Only shown for schedules with at least 2 devices. When all
+   * devices are selected, we store an empty array (semantic = "all"). */
+  private _renderBlockDeviceSubset(schedule: any, block: Block) {
+    if (schedule.device_type === "scene" || schedule.device_type === "automation") return nothing;
+    const allIds: string[] = schedule.device_ids || [];
+    if (allIds.length < 2) return nothing;
+    const stored: string[] = (block as any).device_ids || [];
+    const allSelected = stored.length === 0 || stored.length === allIds.length;
+    const selected = new Set<string>(allSelected ? allIds : stored);
+    const devs = allIds
+      .map((id: string) => this.card._devices.find((d) => d.id === id))
+      .filter(Boolean) as any[];
+    return html`
+      <div class="field" style="border-top:1px dashed var(--border-soft);padding-top:10px;margin-top:6px">
+        <label class="field__label">${t("editor.block.targets")}</label>
+        <div class="row" style="gap:6px;flex-wrap:wrap">
+          <button class="btn btn--sm" @click=${() => this._setBlockDeviceSubset(schedule.id, [])}
+            style="background:${allSelected ? "var(--accent)" : "var(--bg-sunken)"};color:${allSelected ? "white" : "var(--text)"};border-color:${allSelected ? "transparent" : "var(--border-soft)"}">
+            ${allSelected ? icon("check", 11) : nothing} ${t("editor.block.targets.all")}
+          </button>
+          ${devs.map((d) => {
+            const on = !allSelected && selected.has(d.id);
+            return html`
+              <button class="btn btn--sm" @click=${() => this._toggleBlockDeviceTarget(schedule.id, d.id)}
+                style="background:${on ? "var(--accent)" : "var(--bg-sunken)"};color:${on ? "white" : "var(--text)"};border-color:${on ? "transparent" : "var(--border-soft)"}">
+                ${on ? icon("check", 11) : nothing} ${deviceIcon(d.type, 11)} ${d.alias}
+              </button>
+            `;
+          })}
+        </div>
+        <span class="field__hint" style="margin-top:4px">${t("editor.block.targets.hint")}</span>
+      </div>
+    `;
+  }
+
+  private _setBlockDeviceSubset(schedId: string, ids: string[]) {
+    const sched = this.card._schedules.find((s) => s.id === schedId);
+    if (!sched) return;
+    const newBlocks = [...sched.blocks];
+    const block: any = { ...newBlocks[this._selectedBlockIdx] };
+    if (!ids.length) delete block.device_ids;
+    else block.device_ids = ids;
+    newBlocks[this._selectedBlockIdx] = block;
+    this._commitBlocks(schedId, newBlocks, block);
+  }
+
+  private _toggleBlockDeviceTarget(schedId: string, deviceId: string) {
+    const sched = this.card._schedules.find((s) => s.id === schedId);
+    if (!sched) return;
+    const block: any = sched.blocks[this._selectedBlockIdx];
+    if (!block) return;
+    const allIds: string[] = sched.device_ids || [];
+    const stored: string[] = block.device_ids || [];
+    // First click on a chip while in "all" mode initializes the subset to
+    // everything except the clicked one (matches the user's mental model).
+    let next: string[];
+    if (!stored.length) {
+      next = allIds.filter((x) => x !== deviceId);
+    } else if (stored.includes(deviceId)) {
+      next = stored.filter((x) => x !== deviceId);
+    } else {
+      next = [...stored, deviceId];
+    }
+    // Storing all of them = same as empty. Normalise.
+    if (next.length === allIds.length) next = [];
+    this._setBlockDeviceSubset(schedId, next);
+  }
+
+  /** Picker for actions whose value is one or more HA entity_ids (scenes,
+   * automations). When `spec.multi` is true the picker becomes a chip-toggle
+   * grid; otherwise it falls back to a single-select dropdown. The stored
+   * value is `string` (single mode), `string[]` (multi mode), or `undefined`. */
+  private _renderEntityPicker(schedId: string, block: Block, spec: any) {
+    const pool: any[] = spec.domain === "automation"
+      ? this.card._automationEntities
+      : this.card._sceneEntities;
+    const cur = block.action?.value;
+    const selected: string[] = Array.isArray(cur)
+      ? cur
+      : (typeof cur === "string" && cur ? [cur] : []);
+    const placeholder = spec.domain === "automation"
+      ? t("editor.automation.pick_placeholder")
+      : t("editor.scene.pick_placeholder");
+    const warnText = spec.domain === "automation"
+      ? t("editor.automation.pick_warn")
+      : t("editor.scene.pick_warn");
+
+    if (!spec.multi) {
+      return html`
+        <select class="input"
+          @change=${(e: Event) => this._setBlockValue(schedId, (e.target as HTMLSelectElement).value)}>
+          <option value="" ?selected=${!cur}>${placeholder}</option>
+          ${pool.map((s: any) => html`
+            <option value="${s.entity_id}" ?selected=${cur === s.entity_id}>
+              ${s.friendly_name || s.entity_id}
+            </option>
+          `)}
+        </select>
+        ${!cur ? html`<span class="field__hint" style="color:var(--warn);margin-top:4px">${warnText}</span>` : nothing}
+      `;
+    }
+
+    return html`
+      <div class="col" style="gap:6px">
+        <div class="row" style="gap:6px;flex-wrap:wrap">
+          ${pool.length ? pool.map((s: any) => {
+            const id = s.entity_id;
+            const on = selected.includes(id);
+            return html`
+              <button class="btn btn--sm"
+                @click=${() => this._toggleEntitySelection(schedId, id)}
+                style="background:${on ? "var(--accent)" : "var(--bg-sunken)"};color:${on ? "white" : "var(--text)"};border-color:${on ? "transparent" : "var(--border-soft)"}">
+                ${on ? icon("check", 11) : nothing} ${s.friendly_name || id}
+              </button>
+            `;
+          }) : html`<span class="text-xs text-mute">${t("editor.entity.empty")}</span>`}
+        </div>
+        ${selected.length === 0 ? html`<span class="field__hint" style="color:var(--warn)">${warnText}</span>` : html`<span class="field__hint">${t("editor.entity.count", { n: selected.length })}</span>`}
+      </div>
+    `;
+  }
+
+  private _toggleEntitySelection(schedId: string, entityId: string) {
+    const sched = this.card._schedules.find((s) => s.id === schedId);
+    if (!sched) return;
+    const block = sched.blocks[this._selectedBlockIdx];
+    if (!block) return;
+    const cur = block.action?.value;
+    const list: string[] = Array.isArray(cur)
+      ? [...cur]
+      : (typeof cur === "string" && cur ? [cur] : []);
+    const idx = list.indexOf(entityId);
+    if (idx >= 0) list.splice(idx, 1);
+    else list.push(entityId);
+    this._setBlockValue(schedId, list);
   }
 
   private _renderExtras(schedId: string, block: Block, def: any) {

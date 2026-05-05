@@ -531,41 +531,63 @@ class ChronosScheduler:
         service_str = action_def["service"]
         domain, service = service_str.split(".", 1)
 
-        # Scene-type schedules don't iterate device_ids: the per-block action
-        # value is itself the scene entity_id to activate.
-        if device_type == "scene":
-            scene_entity = action.get("value")
-            if not scene_entity:
+        # Scene- and automation-type schedules don't iterate the schedule's
+        # device list: the action's `value` is the entity_id (or list of
+        # entity_ids) on which to invoke the service. One service call per
+        # entity. Backward-compatible with v1.8 single-string scene values.
+        if device_type in ("scene", "automation"):
+            raw = action.get("value")
+            entity_ids: list[str] = []
+            if isinstance(raw, list):
+                entity_ids = [str(x) for x in raw if x]
+            elif isinstance(raw, str) and raw:
+                entity_ids = [raw]
+            if not entity_ids:
                 _LOGGER.warning(
-                    "Chronos: schedule=%s scene block has no scene entity selected",
-                    sched_name,
+                    "Chronos: schedule=%s %s block has no target entity selected",
+                    sched_name, device_type,
                 )
                 return
-            try:
-                _LOGGER.info(
-                    "Chronos: CALL service scene.turn_on data={entity_id: %s} schedule=%s",
-                    scene_entity, sched_name,
-                )
-                await self._hass.services.async_call(
-                    "scene", "turn_on", {"entity_id": scene_entity}, blocking=False
-                )
-                self._hass.bus.async_fire(EVENT_BLOCK_EXECUTED, {
-                    "schedule_id": sched["id"],
-                    "device_id": None,
-                    "entity_id": scene_entity,
-                    "action_id": action_id,
-                    "value": scene_entity,
-                })
-                if self._store.settings.get("notify_block_executed", True):
-                    await self._notify(
-                        f"{action_def['label']} · {scene_entity}",
-                        title=f"Chronos · {sched_name}",
+            executed: list[str] = []
+            for ent in entity_ids:
+                try:
+                    _LOGGER.info(
+                        "Chronos: CALL service %s.%s data={entity_id: %s} schedule=%s",
+                        domain, service, ent, sched_name,
                     )
-            except Exception:
-                _LOGGER.exception("Chronos: scene activation failed for %s", scene_entity)
+                    await self._hass.services.async_call(
+                        domain, service, {"entity_id": ent}, blocking=False
+                    )
+                    executed.append(ent)
+                    self._hass.bus.async_fire(EVENT_BLOCK_EXECUTED, {
+                        "schedule_id": sched["id"],
+                        "device_id": None,
+                        "entity_id": ent,
+                        "action_id": action_id,
+                        "value": ent,
+                    })
+                except Exception:
+                    _LOGGER.exception(
+                        "Chronos: %s.%s failed for %s", domain, service, ent
+                    )
+            if executed and self._store.settings.get("notify_block_executed", True):
+                await self._notify(
+                    f"{action_def['label']} · {', '.join(executed)}",
+                    title=f"Chronos · {sched_name}",
+                )
             return
 
-        device_ids = sched.get("device_ids", []) or []
+        # Per-block device subset: when the block sets `device_ids`, restrict
+        # the dispatch to that subset (intersected with the schedule's device
+        # list, defending against stale references). When unset/empty, fall
+        # back to the schedule's full device list.
+        sched_ids = sched.get("device_ids", []) or []
+        block_subset = block.get("device_ids")
+        if isinstance(block_subset, list) and block_subset:
+            allowed = set(sched_ids)
+            device_ids = [d for d in block_subset if d in allowed]
+        else:
+            device_ids = list(sched_ids)
         if not device_ids:
             _LOGGER.warning(
                 "Chronos: schedule=%s has NO device_ids — action skipped",

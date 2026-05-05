@@ -55,10 +55,13 @@ export class ChronosOverview extends LitElement {
             <h2 style="margin:0;font-size:16px;font-weight:600;letter-spacing:-0.01em">${t("nav.overview")}</h2>
             <span class="tag mono">${total}</span>
           </div>
-          <div class="row">
+          <div class="row" style="flex-wrap:wrap;gap:8px">
             <button class="btn" @click=${() => this.card.navigate("week")}>${icon("calendar", 14)} ${t("nav.week")}</button>
             <button class="btn" @click=${() => this.card.createSceneSchedule()} title="${t("overview.new_scene.hint")}">
               ${icon("sun", 14)} ${t("overview.new_scene")}
+            </button>
+            <button class="btn" @click=${() => this.card.createAutomationSchedule()} title="${t("overview.new_automation.hint")}">
+              ${icon("wand", 14)} ${t("overview.new_automation")}
             </button>
             <button class="btn btn--primary" @click=${() => this.card.navigate("wizard")}>${icon("plus", 14)} ${t("nav.new_schedule")}</button>
           </div>

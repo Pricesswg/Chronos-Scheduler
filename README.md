@@ -4,7 +4,7 @@
 ![hass](https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue.svg)
 ![license](https://img.shields.io/badge/license-MIT-green.svg)
 
-**Chronos** is an advanced scheduler for Home Assistant. It manages thermostats, lights, blinds, irrigation, switches, fans, water heaters, mowers, vacuums and scenes through daily time slots with **conditional weather rules**.
+**Chronos** is an advanced scheduler for Home Assistant. It manages thermostats, lights, blinds, irrigation, switches, fans, water heaters, mowers, vacuums, scenes and automations through daily time slots with **conditional weather rules**.
 
 A single Lovelace card provides:
 
@@ -14,7 +14,9 @@ A single Lovelace card provides:
 - 7-day week view with per-schedule filtering
 - Live status with weather and device readings
 - 6-step wizard for guided schedule creation
-- Scene schedules: a single schedule that activates a different scene per time block
+- Scene schedules: a single schedule that fires one or more scenes per time block (multi-select picker)
+- Automation schedules: a single schedule that turns on/off or triggers one or more HA automations per time block
+- Per-block device subset: in a multi-device schedule, each block can target a custom subset of those devices
 - Recurring yearly date ranges to limit a schedule to specific months/days
 - Light advanced parameters (RGB colour, colour temperature, transition) per block
 - Per-device and global settings (theme follows Home Assistant, color customisation, sensor-level weather overrides)
@@ -45,7 +47,7 @@ For Lovelace YAML mode, add the resource manually once:
 
 ```yaml
 resources:
-  - url: /local/chronos-card.js?v=1.8.1
+  - url: /local/chronos-card.js?v=1.9.0
     type: module
 ```
 
@@ -60,6 +62,39 @@ resources:
 
 On first run the integration asks to select a `weather.*` entity to use as the weather source. You can change it later from the in-card Settings, or even leave it empty if you only rely on point sensors (Ecowitt, WeatherFlow, …) configured per attribute under Settings → Weather source → sensor overrides.
 
+## Card configuration
+
+Most users don't need to configure anything: schedules, devices, weather rules and integration settings live inside the card UI (no YAML to edit). The dashboard's "Edit card" dialog also opens a GUI form for the few presentation options the card exposes.
+
+### Minimal example
+
+```yaml
+type: custom:chronos-card
+```
+
+That's it — Chronos works out of the box.
+
+### Full example
+
+```yaml
+type: custom:chronos-card
+title: Home schedules            # optional header above the card
+default_screen: overview         # which screen opens first
+collapse_sidebar: false          # start with sidebar in mini mode
+mobile_threshold: 700            # px below which the drawer layout kicks in
+```
+
+### Available options
+
+| Option              | Type                | Default      | Description                                                                  |
+|---------------------|---------------------|--------------|------------------------------------------------------------------------------|
+| `title`             | string              | —            | Header text shown above the card. Empty / unset hides the header.            |
+| `default_screen`    | string              | `overview`   | Initial screen. One of: `overview`, `editor`, `week`, `weatherRulesList`, `device`, `live`, `wizard`, `devices`, `settings`, `help`. |
+| `collapse_sidebar`  | boolean             | `false`      | Start the sidebar collapsed (mini mode) on desktop.                          |
+| `mobile_threshold`  | number              | `700`        | Pixel width below which the card switches to the drawer layout. `0` disables mobile mode. |
+
+All schedule, device and weather-rule data is persisted by the integration via WebSocket API — the card config only controls presentation.
+
 ## Supported domains
 
 | HA domain        | Chronos type    | Typical capabilities                       |
@@ -73,7 +108,8 @@ On first run the integration asks to select a `weather.*` entity to use as the w
 | `lawn_mower.*`   | Mower           | start_mowing, dock, pause                  |
 | `water_heater.*` | Water heater    | set_temperature, set_operation_mode        |
 | `valve.*`        | Irrigation      | open_valve, close_valve                    |
-| `scene.*`        | Scene           | turn_on (selected per block, see below)    |
+| `scene.*`        | Scene           | turn_on (multi-select per block, see below) |
+| `automation.*`   | Automation      | turn_on, turn_off, trigger (multi-select per block) |
 
 ## Weather rules
 
@@ -89,9 +125,18 @@ A schedule can have any number of weather rules. Each rule has:
 
 Rules can be attached to schedules with time blocks (the rule modifies block behaviour) or to schedules with no time blocks at all (pure weather-triggered automation).
 
-## Scene schedules
+## Scene and automation schedules
 
-Scenes are not imported as devices. Instead, create a scene schedule from the overview ("Schedule scenes" button): the schedule has no devices, and each time block picks which `scene.*` entity to activate. This lets a single schedule fire different scenes throughout the day (for example, "morning" at 07:00, "movie" at 21:00, "night" at 23:30).
+Scenes and automations are not imported as devices. Instead, create a dedicated schedule from the overview:
+
+- **Schedule scenes** — each time block picks one or more `scene.*` entities to activate (multi-select).
+- **Schedule automations** — each block picks one or more `automation.*` entities and one of three actions: `turn_on`, `turn_off`, `trigger`.
+
+A single schedule can therefore fire different scenes (or toggle different automations) throughout the day — for example "morning" at 07:00, "movie" at 21:00, "night" at 23:30.
+
+## Per-block device subset
+
+In a multi-device schedule, each time block can target a custom subset of the schedule's devices. The block detail panel shows an "Active devices for this block" chip selector with an "All" pill (default). Toggling individual chips restricts the dispatch for that block only — useful when, say, only 3 of 4 lights should turn on between 22:00 and 23:00, but all 4 should turn off at 06:00.
 
 ## Recurring date ranges
 
