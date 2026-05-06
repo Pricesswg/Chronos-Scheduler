@@ -37,14 +37,14 @@ export class ChronosEditor extends LitElement {
 
     return html`
       <div class="col" style="gap:18px">
-        <div class="sp-between">
-          <div>
+        <div class="sp-between" style="align-items:flex-start;flex-wrap:wrap;row-gap:10px">
+          <div style="min-width:0;flex:1 1 280px">
             <button class="btn btn--ghost btn--sm" @click=${() => this.card.navigate("overview")} style="margin-bottom:6px">
               ${icon("chevron-left", 14)} ${t("nav.overview")}
             </button>
             <input class="input" .value=${schedule.name}
               @input=${(e: InputEvent) => this.card.updateScheduleLocal(schedule.id, { name: (e.target as HTMLInputElement).value })}
-              style="font-size:22px;font-weight:700;letter-spacing:-0.02em;border:1px solid transparent;background:transparent;padding:4px 8px;margin-left:-8px;width:460px"/>
+              style="font-size:22px;font-weight:700;letter-spacing:-0.02em;border:1px solid transparent;background:transparent;padding:4px 8px;margin-left:-8px;width:100%;max-width:460px"/>
             <div class="row" style="margin-top:6px;gap:10px;flex-wrap:wrap">
               <span class="chip ${schedule.enabled ? "chip--on" : ""}"><span class="chip__dot"></span>${schedule.enabled ? t("schedule.active") : t("schedule.disabled")}</span>
               <span class="chip">${icon("repeat", 11)} ${computeRepeat(schedule.days)}</span>
@@ -55,7 +55,7 @@ export class ChronosEditor extends LitElement {
                 : nothing}
             </div>
           </div>
-          <div class="row" style="gap:10px">
+          <div class="row" style="gap:10px;flex-shrink:0;flex-wrap:wrap">
             <label class="switch">
               <input type="checkbox" .checked=${schedule.enabled} @change=${(e: Event) => this.card.doToggleSchedule(schedule.id, (e.target as HTMLInputElement).checked)}/>
               <span class="switch__track"></span>
@@ -63,7 +63,7 @@ export class ChronosEditor extends LitElement {
             </label>
             <button class="btn" style="color:var(--danger)" @click=${() => { this._confirmDelete = true; }} title="${t("common.delete")}">${icon("trash", 14)}</button>
             <button class="btn"
-              style="background:${isDirty ? "var(--warn)" : "var(--ok)"};color:white;border-color:transparent;cursor:${isDirty ? "pointer" : "default"};font-weight:600"
+              style="background:${isDirty ? "var(--warn)" : "var(--ok)"};color:white;border-color:transparent;cursor:${isDirty ? "pointer" : "default"};font-weight:600;white-space:nowrap"
               @click=${() => { if (isDirty) this.card.saveCurrentSchedule(); }}>
               ${icon("check", 14)} ${isDirty ? t("editor.dirty.unsaved") : t("editor.dirty.saved")}
             </button>

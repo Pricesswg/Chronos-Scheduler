@@ -113,7 +113,10 @@ export const chronosStyles = css`
     border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
-    padding: 18px 14px;
+    /* Extra top padding so the brand icon sits below the visual line of
+     * the topbar / HA app header on tablet and mobile. Reported overlap on
+     * narrow devices when the card edge-to-edge against the HA app bar. */
+    padding: 24px 14px 18px;
     gap: 4px;
     min-height: 0;
     overflow-y: auto;
@@ -123,7 +126,7 @@ export const chronosStyles = css`
   }
   .sidebar[data-mode="mini"] {
     width: 64px;
-    padding: 10px 8px;
+    padding: 18px 8px 14px;
     align-items: center;
   }
   .sidebar[data-mode="drawer"] {
@@ -485,9 +488,24 @@ export const chronosStyles = css`
   .weather-hero__temp { font-size: 34px; font-weight: 700; letter-spacing: -0.03em; font-family: var(--font-mono); }
   .weather-hero__cond { color: var(--text-soft); font-size: 13px; }
 
-  .forecast-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+  /* Horizontal scroll for the forecast strip. Cells are fixed-size so they
+   * don't try to fill the row and never overflow the parent card visually:
+   * the row stays inside its container, the user scrolls sideways with
+   * finger or wheel when there are more cells than fit. */
+  .forecast-row {
+    display: flex; gap: 8px;
+    overflow-x: auto; overflow-y: hidden;
+    max-width: 100%;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+  .forecast-row::-webkit-scrollbar { height: 6px; }
+  .forecast-row::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
   .forecast-cell {
-    flex: 1; min-width: 58px; text-align: center; padding: 10px 6px;
+    flex: 0 0 auto;
+    min-width: 64px;
+    text-align: center; padding: 10px 6px;
     border-radius: var(--r-md); background: var(--bg-sunken); border: 1px solid var(--border-soft);
   }
   .forecast-cell__hour { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
@@ -511,12 +529,14 @@ export const chronosStyles = css`
   .live-device__bar > div { height: 100%; background: var(--accent); border-radius: 3px; transition: width 300ms; }
 
   /* Wizard */
-  .wizard-stepper { display: flex; gap: 6px; margin-bottom: 24px; }
+  .wizard-stepper { display: flex; gap: 6px; margin-bottom: 24px; flex-wrap: wrap; }
   .wizard-step {
-    flex: 1; display: flex; align-items: center; gap: 10px;
+    flex: 1 1 0; min-width: 0;
+    display: flex; align-items: center; gap: 10px;
     padding: 12px 14px; border-radius: var(--r-md);
     background: var(--bg-sunken); border: 1px solid var(--border-soft);
     font-size: 12.5px; color: var(--text-muted); font-weight: 500;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .wizard-step[data-state="active"] { background: var(--accent-soft); color: var(--accent-ink); border-color: transparent; }
   .wizard-step[data-state="done"] { background: color-mix(in srgb, var(--ok) 12%, transparent); color: var(--ok); border-color: transparent; }
@@ -525,9 +545,18 @@ export const chronosStyles = css`
     background: var(--surface); border: 1px solid var(--border);
     display: grid; place-items: center; font-size: 11px; font-weight: 600;
     font-family: var(--font-mono);
+    flex-shrink: 0;
   }
   .wizard-step[data-state="done"] .wizard-step__num { background: var(--ok); color: white; border-color: transparent; }
   .wizard-step[data-state="active"] .wizard-step__num { background: var(--accent); color: white; border-color: transparent; }
+  /* Narrow viewports: collapse the step labels except for the active one
+   * so all six step indicators stay visible without overflowing. */
+  @media (max-width: 700px) {
+    .wizard-stepper { gap: 4px; }
+    .wizard-step { padding: 8px 10px; gap: 6px; }
+    .wizard-step > span:not(.wizard-step__num) { display: none; }
+    .wizard-step[data-state="active"] > span:not(.wizard-step__num) { display: inline; }
+  }
 
   .tile-pick {
     padding: 14px; border-radius: var(--r-lg); border: 1px solid var(--border);
