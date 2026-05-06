@@ -648,7 +648,8 @@ export class ChronosEditor extends LitElement {
                     placeholder="—"
                     style="flex:1;min-width:100px"/>
                 ` : spec.type === "string" ? html`
-                  <input type="text" class="input mono"
+                  <input type="${spec.secret ? "password" : "text"}" class="input mono"
+                    autocomplete="off"
                     .value=${cur !== undefined && cur !== null ? String(cur) : ""}
                     placeholder="${spec.placeholder || ""}"
                     @input=${(e: InputEvent) => this._setBlockExtra(schedId, spec.key, (e.target as HTMLInputElement).value)}

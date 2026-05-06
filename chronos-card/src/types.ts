@@ -47,6 +47,10 @@ export interface ActionExtraSpec {
   step?: number;
   options?: string[];
   placeholder?: string;
+  /** When true on a string extras, the editor renders the input as
+   * type="password" so the value is masked while editing. The stored
+   * value is still plain text in .storage/chronos.schedules. */
+  secret?: boolean;
 }
 
 export type TimeAnchor = "sunrise" | "sunset";

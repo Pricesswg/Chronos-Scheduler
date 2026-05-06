@@ -1,5 +1,5 @@
 DOMAIN = "chronos"
-VERSION = "1.11.0"
+VERSION = "1.11.1"
 STORAGE_VERSION = 1
 STORAGE_KEY_DEVICES = f"{DOMAIN}.devices"
 STORAGE_KEY_SCHEDULES = f"{DOMAIN}.schedules"
@@ -201,16 +201,25 @@ ACTIONS_BY_TYPE = {
         },
     ],
     "alarm": [
-        # All alarm_control_panel services accept an optional `code`. The
-        # frontend doesn't currently expose a string-typed extras field for
-        # it (most HA alarm panels don't require a code at the service-call
-        # level), so this is omitted intentionally. Add via extras of type
-        # "string" when needed.
-        {"id": "arm_home", "label": "Inserisci (home)", "kind": "on", "service": "alarm_control_panel.alarm_arm_home"},
-        {"id": "arm_away", "label": "Inserisci (away)", "kind": "on", "service": "alarm_control_panel.alarm_arm_away"},
-        {"id": "arm_night", "label": "Inserisci (notte)", "kind": "on", "service": "alarm_control_panel.alarm_arm_night"},
-        {"id": "arm_vacation", "label": "Inserisci (vacanza)", "kind": "on", "service": "alarm_control_panel.alarm_arm_vacation"},
-        {"id": "disarm", "label": "Disinserisci", "kind": "off", "service": "alarm_control_panel.alarm_disarm"},
+        # All alarm_control_panel services accept an optional `code`. Most
+        # panels (Alarmo, MQTT alarm with code_arm_required:true, Bosch,
+        # DSC, ...) reject the call silently if the code isn't passed.
+        # Stored as plain string in the schedule for now; the input is
+        # masked in the UI via the `secret` flag, but the value is in
+        # clear in .storage/chronos.schedules. Suitable when the alarm
+        # storage shares the same trust boundary as the HA host.
+        # Trigger doesn't take a code: any panel can sound the siren
+        # without authentication (it's by design an emergency action).
+        {"id": "arm_home", "label": "Inserisci (home)", "kind": "on", "service": "alarm_control_panel.alarm_arm_home",
+         "extras": [{"key": "code", "type": "string", "label": "Codice (PIN)", "secret": True}]},
+        {"id": "arm_away", "label": "Inserisci (away)", "kind": "on", "service": "alarm_control_panel.alarm_arm_away",
+         "extras": [{"key": "code", "type": "string", "label": "Codice (PIN)", "secret": True}]},
+        {"id": "arm_night", "label": "Inserisci (notte)", "kind": "on", "service": "alarm_control_panel.alarm_arm_night",
+         "extras": [{"key": "code", "type": "string", "label": "Codice (PIN)", "secret": True}]},
+        {"id": "arm_vacation", "label": "Inserisci (vacanza)", "kind": "on", "service": "alarm_control_panel.alarm_arm_vacation",
+         "extras": [{"key": "code", "type": "string", "label": "Codice (PIN)", "secret": True}]},
+        {"id": "disarm", "label": "Disinserisci", "kind": "off", "service": "alarm_control_panel.alarm_disarm",
+         "extras": [{"key": "code", "type": "string", "label": "Codice (PIN)", "secret": True}]},
         {"id": "trigger", "label": "Attiva sirena", "kind": "cmd", "service": "alarm_control_panel.alarm_trigger"},
     ],
 }
