@@ -4,6 +4,7 @@ import { chronosStyles } from "./styles";
 import { actionColor, actionLabel, getActionDef } from "./actions";
 import { fmtHour, clamp, snapToGrid, resolveBlockTime } from "./utils";
 import { defaultAction } from "./actions";
+import { actionDefLabel } from "./i18n";
 import type { Block, DeviceType, WeatherRule } from "./types";
 
 @customElement("chronos-timeline")
@@ -285,7 +286,8 @@ export class ChronosTimeline extends LitElement {
           if (def?.value && b.action.value !== undefined && b.action.value !== null && b.action.value !== "") {
             label = `${b.action.value}${def.value.unit || ""}`;
           } else if (def?.label) {
-            label = def.label.length > 8 ? def.label.slice(0, 7) + "…" : def.label;
+            const translated = actionDefLabel(this.deviceType, b.action.id, def.label);
+            label = translated.length > 8 ? translated.slice(0, 7) + "…" : translated;
           }
           if (!label) return svg``;
           return svg`

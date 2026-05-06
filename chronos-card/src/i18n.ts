@@ -610,6 +610,81 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "weather.attr.forecast.temp_min_today": { it: "Temp. min oggi (forecast)", en: "Today min temp (forecast)", fr: "Temp. min aujourd'hui (prévision)", de: "Heute Tiefsttemperatur (Vorhersage)" },
   "weather.attr.forecast.rain_6h": { it: "Pioggia prossime 6h", en: "Rain next 6h", fr: "Pluie 6 prochaines h", de: "Regen nächste 6 h" },
   "weather.attr.forecast.condition_6h": { it: "Condizione +6h", en: "Condition +6h", fr: "Condition +6 h", de: "Bedingung +6 h" },
+
+  // Device-type labels (used in chips, KPIs, picker tiles).
+  "device_type.thermostat": { it: "Termostato", en: "Thermostat", fr: "Thermostat", de: "Thermostat" },
+  "device_type.boiler": { it: "Boiler", en: "Water heater", fr: "Chauffe-eau", de: "Boiler" },
+  "device_type.light": { it: "Luce", en: "Light", fr: "Lumière", de: "Licht" },
+  "device_type.blind": { it: "Tapparella", en: "Blind", fr: "Volet", de: "Rollladen" },
+  "device_type.irrigation": { it: "Irrigazione", en: "Irrigation", fr: "Irrigation", de: "Bewässerung" },
+  "device_type.plug": { it: "Presa smart", en: "Smart plug", fr: "Prise connectée", de: "Smart-Steckdose" },
+  "device_type.fan": { it: "Ventilatore", en: "Fan", fr: "Ventilateur", de: "Ventilator" },
+  "device_type.mower": { it: "Tosaerba", en: "Lawn mower", fr: "Tondeuse", de: "Rasenmäher" },
+  "device_type.vacuum": { it: "Robot aspirapolvere", en: "Vacuum", fr: "Aspirateur robot", de: "Saugroboter" },
+  "device_type.scene": { it: "Scena", en: "Scene", fr: "Scène", de: "Szene" },
+  "device_type.automation": { it: "Automazione", en: "Automation", fr: "Automatisation", de: "Automation" },
+  "device_type.alarm": { it: "Allarme", en: "Alarm", fr: "Alarme", de: "Alarm" },
+
+  // Action labels (per device type + action id). The fallback keeps the
+  // original Italian label from actions.ts / backend, so a missing key here
+  // doesn't break the UI, it just leaks Italian.
+  "action.thermostat.set_temperature": { it: "Imposta temperatura", en: "Set temperature", fr: "Définir la température", de: "Temperatur einstellen" },
+  "action.thermostat.set_preset": { it: "Preset", en: "Preset", fr: "Préréglage", de: "Voreinstellung" },
+  "action.thermostat.turn_off": { it: "Spegni", en: "Turn off", fr: "Éteindre", de: "Ausschalten" },
+  "action.boiler.set_temperature": { it: "Imposta temperatura", en: "Set temperature", fr: "Définir la température", de: "Temperatur einstellen" },
+  "action.boiler.set_operation": { it: "Modalità operativa", en: "Operation mode", fr: "Mode opératoire", de: "Betriebsmodus" },
+  "action.boiler.turn_off": { it: "Spegni", en: "Turn off", fr: "Éteindre", de: "Ausschalten" },
+  "action.light.turn_on": { it: "Accendi", en: "Turn on", fr: "Allumer", de: "Einschalten" },
+  "action.light.turn_off": { it: "Spegni", en: "Turn off", fr: "Éteindre", de: "Ausschalten" },
+  "action.scene.activate": { it: "Attiva scena", en: "Activate scene", fr: "Activer la scène", de: "Szene aktivieren" },
+  "action.automation.turn_on": { it: "Attiva automazione", en: "Enable automation", fr: "Activer l'automatisation", de: "Automation aktivieren" },
+  "action.automation.turn_off": { it: "Disattiva automazione", en: "Disable automation", fr: "Désactiver l'automatisation", de: "Automation deaktivieren" },
+  "action.automation.trigger": { it: "Trigger automazione", en: "Trigger automation", fr: "Déclencher l'automatisation", de: "Automation auslösen" },
+  "action.blind.set_position": { it: "Posiziona", en: "Set position", fr: "Positionner", de: "Position einstellen" },
+  "action.blind.open_cover": { it: "Apri", en: "Open", fr: "Ouvrir", de: "Öffnen" },
+  "action.blind.close_cover": { it: "Chiudi", en: "Close", fr: "Fermer", de: "Schließen" },
+  "action.irrigation.turn_on": { it: "Avvia", en: "Start", fr: "Démarrer", de: "Starten" },
+  "action.irrigation.turn_off": { it: "Stop", en: "Stop", fr: "Arrêter", de: "Stoppen" },
+  "action.plug.turn_on": { it: "Accendi", en: "Turn on", fr: "Allumer", de: "Einschalten" },
+  "action.plug.turn_off": { it: "Spegni", en: "Turn off", fr: "Éteindre", de: "Ausschalten" },
+  "action.fan.turn_on": { it: "Accendi", en: "Turn on", fr: "Allumer", de: "Einschalten" },
+  "action.fan.turn_off": { it: "Spegni", en: "Turn off", fr: "Éteindre", de: "Ausschalten" },
+  "action.mower.start_mowing": { it: "Avvia taglio", en: "Start mowing", fr: "Démarrer la tonte", de: "Mähen starten" },
+  "action.mower.pause": { it: "Pausa", en: "Pause", fr: "Pause", de: "Pause" },
+  "action.mower.dock": { it: "Torna in base", en: "Return to dock", fr: "Retour à la station", de: "Zur Station" },
+  "action.vacuum.start": { it: "Avvia pulizia", en: "Start cleaning", fr: "Démarrer le nettoyage", de: "Reinigung starten" },
+  "action.vacuum.pause": { it: "Pausa", en: "Pause", fr: "Pause", de: "Pause" },
+  "action.vacuum.return_to_base": { it: "Torna in base", en: "Return to base", fr: "Retour à la base", de: "Zur Basis" },
+  "action.alarm.arm_home": { it: "Inserisci (home)", en: "Arm (home)", fr: "Armer (maison)", de: "Scharf (zu Hause)" },
+  "action.alarm.arm_away": { it: "Inserisci (away)", en: "Arm (away)", fr: "Armer (absent)", de: "Scharf (abwesend)" },
+  "action.alarm.arm_night": { it: "Inserisci (notte)", en: "Arm (night)", fr: "Armer (nuit)", de: "Scharf (Nacht)" },
+  "action.alarm.arm_vacation": { it: "Inserisci (vacanza)", en: "Arm (vacation)", fr: "Armer (vacances)", de: "Scharf (Urlaub)" },
+  "action.alarm.disarm": { it: "Disinserisci", en: "Disarm", fr: "Désarmer", de: "Unscharf" },
+  "action.alarm.trigger": { it: "Attiva sirena", en: "Trigger alarm", fr: "Déclencher l'alarme", de: "Alarm auslösen" },
+
+  // Action value labels (the input field next to the action). Only set for
+  // actions that take a value; lookup falls back to the action def label.
+  "action.light.turn_on.value": { it: "Luminosità", en: "Brightness", fr: "Luminosité", de: "Helligkeit" },
+  "action.blind.set_position.value": { it: "Apertura", en: "Open", fr: "Ouverture", de: "Öffnung" },
+  "action.irrigation.turn_on.value": { it: "Durata", en: "Duration", fr: "Durée", de: "Dauer" },
+  "action.fan.turn_on.value": { it: "Velocità", en: "Speed", fr: "Vitesse", de: "Geschwindigkeit" },
+  "action.scene.activate.value": { it: "Scena", en: "Scene", fr: "Scène", de: "Szene" },
+  "action.automation.turn_on.value": { it: "Automazione", en: "Automation", fr: "Automatisation", de: "Automation" },
+  "action.automation.turn_off.value": { it: "Automazione", en: "Automation", fr: "Automatisation", de: "Automation" },
+  "action.automation.trigger.value": { it: "Automazione", en: "Automation", fr: "Automatisation", de: "Automation" },
+
+  // Action extras (advanced parameters, currently only on light).
+  "action.extra.rgb_color": { it: "Colore RGB", en: "RGB color", fr: "Couleur RGB", de: "RGB-Farbe" },
+  "action.extra.color_temp_kelvin": { it: "Temperatura colore", en: "Color temperature", fr: "Température de couleur", de: "Farbtemperatur" },
+  "action.extra.transition": { it: "Transizione", en: "Transition", fr: "Transition", de: "Übergang" },
+
+  // Strings that previously had Italian fallbacks inline because the keys
+  // weren't defined. Now they're real keys with translations.
+  "editor.delete.warn": { it: "Operazione non reversibile. La schedulazione, i blocchi e le regole meteo associate verranno eliminati.", en: "This cannot be undone. The schedule, its blocks and its weather rules will be deleted.", fr: "Action irréversible. La planification, ses créneaux et ses règles météo seront supprimés.", de: "Nicht umkehrbar. Der Zeitplan, seine Blöcke und Wetterregeln werden gelöscht." },
+  "editor.delete.summary": { it: "{blocks} fasce · {devices} dispositivi · {rules} regole meteo", en: "{blocks} blocks · {devices} devices · {rules} weather rules", fr: "{blocks} créneaux · {devices} appareils · {rules} règles météo", de: "{blocks} Blöcke · {devices} Geräte · {rules} Wetterregeln" },
+  "devices.bulk_remove.hint": { it: "Seleziona il dispositivo da scollegare. Verrà rimosso anche dalle schedulazioni che lo usano.", en: "Pick the device to unlink. It will also be removed from the schedules that use it.", fr: "Choisis l'appareil à dissocier. Il sera également retiré des planifications qui l'utilisent.", de: "Wähle das zu trennende Gerät. Es wird auch aus den Zeitplänen entfernt, die es verwenden." },
+  "devices.refresh.title": { it: "Forza l'aggiornamento dal backend", en: "Force refresh from backend", fr: "Forcer le rafraîchissement depuis le backend", de: "Aktualisierung vom Backend erzwingen" },
+  "wr.delta.placeholder": { it: "es. 30 / -30", en: "e.g. 30 / -30", fr: "ex. 30 / -30", de: "z.B. 30 / -30" },
 };
 
 /** Etichetta tradotta per un weather attribute key, con fallback al label backend. */
@@ -617,4 +692,34 @@ export function attrLabel(key: string, fallback?: string): string {
   const tk = `weather.attr.${key}`;
   const v = t(tk);
   return v === tk ? (fallback || key) : v;
+}
+
+/** Translated label for an action def. The fallback is the original Italian
+ * label coming from actions.ts / the backend, so a missing translation
+ * doesn't break the UI, it just leaks the source language. */
+export function actionDefLabel(deviceType: string, actionId: string, fallback?: string): string {
+  const tk = `action.${deviceType}.${actionId}`;
+  const v = t(tk);
+  return v === tk ? (fallback || actionId) : v;
+}
+
+/** Translated label for an action's value field (e.g. Brightness, Duration). */
+export function actionValueLabel(deviceType: string, actionId: string, fallback?: string): string {
+  const tk = `action.${deviceType}.${actionId}.value`;
+  const v = t(tk);
+  return v === tk ? (fallback || "") : v;
+}
+
+/** Translated label for an action's extra parameter (e.g. rgb_color, transition). */
+export function actionExtraLabel(extraKey: string, fallback?: string): string {
+  const tk = `action.extra.${extraKey}`;
+  const v = t(tk);
+  return v === tk ? (fallback || extraKey) : v;
+}
+
+/** Translated label for a Chronos device type (Thermostat, Light, etc.). */
+export function deviceTypeLabel(deviceType: string, fallback?: string): string {
+  const tk = `device_type.${deviceType}`;
+  const v = t(tk);
+  return v === tk ? (fallback || deviceType) : v;
 }

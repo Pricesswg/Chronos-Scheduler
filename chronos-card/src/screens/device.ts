@@ -4,7 +4,7 @@ import { chronosStyles } from "../styles";
 import { icon, deviceIcon } from "../icons";
 import { DEVICE_TYPES, computeRepeat } from "../utils";
 import { getDeviceColor } from "../device-colors";
-import { t } from "../i18n";
+import { t, deviceTypeLabel } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
 import "../timeline";
 
@@ -51,7 +51,7 @@ export class ChronosDeviceScreen extends LitElement {
 
         <div class="grid-3">
           <div class="kpi"><div class="kpi__label">${t("device.state")}</div><div class="kpi__value">${stateStr}</div><div class="kpi__delta">${t("device.state.live")}</div></div>
-          <div class="kpi"><div class="kpi__label">${t("device.type")}</div><div class="kpi__value" style="font-size:20px">${def.label}</div><div class="kpi__delta mono">${def.domain}</div></div>
+          <div class="kpi"><div class="kpi__label">${t("device.type")}</div><div class="kpi__value" style="font-size:20px">${deviceTypeLabel(device.type, def.label)}</div><div class="kpi__delta mono">${def.domain}</div></div>
           <div class="kpi"><div class="kpi__label">${t("device.linked_schedules")}</div><div class="kpi__value">${linkedSchedules.length}</div><div class="kpi__delta">${t("device.linked_schedules.active", { n: linkedSchedules.filter((s) => s.enabled).length })}</div></div>
         </div>
 

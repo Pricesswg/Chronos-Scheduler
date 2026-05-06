@@ -4,7 +4,7 @@ import { chronosStyles } from "../styles";
 import { icon } from "../icons";
 import { getActionsForType } from "../actions";
 import { fmtHour, resolveBlockTime } from "../utils";
-import { t, attrLabel } from "../i18n";
+import { t, attrLabel, actionDefLabel } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
 import type { Block, RuleEffect, WeatherRule } from "../types";
 import "../timeline";
@@ -423,7 +423,7 @@ export class ChronosWeatherRule extends LitElement {
             <label class="field__label">${t("wr.delta")} (${t("common.min")})</label>
             <input type="number" class="input mono" step="5" .value=${String(this._deltaMin)}
               @input=${(e2: InputEvent) => { const x = parseInt((e2.target as HTMLInputElement).value, 10); if (!isNaN(x)) this._deltaMin = x; }}
-              placeholder="es. 30 / -30"/>
+              placeholder="${t("wr.delta.placeholder")}"/>
           </div>
           ${this._renderFireMode()}
         </div>
@@ -450,7 +450,10 @@ export class ChronosWeatherRule extends LitElement {
             <label class="field__label">${t("wr.action.force")}</label>
             <select class="select" @change=${(e2: Event) => this._setForceAction((e2.target as HTMLSelectElement).value, typeActions)}>
               <option value="" ?selected=${!this._actionId}>—</option>
-              ${typeActions.map((a) => html`<option value="${a.id}" ?selected=${this._actionId === a.id}>${a.label}</option>`)}
+              ${typeActions.map((a) => {
+                const dt = this.card._schedules.find((s) => s.id === this.card._selectedId)?.device_type || "thermostat";
+                return html`<option value="${a.id}" ?selected=${this._actionId === a.id}>${actionDefLabel(dt, a.id, a.label)}</option>`;
+              })}
             </select>
           </div>
           ${def?.value ? this._renderValueField(def, this._actionValue, (v) => { this._actionValue = v; }) : nothing}

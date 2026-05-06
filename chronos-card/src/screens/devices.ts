@@ -4,7 +4,7 @@ import { chronosStyles } from "../styles";
 import { icon, deviceIcon } from "../icons";
 import { DEVICE_TYPES } from "../utils";
 import { getDeviceColor } from "../device-colors";
-import { t } from "../i18n";
+import { t, deviceTypeLabel } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
 
 @customElement("chronos-devices-screen")
@@ -78,7 +78,7 @@ export class ChronosDevicesScreen extends LitElement {
             <p class="page-sub">${t("devices.subtitle", { n: devices.length })}</p>
           </div>
           <div class="row" style="gap:8px">
-            <button class="btn" title="Force refresh from backend"
+            <button class="btn" title="${t("devices.refresh.title")}"
               @click=${async () => {
                 this._log("force REFRESH dal backend…");
                 try {
@@ -130,7 +130,7 @@ export class ChronosDevicesScreen extends LitElement {
                       <span style="color:var(--text-muted);opacity:0.6"> · id:${d.id}(${typeof d.id})</span>
                     </div>
                   </div>
-                  <span class="chip chip--accent" style="flex:0 0 auto">${def.label}</span>
+                  <span class="chip chip--accent" style="flex:0 0 auto">${deviceTypeLabel(d.type, def.label)}</span>
                   <span class="mono text-xs text-mute" style="flex:0 0 auto;min-width:60px;text-align:right">${stateStr}</span>
                   <button
                     type="button"
@@ -200,11 +200,7 @@ export class ChronosDevicesScreen extends LitElement {
       <div class="modal-overlay" @click=${() => { this._bulkOpen = false; }}>
         <div class="card" style="width:min(520px,100%);padding:22px" @click=${(e: Event) => e.stopPropagation()}>
           <h3 style="margin:0 0 4px">${t("devices.unlink")}</h3>
-          <p class="text-sm text-mute" style="margin:0 0 14px">
-            ${t("devices.bulk_remove.hint") !== "devices.bulk_remove.hint"
-              ? t("devices.bulk_remove.hint")
-              : "Seleziona il dispositivo da scollegare. Verrà rimosso anche dalle schedulazioni che lo usano."}
-          </p>
+          <p class="text-sm text-mute" style="margin:0 0 14px">${t("devices.bulk_remove.hint")}</p>
           <select class="select mono" style="margin-bottom:12px"
             @change=${(e: Event) => { this._bulkSelected = (e.target as HTMLSelectElement).value; }}>
             ${devices.map((d) => html`
@@ -268,7 +264,7 @@ export class ChronosDevicesScreen extends LitElement {
                     .value=${this._pickedAlias[e.entity_id] || ""}
                     @input=${(ev: InputEvent) => { this._pickedAlias = { ...this._pickedAlias, [e.entity_id]: (ev.target as HTMLInputElement).value }; }}
                     style="width:160px;font-size:12px"/>
-                  <span class="chip chip--accent">${def.label}</span>
+                  <span class="chip chip--accent">${deviceTypeLabel(type, def.label)}</span>
                   <button class="btn btn--sm btn--primary" @click=${async () => {
                     await this.card.doAddDevice(e.entity_id, this._pickedAlias[e.entity_id] || undefined);
                     this._pickedAlias = { ...this._pickedAlias, [e.entity_id]: "" };

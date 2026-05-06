@@ -4,7 +4,7 @@ import { chronosStyles } from "../styles";
 import { icon, deviceIcon } from "../icons";
 import { getActionsForType, getActionDef, actionLabel, actionColor, KIND_COLORS, defaultAction } from "../actions";
 import { fmtHour, getDays, DEVICE_TYPES, computeRepeat, resolveBlockTime } from "../utils";
-import { t } from "../i18n";
+import { t, actionDefLabel, actionValueLabel, actionExtraLabel } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
 import type { Block, Schedule } from "../types";
 import "../timeline";
@@ -104,7 +104,7 @@ export class ChronosEditor extends LitElement {
                   ${availableActions.map((a) => html`
                     <div class="row" style="gap:6px">
                       <span style="width:10px;height:10px;border-radius:3px;background:${KIND_COLORS[a.kind]};display:inline-block"></span>
-                      <span class="text-xs">${a.label}</span>
+                      <span class="text-xs">${actionDefLabel(deviceType, a.id, a.label)}</span>
                     </div>
                   `)}
                 </div>
@@ -231,14 +231,14 @@ export class ChronosEditor extends LitElement {
                         const active = block.action?.id === a.id;
                         return html`<button class="btn btn--sm" @click=${() => this._setBlockAction(schedule.id, a.id, a.value?.default)}
                           style="background:${active ? KIND_COLORS[a.kind] : "var(--surface)"};color:${active ? "white" : "var(--text)"};border-color:${active ? "transparent" : "var(--border)"}">
-                          ${a.label}</button>`;
+                          ${actionDefLabel(deviceType, a.id, a.label)}</button>`;
                       })}
                     </div>
                     <span class="field__hint mono" style="margin-top:4px">${currentActionDef?.service || ""}</span>
                   </div>
                   ${currentActionDef?.value ? html`
                     <div class="field">
-                      <label class="field__label">${currentActionDef.value.label || t("common.value")} ${currentActionDef.value.unit ? html`<span class="text-mute">(${currentActionDef.value.unit})</span>` : nothing}</label>
+                      <label class="field__label">${actionValueLabel(deviceType, block.action.id, currentActionDef.value.label) || t("common.value")} ${currentActionDef.value.unit ? html`<span class="text-mute">(${currentActionDef.value.unit})</span>` : nothing}</label>
                       ${currentActionDef.value.type === "number" ? html`
                         <div class="row" style="gap:10px;align-items:center">
                           <input type="range" min="${currentActionDef.value.min}" max="${currentActionDef.value.max}" step="${currentActionDef.value.step}"
@@ -607,7 +607,7 @@ export class ChronosEditor extends LitElement {
             const cur = extras[spec.key];
             return html`
               <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">
-                <span class="text-xs text-mute" style="min-width:130px">${spec.label || spec.key}${spec.unit ? ` (${spec.unit})` : ""}</span>
+                <span class="text-xs text-mute" style="min-width:130px">${actionExtraLabel(spec.key, spec.label)}${spec.unit ? ` (${spec.unit})` : ""}</span>
                 ${spec.type === "color" ? html`
                   <input type="color"
                     .value=${this._rgbToHex(cur)}
@@ -807,13 +807,15 @@ export class ChronosEditor extends LitElement {
           <p class="text-sm" style="margin:0 0 16px;color:var(--text-soft)">
             <strong>${schedule.name}</strong>
             <span class="text-xs text-mute" style="display:block;margin-top:4px">
-              ${schedule.blocks.length} fasce · ${(schedule.device_ids || []).length} dispositivi · ${(schedule.weather_rules || []).length} regole meteo
+              ${t("editor.delete.summary", {
+                blocks: schedule.blocks.length,
+                devices: (schedule.device_ids || []).length,
+                rules: (schedule.weather_rules || []).length,
+              })}
             </span>
           </p>
           <p class="text-xs text-mute" style="margin:0 0 16px">
-            ${t("editor.delete.warn") !== "editor.delete.warn"
-              ? t("editor.delete.warn")
-              : "Operazione non reversibile. La schedulazione, i blocchi e le regole meteo associate verranno eliminati."}
+            ${t("editor.delete.warn")}
           </p>
           <div class="row" style="justify-content:flex-end;gap:8px">
             <button class="btn" @click=${() => { this._confirmDelete = false; }}>${t("common.cancel")}</button>

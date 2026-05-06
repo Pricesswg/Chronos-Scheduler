@@ -4,7 +4,7 @@ import { chronosStyles } from "../styles";
 import { icon, deviceIcon } from "../icons";
 import { defaultAction, getActionsForType, getActionDef, actionColor } from "../actions";
 import { getDays, DEVICE_TYPES, computeRepeat } from "../utils";
-import { t } from "../i18n";
+import { t, actionDefLabel, actionValueLabel } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
 import type { Block, DeviceType, Schedule } from "../types";
 import "../timeline";
@@ -201,13 +201,13 @@ export class ChronosWizard extends LitElement {
                     ${actions.map((a) => html`
                       <button class="chip" data-active="${block.action?.id === a.id}"
                         style="background:${block.action?.id === a.id ? actionColor(deviceType, { id: a.id }) : "var(--bg-sunken)"};color:${block.action?.id === a.id ? "white" : "var(--text-soft)"};border:1px solid ${block.action?.id === a.id ? "transparent" : "var(--border-soft)"};cursor:pointer"
-                        @click=${() => this._setAction(a.id)}>${a.label}</button>
+                        @click=${() => this._setAction(a.id)}>${actionDefLabel(deviceType, a.id, a.label)}</button>
                     `)}
                   </div>
                 </div>
                 ${def?.value ? html`
                   <div class="field" style="margin-top:10px">
-                    <label class="field__label">${def.value.label || t("common.value")} ${def.value.unit ? html`<span class="text-mute">(${def.value.unit})</span>` : nothing}</label>
+                    <label class="field__label">${actionValueLabel(deviceType, block.action!.id, def.value.label) || t("common.value")} ${def.value.unit ? html`<span class="text-mute">(${def.value.unit})</span>` : nothing}</label>
                     ${def.value.type === "number" ? html`
                       <div class="row" style="gap:10px;align-items:center">
                         <input type="range" min="${def.value.min}" max="${def.value.max}" step="${def.value.step}"

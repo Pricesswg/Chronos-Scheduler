@@ -1,5 +1,6 @@
 import type { ActionDef, BlockAction, DeviceType, Settings } from "./types";
 import { getStops, getPresetColors } from "./device-colors";
+import { actionDefLabel } from "./i18n";
 
 export const KIND_COLORS: Record<string, string> = {
   on: "var(--mode-comfort)",
@@ -136,16 +137,19 @@ export function actionLabel(type: DeviceType, action?: BlockAction): string {
   if (!action) return "—";
   const def = getActionDef(type, action.id);
   if (!def) return action.id;
+  // Resolve once: use the i18n translation when available, fall back to the
+  // backend / FALLBACK_ACTIONS Italian label otherwise.
+  const tLabel = actionDefLabel(type, action.id, def.label);
   if (def.value && action.value !== undefined && action.value !== null && action.value !== "") {
     if (def.value.type === "entity") {
       const list = Array.isArray(action.value) ? action.value : [String(action.value)];
-      if (!list.length) return def.label;
-      if (list.length === 1) return `${def.label}: ${shortEntity(list[0])}`;
-      return `${def.label} ×${list.length}`;
+      if (!list.length) return tLabel;
+      if (list.length === 1) return `${tLabel}: ${shortEntity(list[0])}`;
+      return `${tLabel} ×${list.length}`;
     }
     return `${action.value}${def.value.unit || ""}`;
   }
-  return def.label;
+  return tLabel;
 }
 
 function shortEntity(eid: string): string {
