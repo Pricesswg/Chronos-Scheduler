@@ -55,16 +55,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def _register_frontend_card(hass: HomeAssistant) -> None:
     """Sincronizza il bundle in /config/www/ e registra il custom card.
 
-    Tre layer di affidabilità:
+    Due layer di affidabilità:
       1. Copia il bundle in /config/www/chronos-card.js (servito da HA come /local/...)
          Se HACS aggiorna il bundle in custom_components/, viene riallineato
          automaticamente al prossimo restart.
-      2. Auto-registra la Lovelace resource su /local/chronos-card.js?v=VERSION.
-         Funziona in storage mode (UI dashboard); in YAML mode richiede
-         resource manuale (vedi README).
-      3. Fallback add_extra_js_url + static path su /chronos_static/...
-         Se il path /local/ ha problemi (raro), questo fallback rende ancora
-         disponibile la card.
+      2. add_extra_js_url + static path su /chronos_static/chronos-card.js
+         Carica la card a livello frontend, sufficiente per registrare il custom
+         element <chronos-card> e renderlo usabile in dashboard storage o YAML.
+
+    L'auto-register della Lovelace resource (presente fino a v1.10.3) è stato
+    rimosso in v1.10.4: HACS già registra la resource automaticamente per chi
+    installa via HACS, e l'auto-register di Chronos in alcuni casi confliggeva
+    con quello di HACS lasciando la collection lovelace_resources in stato
+    inconsistente al reboot (issue #2). Per install manuali la card resta
+    comunque caricata grazie al meccanismo 2; chi la vuole anche come Lovelace
+    resource visibile in UI può aggiungerla a mano (vedi README).
     """
     src = Path(__file__).parent / "www" / "chronos-card.js"
     if not src.exists():
@@ -110,18 +115,13 @@ async def _register_frontend_card(hass: HomeAssistant) -> None:
         _LOGGER.exception("Chronos: errore copiando file in /config/www/")
         # Continuiamo comunque, il fallback static path potrebbe funzionare
 
-    # --- 2. Lovelace resource auto-register (storage mode) ---
-    try:
-        await _upsert_lovelace_resource(hass, local_url)
-    except Exception:
-        _LOGGER.warning(
-            "Chronos: impossibile auto-registrare la Lovelace resource "
-            "(probabilmente sei in YAML mode). Aggiungi a mano: %s",
-            local_url,
-            exc_info=True,
-        )
+    # NOTE: l'auto-register della Lovelace resource è stato rimosso in v1.10.4
+    # per evitare conflitti con HACS (vedi docstring sopra e issue #2).
+    # `local_url` resta calcolato perché alcuni log e il README ci puntano,
+    # ma non viene più scritto nella collection lovelace_resources.
+    _ = local_url  # noqa: F841
 
-    # --- 3. Fallback: static path /chronos_static/ + add_extra_js_url ---
+    # --- 2. Fallback: static path /chronos_static/ + add_extra_js_url ---
     if not hass.data.get(_CARD_REGISTERED_FLAG):
         try:
             await hass.http.async_register_static_paths([
@@ -135,11 +135,20 @@ async def _register_frontend_card(hass: HomeAssistant) -> None:
 
 
 async def _upsert_lovelace_resource(hass: HomeAssistant, url: str) -> None:
-    """Crea o aggiorna la Lovelace resource per chronos-card.js.
+    """DEPRECATED, non più chiamato dal setup a partire da v1.10.4.
 
-    Cerca qualsiasi resource esistente che punti a chronos-card.js (anche da
-    setup precedenti, manuali o automatici) e ne aggiorna l'URL. Se non
-    esiste la crea. Rimuove eventuali duplicati."""
+    Causava un conflitto con la registrazione fatta da HACS quando il bundle
+    veniva installato via HACS: i due write ravvicinati sulla stessa
+    collection `lovelace_resources` lasciavano lo state in-memory di HA in
+    una situazione inconsistente, con le resources che sparivano dalla UI
+    dopo il reboot pur restando intatte sul disco (issue #2).
+
+    Mantenuta nel modulo come riferimento e per eventuale uso manuale; il
+    setup oggi si affida solo a (1) copia bundle in /config/www e
+    (2) add_extra_js_url su /chronos_static/, sufficienti a far caricare
+    la card senza toccare lovelace_resources. Per chi installa
+    manualmente fuori da HACS, la procedura per aggiungere la resource a
+    mano è descritta nel README."""
     lovelace = hass.data.get("lovelace")
     if lovelace is None:
         _LOGGER.debug("Chronos: lovelace data non disponibile")

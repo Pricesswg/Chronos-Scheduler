@@ -170,9 +170,13 @@ export class ChronosHelpScreen extends LitElement {
           </p>
         </div>
 
+        ${this._renderQuickStart()}
+
         <div class="grid-auto" style="grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));gap:12px">
           ${RECIPES.map((r) => this._renderRecipe(r))}
         </div>
+
+        ${this._renderFaq()}
 
         <div class="card">
           <h3 class="card__title" style="margin:0 0 10px">${t("help.glossary.title")}</h3>
@@ -190,6 +194,68 @@ export class ChronosHelpScreen extends LitElement {
               </div>
             `)}
           </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /** Quick start card: short ordered list of the typical setup flow + a
+   * prominent link that opens the full guide on GitHub in a new tab.
+   * The full guide lives in docs/USER_GUIDE.md, a 700-line reference with
+   * screenshots that we don't want to embed in the bundle. */
+  private _renderQuickStart() {
+    const steps: [string, string][] = [
+      ["help.quickstart.s1.title", "help.quickstart.s1.body"],
+      ["help.quickstart.s2.title", "help.quickstart.s2.body"],
+      ["help.quickstart.s3.title", "help.quickstart.s3.body"],
+      ["help.quickstart.s4.title", "help.quickstart.s4.body"],
+      ["help.quickstart.s5.title", "help.quickstart.s5.body"],
+      ["help.quickstart.s6.title", "help.quickstart.s6.body"],
+    ];
+    return html`
+      <div class="card">
+        <div class="sp-between" style="align-items:flex-start;margin-bottom:10px">
+          <div>
+            <h3 class="card__title" style="margin:0">${t("help.quickstart.title")}</h3>
+            <p class="text-sm" style="margin:4px 0 0;color:var(--text-soft)">${t("help.quickstart.subtitle")}</p>
+          </div>
+          <a class="btn btn--primary" href="https://github.com/Pricesswg/Chronos-Scheduler/blob/main/docs/USER_GUIDE.md"
+            target="_blank" rel="noopener noreferrer"
+            style="text-decoration:none;white-space:nowrap">
+            ${icon("info", 13)} ${t("help.quickstart.open_full_guide")}
+          </a>
+        </div>
+        <ol style="margin:0;padding-left:22px;color:var(--text);font-size:13.5px;line-height:1.55">
+          ${steps.map(([titleKey, bodyKey]) => html`
+            <li style="margin-bottom:8px">
+              <span class="fw-600">${t(titleKey)}</span>
+              <span style="color:var(--text-soft)"> · ${t(bodyKey)}</span>
+            </li>
+          `)}
+        </ol>
+      </div>
+    `;
+  }
+
+  private _renderFaq() {
+    const items: [string, string][] = [
+      ["help.faq.q1", "help.faq.a1"],
+      ["help.faq.q2", "help.faq.a2"],
+      ["help.faq.q3", "help.faq.a3"],
+      ["help.faq.q4", "help.faq.a4"],
+      ["help.faq.q5", "help.faq.a5"],
+      ["help.faq.q6", "help.faq.a6"],
+    ];
+    return html`
+      <div class="card">
+        <h3 class="card__title" style="margin:0 0 10px">${t("help.faq.title")}</h3>
+        <div class="col" style="gap:14px">
+          ${items.map(([qKey, aKey]) => html`
+            <div>
+              <div class="fw-600 text-sm">${t(qKey)}</div>
+              <div class="text-sm" style="color:var(--text-soft);line-height:1.55;margin-top:2px">${t(aKey)}</div>
+            </div>
+          `)}
         </div>
       </div>
     `;

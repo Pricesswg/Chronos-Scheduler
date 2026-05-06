@@ -23,6 +23,27 @@ A single Lovelace card provides:
 
 All persisted by Home Assistant, accessible via WebSocket API, and auto-registered as a custom card.
 
+## Documentation
+
+The full user guide is in [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md). It covers every section of the card with screenshots: overview, schedule editor (linear / radial / list), weather rules, live status, week view, device management, examples, and settings.
+
+The in-card Help screen has a quick start, a short FAQ, and a link to the full guide.
+
+## Quick start
+
+1. Install Chronos via HACS (see Installation below) and restart Home Assistant.
+2. Add the card to any dashboard:
+   ```yaml
+   type: custom:chronos-card
+   ```
+3. Open the card and go to **Manage devices** → import the entities you want to control (e.g. `light.living_room`, `climate.kitchen`).
+4. Hit **+ New schedule** in the overview, follow the wizard.
+5. Add time blocks on the timeline. Each block has a start, an end, an action (e.g. "Turn on at 80%"), and optional weather rules.
+
+A typical first schedule: turn on the living room light from sunset to 23:00. Pick the light, drop a single block from `sunset` to `23:00`, action `Turn on`, brightness `80%`. Save. Done.
+
+![Overview](docs/images/overview.PNG)
+
 ## Installation
 
 ### Through HACS (recommended)
@@ -37,18 +58,16 @@ All persisted by Home Assistant, accessible via WebSocket API, and auto-register
    type: custom:chronos-card
    ```
 
-The frontend card is registered automatically by the integration on every startup:
+The frontend card is loaded automatically by the integration on every startup via two mechanisms:
 
-1. Bundle is copied to `<config>/www/chronos-card.js`
-2. Lovelace resource is created/updated to `/local/chronos-card.js?v=<version>` (UI dashboard mode)
-3. Fallback `add_extra_js_url` on `/chronos_static/chronos-card.js`
+1. The bundle is copied to `<config>/www/chronos-card.js` so it's available at `/local/chronos-card.js`.
+2. The integration calls `add_extra_js_url` on `/chronos_static/chronos-card.js`, which makes the frontend load the JS and register the `<chronos-card>` custom element. This is enough to use `type: custom:chronos-card` in any dashboard, both storage and YAML mode.
 
-For Lovelace YAML mode, add the resource manually once:
+When you install via HACS, HACS also adds a Lovelace resource entry pointing to the bundle. The integration does **not** register that entry on its own (since v1.10.4), to avoid conflicting writes against the resource collection. If you installed manually outside HACS and want a visible Lovelace resource entry too, add it once from **Settings → Dashboards → Resources**:
 
 ```yaml
-resources:
-  - url: /local/chronos-card.js?v=1.9.0
-    type: module
+url: /local/chronos-card.js
+type: module
 ```
 
 ### Manual installation
