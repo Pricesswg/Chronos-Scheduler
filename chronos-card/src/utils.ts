@@ -72,6 +72,10 @@ export const DEVICE_TYPES: Record<string, { label: string; domain: string; capab
   scene: { label: "Scena", domain: "scene", capabilities: ["turn_on"] },
   automation: { label: "Automazione", domain: "automation", capabilities: ["turn_on", "turn_off", "trigger"] },
   alarm: { label: "Allarme", domain: "alarm_control_panel", capabilities: ["arm_home", "arm_away", "arm_night", "arm_vacation", "disarm", "trigger"] },
+  input_boolean: { label: "Helper booleano", domain: "input_boolean", capabilities: ["turn_on", "turn_off", "toggle"] },
+  input_number: { label: "Helper numerico", domain: "input_number", capabilities: ["set_value"] },
+  input_select: { label: "Helper selettore", domain: "input_select", capabilities: ["select_option"] },
+  service: { label: "Servizio HA", domain: "service", capabilities: ["call_service"] },
 };
 
 export function computeRepeat(days: number[]): string {

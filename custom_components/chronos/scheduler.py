@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import operator
 import re
@@ -62,6 +63,34 @@ def _split_and(expr: str) -> list[str]:
 def _get_action_def(device_type: str, action_id: str) -> dict[str, Any] | None:
     actions = ACTIONS_BY_TYPE.get(device_type, [])
     return next((a for a in actions if a["id"] == action_id), None)
+
+
+def _make_history_entry(
+    sched: dict,
+    *,
+    kind: str,
+    action_id: str,
+    entity_id: str | None,
+    value: Any = None,
+    outcome: str = "ok",
+    error: str | None = None,
+    rule_idx: int | None = None,
+) -> dict[str, Any]:
+    """Build a history entry. Schedule name is snapshotted so deletions
+    don't lose context for past entries."""
+    return {
+        "ts": dt_util.utcnow().isoformat(),
+        "schedule_id": str(sched.get("id", "")),
+        "schedule_name": sched.get("name", ""),
+        "device_type": sched.get("device_type", ""),
+        "kind": kind,
+        "action_id": action_id,
+        "entity_id": entity_id,
+        "value": value,
+        "outcome": outcome,
+        "error": error,
+        "rule_idx": rule_idx,
+    }
 
 
 class ChronosScheduler:
@@ -168,6 +197,14 @@ class ChronosScheduler:
                     await self._apply_block(sched, current_block, current_idx)
 
             await self._evaluate_triggers(sched, local_now, effective_blocks, current_idx)
+
+        # Persist any new history entries accumulated during this tick. The
+        # store keeps them in memory and only writes to disk on flush, so a
+        # busy tick with multiple dispatches still results in a single I/O.
+        try:
+            await self._store.flush_history()
+        except Exception:
+            _LOGGER.exception("Chronos: history flush failed")
 
     def _is_in_date_range(self, sched: dict, today_local) -> bool:
         """Return True if today (month/day) is inside the schedule's recurring
@@ -447,6 +484,11 @@ class ChronosScheduler:
             trigger_action = {"action_id": rule.get("action_id"), "value": rule.get("action_value")}
             await self._execute_trigger(sched, trigger_action)
             state["last_fire"] = local_now
+            self._store.append_history(_make_history_entry(
+                sched, kind="rule", action_id=rule.get("action_id", ""),
+                entity_id=None, value=rule.get("action_value"),
+                rule_idx=idx,
+            ))
 
     def _is_armed(self, fire_mode: str, last_fire, local_now) -> bool:
         """Return True if the rule is allowed to fire now, given its mode and
@@ -559,6 +601,75 @@ class ChronosScheduler:
         service_str = action_def["service"]
         domain, service = service_str.split(".", 1)
 
+        # Service-type schedules invoke an arbitrary HA service. The block's
+        # value holds the "domain.service_name" string, and an optional
+        # `service_data` extras carries the JSON params dict. No device
+        # iteration. Useful for mqtt.publish, backup.create, script.run, etc.
+        if device_type == "service":
+            raw_service = action.get("value")
+            if not raw_service or "." not in str(raw_service):
+                _LOGGER.warning(
+                    "Chronos: schedule=%s service block has no valid 'domain.service' set (value=%r)",
+                    sched_name, raw_service,
+                )
+                return
+            svc_domain, svc_name = str(raw_service).split(".", 1)
+            extras_dict = action.get("extras") or {}
+            raw_data = extras_dict.get("service_data") if isinstance(extras_dict, dict) else None
+            service_data: dict[str, Any] = {}
+            if isinstance(raw_data, dict):
+                service_data = raw_data
+            elif isinstance(raw_data, str) and raw_data.strip():
+                try:
+                    parsed = json.loads(raw_data)
+                    if isinstance(parsed, dict):
+                        service_data = parsed
+                except json.JSONDecodeError:
+                    _LOGGER.warning(
+                        "Chronos: schedule=%s service block has invalid JSON service_data; ignoring it",
+                        sched_name,
+                    )
+            try:
+                _LOGGER.info(
+                    "Chronos: CALL service %s.%s data=%s schedule=%s",
+                    svc_domain, svc_name, service_data, sched_name,
+                )
+                await self._hass.services.async_call(
+                    svc_domain, svc_name, service_data, blocking=False
+                )
+                self._hass.bus.async_fire(EVENT_BLOCK_EXECUTED, {
+                    "schedule_id": sched["id"],
+                    "device_id": None,
+                    "entity_id": f"{svc_domain}.{svc_name}",
+                    "action_id": action_id,
+                    "value": raw_service,
+                })
+                self._store.append_history(_make_history_entry(
+                    sched, kind="block", action_id=action_id,
+                    entity_id=f"{svc_domain}.{svc_name}", value=raw_service,
+                ))
+                if self._store.settings.get("notify_block_executed", True):
+                    await self._notify(
+                        f"{svc_domain}.{svc_name}",
+                        title=f"Chronos · {sched_name}",
+                    )
+            except Exception as ex:
+                _LOGGER.exception(
+                    "Chronos: %s.%s failed (service block)", svc_domain, svc_name
+                )
+                self._hass.bus.async_fire(EVENT_COMMAND_ERROR, {
+                    "schedule_id": sched["id"],
+                    "device_id": None,
+                    "entity_id": f"{svc_domain}.{svc_name}",
+                    "error": f"Failed to call {svc_domain}.{svc_name}",
+                })
+                self._store.append_history(_make_history_entry(
+                    sched, kind="block", action_id=action_id,
+                    entity_id=f"{svc_domain}.{svc_name}", value=raw_service,
+                    outcome="error", error=str(ex)[:200],
+                ))
+            return
+
         # Scene- and automation-type schedules don't iterate the schedule's
         # device list: the action's `value` is the entity_id (or list of
         # entity_ids) on which to invoke the service. One service call per
@@ -594,10 +705,18 @@ class ChronosScheduler:
                         "action_id": action_id,
                         "value": ent,
                     })
-                except Exception:
+                    self._store.append_history(_make_history_entry(
+                        sched, kind="block", action_id=action_id,
+                        entity_id=ent,
+                    ))
+                except Exception as ex:
                     _LOGGER.exception(
                         "Chronos: %s.%s failed for %s", domain, service, ent
                     )
+                    self._store.append_history(_make_history_entry(
+                        sched, kind="block", action_id=action_id,
+                        entity_id=ent, outcome="error", error=str(ex)[:200],
+                    ))
             if executed and self._store.settings.get("notify_block_executed", True):
                 await self._notify(
                     f"{action_def['label']} · {', '.join(executed)}",
@@ -649,6 +768,13 @@ class ChronosScheduler:
                 service_data["percentage"] = int(value)
             elif action_id == "set_position" and value is not None:
                 service_data["position"] = int(value)
+            elif action_id == "set_value" and device_type == "input_number" and value is not None:
+                try:
+                    service_data["value"] = float(value)
+                except (TypeError, ValueError):
+                    _LOGGER.warning("Chronos: invalid input_number value %r", value)
+            elif action_id == "select_option" and device_type == "input_select" and value not in (None, ""):
+                service_data["option"] = str(value)
 
             # Optional extras: arbitrary service params the user attached to the
             # block action (e.g. light rgb_color, color_temp_kelvin, transition).
@@ -676,7 +802,11 @@ class ChronosScheduler:
                     "action_id": action_id,
                     "value": value,
                 })
-            except Exception:
+                self._store.append_history(_make_history_entry(
+                    sched, kind="block", action_id=action_id,
+                    entity_id=device["entity_id"], value=value,
+                ))
+            except Exception as ex:
                 _LOGGER.exception(
                     "Chronos: ERROR calling %s.%s for %s", domain, service, device["entity_id"]
                 )
@@ -686,6 +816,11 @@ class ChronosScheduler:
                     "entity_id": device["entity_id"],
                     "error": f"Failed to call {domain}.{service}",
                 })
+                self._store.append_history(_make_history_entry(
+                    sched, kind="block", action_id=action_id,
+                    entity_id=device["entity_id"], value=value,
+                    outcome="error", error=str(ex)[:200],
+                ))
                 if self._store.settings.get("notify_command_error"):
                     await self._notify(
                         f"Errore comando: {domain}.{service} su {device['entity_id']}",

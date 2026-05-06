@@ -64,6 +64,7 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "nav.manage_devices": { it: "Gestisci dispositivi", en: "Manage devices", fr: "Gérer les appareils", de: "Geräte verwalten" },
   "nav.settings": { it: "Impostazioni", en: "Settings", fr: "Réglages", de: "Einstellungen" },
   "nav.help": { it: "Aiuto", en: "Help", fr: "Aide", de: "Hilfe" },
+  "nav.history": { it: "Storico", en: "History", fr: "Historique", de: "Verlauf" },
   "nav.menu_open": { it: "Apri menu", en: "Open menu", fr: "Ouvrir le menu", de: "Menü öffnen" },
   "nav.menu_close": { it: "Chiudi menu", en: "Close menu", fr: "Fermer le menu", de: "Menü schließen" },
 
@@ -74,6 +75,7 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "screen.device.title": { it: "Dispositivo", en: "Device", fr: "Appareil", de: "Gerät" },
   "screen.week.title": { it: "Vista settimanale", en: "Week view", fr: "Vue semaine", de: "Wochenansicht" },
   "screen.live.title": { it: "Stato live", en: "Live status", fr: "État en direct", de: "Live-Status" },
+  "screen.history.title": { it: "Storico esecuzioni", en: "Execution history", fr: "Historique des exécutions", de: "Ausführungsverlauf" },
   "screen.wizard.title": { it: "Wizard", en: "Wizard", fr: "Assistant", de: "Assistent" },
   "screen.devices.title": { it: "Gestisci dispositivi", en: "Manage devices", fr: "Gérer les appareils", de: "Geräte verwalten" },
   "screen.settings.title": { it: "Impostazioni", en: "Settings", fr: "Réglages", de: "Einstellungen" },
@@ -685,6 +687,59 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "devices.bulk_remove.hint": { it: "Seleziona il dispositivo da scollegare. Verrà rimosso anche dalle schedulazioni che lo usano.", en: "Pick the device to unlink. It will also be removed from the schedules that use it.", fr: "Choisis l'appareil à dissocier. Il sera également retiré des planifications qui l'utilisent.", de: "Wähle das zu trennende Gerät. Es wird auch aus den Zeitplänen entfernt, die es verwenden." },
   "devices.refresh.title": { it: "Forza l'aggiornamento dal backend", en: "Force refresh from backend", fr: "Forcer le rafraîchissement depuis le backend", de: "Aktualisierung vom Backend erzwingen" },
   "wr.delta.placeholder": { it: "es. 30 / -30", en: "e.g. 30 / -30", fr: "ex. 30 / -30", de: "z.B. 30 / -30" },
+
+  // New device types in v1.11
+  "device_type.input_boolean": { it: "Helper booleano", en: "Boolean helper", fr: "Aide booléenne", de: "Boolesche Hilfe" },
+  "device_type.input_number": { it: "Helper numerico", en: "Numeric helper", fr: "Aide numérique", de: "Numerische Hilfe" },
+  "device_type.input_select": { it: "Helper selettore", en: "Select helper", fr: "Aide de sélection", de: "Auswahlhilfe" },
+  "device_type.service": { it: "Servizio HA", en: "HA service", fr: "Service HA", de: "HA-Dienst" },
+
+  "action.input_boolean.turn_on": { it: "Attiva flag", en: "Turn flag on", fr: "Activer le drapeau", de: "Flag setzen" },
+  "action.input_boolean.turn_off": { it: "Disattiva flag", en: "Turn flag off", fr: "Désactiver le drapeau", de: "Flag entfernen" },
+  "action.input_boolean.toggle": { it: "Inverti flag", en: "Toggle flag", fr: "Inverser le drapeau", de: "Flag umschalten" },
+  "action.input_number.set_value": { it: "Imposta valore", en: "Set value", fr: "Définir la valeur", de: "Wert setzen" },
+  "action.input_number.set_value.value": { it: "Valore", en: "Value", fr: "Valeur", de: "Wert" },
+  "action.input_select.select_option": { it: "Seleziona opzione", en: "Select option", fr: "Choisir une option", de: "Option auswählen" },
+  "action.input_select.select_option.value": { it: "Opzione", en: "Option", fr: "Option", de: "Option" },
+  "action.service.call_service": { it: "Chiama servizio", en: "Call service", fr: "Appeler un service", de: "Dienst aufrufen" },
+  "action.service.call_service.value": { it: "Servizio HA", en: "HA service", fr: "Service HA", de: "HA-Dienst" },
+  "action.extra.service_data": { it: "Dati servizio (JSON)", en: "Service data (JSON)", fr: "Données du service (JSON)", de: "Dienstdaten (JSON)" },
+
+  "overview.new_service": { it: "Schedula servizi", en: "Schedule services", fr: "Planifier des services", de: "Dienste planen" },
+  "overview.new_service.hint": { it: "Crea una schedulazione che chiama servizi HA arbitrari (mqtt.publish, backup.create, script.run, ...)", en: "Create a schedule that calls arbitrary HA services (mqtt.publish, backup.create, script.run, ...)", fr: "Crée une planification qui appelle des services HA arbitraires", de: "Plan erstellen, der beliebige HA-Dienste aufruft" },
+  "overview.new_service_default_name": { it: "Chiamate servizio", en: "Service calls", fr: "Appels de service", de: "Dienstaufrufe" },
+
+  "editor.block.extras.json.hint": { it: "JSON inline. I campi vuoti vengono ignorati. Esempio: {\\\"topic\\\": \\\"home/cmd\\\", \\\"payload\\\": \\\"on\\\"}", en: "Inline JSON. Empty fields are ignored. Example: {\\\"topic\\\": \\\"home/cmd\\\", \\\"payload\\\": \\\"on\\\"}", fr: "JSON inline. Les champs vides sont ignorés.", de: "Inline-JSON. Leere Felder werden ignoriert." },
+
+  "common.refresh": { it: "Aggiorna", en: "Refresh", fr: "Actualiser", de: "Aktualisieren" },
+
+  // History screen
+  "history.title": { it: "Storico esecuzioni", en: "Execution history", fr: "Historique des exécutions", de: "Ausführungsverlauf" },
+  "history.subtitle": { it: "Cosa ha eseguito Chronos nel periodo selezionato — utile per debug.", en: "What Chronos has executed in the selected window — useful for debugging.", fr: "Ce que Chronos a exécuté dans la période sélectionnée — utile pour le debug.", de: "Was Chronos im gewählten Zeitraum ausgeführt hat — hilft beim Debuggen." },
+  "history.from": { it: "Da", en: "From", fr: "Du", de: "Von" },
+  "history.to": { it: "A", en: "To", fr: "Au", de: "Bis" },
+  "history.schedule": { it: "Schedulazione", en: "Schedule", fr: "Planification", de: "Zeitplan" },
+  "history.all_schedules": { it: "Tutte", en: "All", fr: "Toutes", de: "Alle" },
+  "history.kind": { it: "Tipo evento", en: "Event type", fr: "Type d'événement", de: "Ereignistyp" },
+  "history.kind.all": { it: "Tutti", en: "All", fr: "Tous", de: "Alle" },
+  "history.kind.block": { it: "Esecuzione fascia", en: "Block fired", fr: "Créneau exécuté", de: "Block ausgeführt" },
+  "history.kind.rule": { it: "Regola meteo", en: "Weather rule", fr: "Règle météo", de: "Wetterregel" },
+  "history.outcome": { it: "Esito", en: "Outcome", fr: "Résultat", de: "Ergebnis" },
+  "history.outcome.all": { it: "Qualsiasi", en: "Any", fr: "Tous", de: "Alle" },
+  "history.outcome.ok": { it: "OK", en: "OK", fr: "OK", de: "OK" },
+  "history.outcome.error": { it: "Errore", en: "Error", fr: "Erreur", de: "Fehler" },
+  "history.kpi.total": { it: "Eventi totali", en: "Total events", fr: "Événements totaux", de: "Ereignisse gesamt" },
+  "history.kpi.in_range": { it: "nel periodo", en: "in range", fr: "dans la période", de: "im Zeitraum" },
+  "history.kpi.ok": { it: "Andati a buon fine", en: "Successful", fr: "Réussis", de: "Erfolgreich" },
+  "history.kpi.errors": { it: "Errori", en: "Errors", fr: "Erreurs", de: "Fehler" },
+  "history.events": { it: "Eventi", en: "Events", fr: "Événements", de: "Ereignisse" },
+  "history.events.sub": { it: "{n} totali — più recenti in cima", en: "{n} total — most recent first", fr: "{n} au total — plus récents en haut", de: "{n} insgesamt — neueste zuerst" },
+  "history.empty": { it: "Nessun evento nel periodo selezionato.", en: "No events in the selected window.", fr: "Aucun événement dans la période.", de: "Keine Ereignisse im gewählten Zeitraum." },
+  "history.truncated": { it: "Mostro i primi {n} di {total}. Affina i filtri per vedere il resto.", en: "Showing the first {n} of {total}. Refine the filters to see the rest.", fr: "Affichage des {n} premiers sur {total}. Affine les filtres pour voir le reste.", de: "Erste {n} von {total} angezeigt. Filter verfeinern, um den Rest zu sehen." },
+  "history.chart.title": { it: "Eventi al giorno", en: "Events per day", fr: "Événements par jour", de: "Ereignisse pro Tag" },
+  "history.chart.sub": { it: "Verde: ok · rosso: errori", en: "Green: ok · red: errors", fr: "Vert : ok · rouge : erreurs", de: "Grün: ok · rot: Fehler" },
+  "history.clear": { it: "Cancella storico", en: "Clear history", fr: "Effacer l'historique", de: "Verlauf löschen" },
+  "history.clear.warn": { it: "Cancella tutti gli eventi storici. Operazione non reversibile.", en: "Erases all stored history events. Cannot be undone.", fr: "Efface tout l'historique stocké. Action irréversible.", de: "Löscht den gesamten gespeicherten Verlauf. Nicht umkehrbar." },
 };
 
 /** Etichetta tradotta per un weather attribute key, con fallback al label backend. */

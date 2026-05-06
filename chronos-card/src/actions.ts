@@ -94,6 +94,27 @@ const FALLBACK_ACTIONS: Record<string, ActionDef[]> = {
     { id: "pause", label: "Pausa", kind: "cmd", service: "vacuum.pause" },
     { id: "return_to_base", label: "Torna in base", kind: "off", service: "vacuum.return_to_base" },
   ],
+  input_boolean: [
+    { id: "turn_on", label: "Attiva flag", kind: "on", service: "input_boolean.turn_on" },
+    { id: "turn_off", label: "Disattiva flag", kind: "off", service: "input_boolean.turn_off" },
+    { id: "toggle", label: "Inverti flag", kind: "cmd", service: "input_boolean.toggle" },
+  ],
+  input_number: [
+    { id: "set_value", label: "Imposta valore", kind: "set", service: "input_number.set_value",
+      value: { type: "number", min: -1000000, max: 1000000, step: 0.1, default: 0, label: "Valore" } },
+  ],
+  input_select: [
+    { id: "select_option", label: "Seleziona opzione", kind: "preset", service: "input_select.select_option",
+      value: { type: "string", label: "Opzione" } },
+  ],
+  service: [
+    { id: "call_service", label: "Chiama servizio", kind: "cmd", service: "",
+      value: { type: "string", label: "Servizio HA", placeholder: "es. mqtt.publish, backup.create, script.run" },
+      extras: [
+        { key: "service_data", type: "json", label: "Service data (JSON)" },
+      ],
+    },
+  ],
   alarm: [
     { id: "arm_home", label: "Inserisci (home)", kind: "on", service: "alarm_control_panel.alarm_arm_home" },
     { id: "arm_away", label: "Inserisci (away)", kind: "on", service: "alarm_control_panel.alarm_arm_away" },

@@ -1,9 +1,15 @@
 DOMAIN = "chronos"
-VERSION = "1.10.8"
+VERSION = "1.11.0"
 STORAGE_VERSION = 1
 STORAGE_KEY_DEVICES = f"{DOMAIN}.devices"
 STORAGE_KEY_SCHEDULES = f"{DOMAIN}.schedules"
 STORAGE_KEY_SETTINGS = f"{DOMAIN}.settings"
+STORAGE_KEY_HISTORY = f"{DOMAIN}.history"
+
+# Maximum number of history entries kept on disk. Older entries are dropped
+# in FIFO order when this limit is reached. 5000 entries is roughly several
+# weeks of typical usage at 1-2 dispatches per minute.
+HISTORY_MAX_ENTRIES = 5000
 
 DOMAIN_TO_TYPE = {
     "climate": "thermostat",
@@ -16,10 +22,16 @@ DOMAIN_TO_TYPE = {
     "water_heater": "boiler",
     "valve": "irrigation",
     "alarm_control_panel": "alarm",
-    # Note: "scene" and "automation" are intentionally NOT here. They are not
-    # imported as devices; instead, schedules of type "scene" / "automation"
-    # pick the target entities per block via the action's `value` field
-    # (resolved by the multi-entity picker UI).
+    # HA helper entities. Common pattern: users set up input_boolean as flags
+    # for automation conditions, input_number for thresholds, input_select for
+    # state machines. Chronos schedules can flip them at the right times so
+    # existing automations don't need to be rewritten.
+    "input_boolean": "input_boolean",
+    "input_number": "input_number",
+    "input_select": "input_select",
+    # Note: "scene", "automation" and "service" are intentionally NOT here.
+    # They are not imported as devices; instead, schedules of those types
+    # pick the target entity / service per block via the action value.
 }
 
 SUPPORTED_DOMAINS = set(DOMAIN_TO_TYPE.keys())
@@ -149,6 +161,44 @@ ACTIONS_BY_TYPE = {
         {"id": "start", "label": "Avvia pulizia", "kind": "on", "service": "vacuum.start"},
         {"id": "pause", "label": "Pausa", "kind": "cmd", "service": "vacuum.pause"},
         {"id": "return_to_base", "label": "Torna in base", "kind": "off", "service": "vacuum.return_to_base"},
+    ],
+    "input_boolean": [
+        {"id": "turn_on", "label": "Attiva flag", "kind": "on", "service": "input_boolean.turn_on"},
+        {"id": "turn_off", "label": "Disattiva flag", "kind": "off", "service": "input_boolean.turn_off"},
+        {"id": "toggle", "label": "Inverti flag", "kind": "cmd", "service": "input_boolean.toggle"},
+    ],
+    "input_number": [
+        {
+            "id": "set_value", "label": "Imposta valore", "kind": "set",
+            "service": "input_number.set_value",
+            "value": {"type": "number", "min": -1000000, "max": 1000000, "step": 0.1, "default": 0, "label": "Valore"},
+        },
+    ],
+    "input_select": [
+        {
+            "id": "select_option", "label": "Seleziona opzione", "kind": "preset",
+            "service": "input_select.select_option",
+            # The user types the option name; we don't enumerate options
+            # because they vary per entity and would require a per-entity
+            # WS lookup. A free string is the lowest-friction approach.
+            "value": {"type": "string", "label": "Opzione"},
+        },
+    ],
+    "service": [
+        {
+            "id": "call_service", "label": "Chiama servizio", "kind": "cmd",
+            # `service` is filled at dispatch time from the block's value
+            # (the user enters something like "mqtt.publish" or "backup.create").
+            "service": "",
+            "value": {
+                "type": "string",
+                "label": "Servizio HA",
+                "placeholder": "es. mqtt.publish, backup.create, script.run",
+            },
+            "extras": [
+                {"key": "service_data", "type": "json", "label": "Service data (JSON)"},
+            ],
+        },
     ],
     "alarm": [
         # All alarm_control_panel services accept an optional `code`. The

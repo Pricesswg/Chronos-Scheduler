@@ -22,7 +22,7 @@ export const chronosTokens = css`
    * runtime detection identifies this layout; the padding then offsets the
    * card content by the app bar height. */
   :host([panel-mode]) {
-    padding-top: var(--header-height, 56px);
+    padding-top: var(--chronos-panel-offset, var(--header-height, 56px));
   }
   :host {
     --font-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
@@ -507,33 +507,21 @@ export const chronosStyles = css`
   .weather-hero__temp { font-size: 34px; font-weight: 700; letter-spacing: -0.03em; font-family: var(--font-mono); }
   .weather-hero__cond { color: var(--text-soft); font-size: 13px; }
 
-  /* Horizontal scroll for the forecast strip. Cells are fixed-size so they
-   * don't try to fill the row and never overflow the parent card visually:
-   * the row stays inside its container, the user scrolls sideways with
-   * finger or wheel when there are more cells than fit.
-   *
-   * The crucial bit is min-width:0. Flex containers default to
-   * min-width:auto, which equals their min-content size; that means the
-   * row would refuse to shrink below the sum of its cells, breaking out
-   * of the parent card width despite max-width:100%. Setting min-width
-   * explicitly to 0 lets max-width win, the row stays bounded, and the
-   * children scroll inside via overflow-x.
-   */
+  /* Forecast strip: fixed grid, no horizontal scroll. 12 cells split in
+   * two rows of 6 so all hours stay visible without panning. The grid
+   * naturally fits the parent card width: when the card narrows the cells
+   * shrink instead of overflowing or scrolling. */
   .forecast-row {
-    display: flex; gap: 8px;
-    overflow-x: auto; overflow-y: hidden;
-    min-width: 0; max-width: 100%; width: 100%;
-    padding-bottom: 4px;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
   }
-  .forecast-row::-webkit-scrollbar { height: 6px; }
-  .forecast-row::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
   .forecast-cell {
-    flex: 0 0 auto;
-    min-width: 64px;
-    text-align: center; padding: 10px 6px;
+    min-width: 0;
+    text-align: center; padding: 10px 4px;
     border-radius: var(--r-md); background: var(--bg-sunken); border: 1px solid var(--border-soft);
+    overflow: hidden;
   }
   .forecast-cell__hour { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
   .forecast-cell__icon { color: var(--weather-ink); margin: 6px 0 4px; }
@@ -659,6 +647,9 @@ export const chronosStyles = css`
     .kpi__value { font-size: 22px; }
     .sched-card { padding: 12px; gap: 10px; }
     .grid-auto { grid-template-columns: 1fr !important; }
+    /* Forecast: fewer columns on phone so each hour stays legible. 12
+     * cells become 3 rows of 4 instead of 2 rows of 6. */
+    .forecast-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     .wr-vars { max-height: 260px; }
     .segmented button { padding: 5px 8px; font-size: 11.5px; }
     .btn { padding: 7px 10px; font-size: 12.5px; }

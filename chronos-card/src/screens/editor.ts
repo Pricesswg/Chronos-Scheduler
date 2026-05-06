@@ -263,7 +263,14 @@ export class ChronosEditor extends LitElement {
                             return html`<option value="${o}" ?selected=${cur === o}>${o}</option>`;
                           })}
                         </select>
-                      ` : currentActionDef.value.type === "entity" ? this._renderEntityPicker(schedule.id, block, currentActionDef.value) : nothing}
+                      ` : currentActionDef.value.type === "entity" ? this._renderEntityPicker(schedule.id, block, currentActionDef.value) :
+                         currentActionDef.value.type === "string" ? html`
+                        <input class="input mono" type="text"
+                          .value=${String(block.action?.value ?? "")}
+                          placeholder="${currentActionDef.value.placeholder || ""}"
+                          @input=${(e: InputEvent) => this._setBlockValue(schedule.id, (e.target as HTMLInputElement).value)}
+                          style="width:100%;font-weight:500"/>
+                      ` : nothing}
                     </div>
                   ` : nothing}
                   ${currentActionDef?.extras?.length ? this._renderExtras(schedule.id, block, currentActionDef) : nothing}
@@ -605,6 +612,22 @@ export class ChronosEditor extends LitElement {
         <div class="col" style="gap:8px">
           ${(def.extras || []).map((spec: any) => {
             const cur = extras[spec.key];
+            // JSON extras render as a full-width textarea below the label,
+            // not in a single row, since their content spans multiple lines.
+            if (spec.type === "json") {
+              const raw = typeof cur === "string" ? cur : (cur ? JSON.stringify(cur, null, 2) : "");
+              return html`
+                <div class="col" style="gap:4px">
+                  <span class="text-xs text-mute">${actionExtraLabel(spec.key, spec.label)}</span>
+                  <textarea class="input mono"
+                    .value=${raw}
+                    placeholder="${spec.placeholder || '{"key": "value"}'}"
+                    @input=${(e: InputEvent) => this._setBlockExtra(schedId, spec.key, (e.target as HTMLTextAreaElement).value)}
+                    style="width:100%;min-height:90px;font-size:12px;font-family:var(--font-mono);resize:vertical"></textarea>
+                  <span class="text-xs text-mute">${t("editor.block.extras.json.hint")}</span>
+                </div>
+              `;
+            }
             return html`
               <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">
                 <span class="text-xs text-mute" style="min-width:130px">${actionExtraLabel(spec.key, spec.label)}${spec.unit ? ` (${spec.unit})` : ""}</span>
@@ -623,6 +646,12 @@ export class ChronosEditor extends LitElement {
                       this._setBlockExtra(schedId, spec.key, isNaN(x as number) ? undefined : x);
                     }}
                     placeholder="—"
+                    style="flex:1;min-width:100px"/>
+                ` : spec.type === "string" ? html`
+                  <input type="text" class="input mono"
+                    .value=${cur !== undefined && cur !== null ? String(cur) : ""}
+                    placeholder="${spec.placeholder || ""}"
+                    @input=${(e: InputEvent) => this._setBlockExtra(schedId, spec.key, (e.target as HTMLInputElement).value)}
                     style="flex:1;min-width:100px"/>
                 ` : nothing}
                 ${cur !== undefined && cur !== null && cur !== "" ? html`

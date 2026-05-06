@@ -480,6 +480,52 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
     ) -> None:
         connection.send_result(msg["id"], WEATHER_ATTRIBUTES)
 
+    @websocket_api.websocket_command({
+        vol.Required("type"): "chronos/history/list",
+        vol.Optional("from_ts"): str,
+        vol.Optional("to_ts"): str,
+        vol.Optional("schedule_id"): str,
+        vol.Optional("outcome"): vol.In(["ok", "error"]),
+        vol.Optional("kind"): vol.In(["block", "rule"]),
+        vol.Optional("limit"): vol.All(int, vol.Range(min=1, max=5000)),
+    })
+    @websocket_api.async_response
+    async def ws_history_list(
+        hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+    ) -> None:
+        store: ChronosStore = hass.data[DOMAIN]["store"]
+        items = list(store.history)
+        # Filter chain. Each filter is independent and skipped when its
+        # parameter is absent in the message.
+        from_ts = msg.get("from_ts")
+        to_ts = msg.get("to_ts")
+        schedule_id = msg.get("schedule_id")
+        outcome = msg.get("outcome")
+        kind = msg.get("kind")
+        if from_ts:
+            items = [it for it in items if it.get("ts", "") >= from_ts]
+        if to_ts:
+            items = [it for it in items if it.get("ts", "") <= to_ts]
+        if schedule_id:
+            items = [it for it in items if it.get("schedule_id") == schedule_id]
+        if outcome:
+            items = [it for it in items if it.get("outcome") == outcome]
+        if kind:
+            items = [it for it in items if it.get("kind") == kind]
+        # Most recent first.
+        items.sort(key=lambda x: x.get("ts", ""), reverse=True)
+        limit = msg.get("limit") or 1000
+        connection.send_result(msg["id"], items[:limit])
+
+    @websocket_api.websocket_command({vol.Required("type"): "chronos/history/clear"})
+    @websocket_api.async_response
+    async def ws_history_clear(
+        hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+    ) -> None:
+        store: ChronosStore = hass.data[DOMAIN]["store"]
+        await store.clear_history()
+        connection.send_result(msg["id"], {"cleared": True})
+
     # Register all
     websocket_api.async_register_command(hass, ws_devices_list)
     websocket_api.async_register_command(hass, ws_devices_add)
@@ -499,3 +545,5 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_sensor_entities)
     websocket_api.async_register_command(hass, ws_actions)
     websocket_api.async_register_command(hass, ws_weather_attributes)
+    websocket_api.async_register_command(hass, ws_history_list)
+    websocket_api.async_register_command(hass, ws_history_clear)

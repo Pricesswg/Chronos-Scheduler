@@ -48,6 +48,7 @@ import "./screens/wizard";
 import "./screens/devices";
 import "./screens/settings";
 import "./screens/help";
+import "./screens/history";
 import "./screens/card-editor";
 
 const TITLE_KEYS: Record<Screen, [string, string]> = {
@@ -62,6 +63,7 @@ const TITLE_KEYS: Record<Screen, [string, string]> = {
   devices: ["screen.devices.title", "chronos / devices"],
   settings: ["screen.settings.title", "chronos / settings"],
   help: ["nav.help", "chronos / help"],
+  history: ["screen.history.title", "chronos / history"],
 };
 
 @customElement("chronos-card")
@@ -108,6 +110,10 @@ export class ChronosCard extends LitElement {
     if (config?.collapse_sidebar !== undefined) {
       this._desktopCollapsed = !!config.collapse_sidebar;
     }
+    // Re-evaluate panel-mode whenever the config changes: panel_mode and
+    // panel_offset are config-driven and might have just been edited via
+    // the GUI editor.
+    if (this.isConnected) this._checkPanelMode();
   }
 
   static getStubConfig() {
@@ -125,29 +131,60 @@ export class ChronosCard extends LitElement {
    * default screen mid-session. */
   private _screenInitialised = false;
 
+  private _windowResizeBound = () => this._checkPanelMode();
+
   /** Detect whether the card is being rendered in a Lovelace "panel" view
    * (where HA gives the card the full viewport height and overlays its app
    * bar on top of it instead of pushing the content down). In that mode our
    * sidebar and topbar would otherwise sit at y=0 of the viewport, behind
-   * the HA app bar. We toggle a `panel-mode` attribute on :host so the CSS
+   * the HA app bar. We toggle a panel-mode attribute on :host so the CSS
    * can compensate with the appropriate top padding.
    *
    * Heuristic: in normal dashboard the card is below the app bar at roughly
    * y=56px or more; in panel mode the card's top is at viewport y=0 (or
    * negative when scrolled). 30px is a generous threshold that distinguishes
-   * the two cases and tolerates HA themes that adjust the bar height. */
+   * the two cases and tolerates HA themes that adjust the bar height.
+   *
+   * Honours the `panel_mode` config option (auto / true / false) to let
+   * users force or disable the offset when the heuristic fails (kiosk
+   * setups, themes that hide the HA bar, custom panel layouts). */
   private _checkPanelMode() {
     if (!this.isConnected) return;
-    const rect = this.getBoundingClientRect();
-    const isPanel = rect.top < 30;
+    const cfg = this.config?.panel_mode;
+    let isPanel: boolean;
+    if (cfg === true) {
+      isPanel = true;
+    } else if (cfg === false) {
+      isPanel = false;
+    } else {
+      // "auto" or unset: use bounding rect detection. Use ownerDocument's
+      // documentElement scroll position to compare against viewport, since
+      // getBoundingClientRect is already viewport-relative.
+      const rect = this.getBoundingClientRect();
+      isPanel = rect.top < 30 && rect.height > 200;
+    }
     if (this.hasAttribute("panel-mode") !== isPanel) {
       this.toggleAttribute("panel-mode", isPanel);
+    }
+    // Apply explicit pixel offset from config if provided, otherwise leave
+    // it to the CSS fallback (var(--header-height, 56px)).
+    const offset = this.config?.panel_offset;
+    if (typeof offset === "number" && offset >= 0) {
+      this.style.setProperty("--chronos-panel-offset", `${offset}px`);
+    } else {
+      this.style.removeProperty("--chronos-panel-offset");
     }
   }
 
   connectedCallback() {
     super.connectedCallback();
     this._checkPanelMode();
+    // Defer one more check so HA's panel layout has time to settle. The
+    // first connectedCallback tick can fire before the parent <hui-view>
+    // has been positioned, returning a misleading rect.top.
+    setTimeout(() => this._checkPanelMode(), 50);
+    setTimeout(() => this._checkPanelMode(), 250);
+    window.addEventListener("resize", this._windowResizeBound, { passive: true });
     this._resizeObserver = new ResizeObserver((entries) => {
       this._checkPanelMode();
       for (const entry of entries) {
@@ -162,9 +199,13 @@ export class ChronosCard extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     this._resizeObserver?.disconnect();
+    window.removeEventListener("resize", this._windowResizeBound);
   }
 
   async firstUpdated() {
+    // Re-run the panel-mode check now that Lit has rendered the shadow DOM
+    // and HA has positioned us. ResizeObserver fires reliably afterwards.
+    this._checkPanelMode();
     await this._loadAll();
   }
 
@@ -396,6 +437,23 @@ export class ChronosCard extends LitElement {
     await this.doAddSchedule(schedule);
   }
 
+  /** Service-call schedule: each block invokes a freeform HA service with
+   * an optional JSON service_data payload. Useful for mqtt.publish, backup
+   * snapshots, script execution and any debug-style invocations. */
+  async createServiceSchedule() {
+    const schedule: Schedule = {
+      id: "",
+      name: t("overview.new_service_default_name"),
+      device_type: "service",
+      device_ids: [],
+      days: [1, 1, 1, 1, 1, 1, 1],
+      enabled: true,
+      blocks: [{ start: 8, end: 9, action: { id: "call_service", value: "" } }],
+      weather_rules: [],
+    };
+    await this.doAddSchedule(schedule);
+  }
+
   async doAddSchedule(schedule: Schedule) {
     try {
       const saved = await wsSaveSchedule(this.hass, schedule);
@@ -493,6 +551,7 @@ export class ChronosCard extends LitElement {
       { key: "weatherRulesList" as Screen, label: t("nav.weather_rules"), iconName: "cloud" },
       { key: "device" as Screen, label: t("nav.devices"), iconName: "device" },
       { key: "live" as Screen, label: t("nav.live"), iconName: "live" },
+      { key: "history" as Screen, label: t("nav.history"), iconName: "history" },
     ];
     const actions = [
       { key: "wizard" as Screen, label: t("nav.new_schedule"), iconName: "wand" },
@@ -597,6 +656,8 @@ export class ChronosCard extends LitElement {
         return html`<chronos-settings-screen .card=${this} .nowHour=${nowHour}></chronos-settings-screen>`;
       case "help":
         return html`<chronos-help-screen .card=${this} .nowHour=${nowHour}></chronos-help-screen>`;
+      case "history":
+        return html`<chronos-history-screen .card=${this} .nowHour=${nowHour}></chronos-history-screen>`;
       default:
         return html`<chronos-overview .card=${this} .nowHour=${nowHour}></chronos-overview>`;
     }

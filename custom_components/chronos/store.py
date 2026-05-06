@@ -9,7 +9,9 @@ from homeassistant.helpers.storage import Store
 from .const import (
     DOMAIN,
     DOMAIN_TO_TYPE,
+    HISTORY_MAX_ENTRIES,
     STORAGE_KEY_DEVICES,
+    STORAGE_KEY_HISTORY,
     STORAGE_KEY_SCHEDULES,
     STORAGE_KEY_SETTINGS,
     STORAGE_VERSION,
@@ -52,15 +54,24 @@ class ChronosStore:
         self._store_devices = Store(hass, STORAGE_VERSION, STORAGE_KEY_DEVICES)
         self._store_schedules = Store(hass, STORAGE_VERSION, STORAGE_KEY_SCHEDULES)
         self._store_settings = Store(hass, STORAGE_VERSION, STORAGE_KEY_SETTINGS)
+        self._store_history = Store(hass, STORAGE_VERSION, STORAGE_KEY_HISTORY)
         self.devices: list[dict[str, Any]] = []
         self.schedules: list[dict[str, Any]] = []
         self.settings: dict[str, Any] = {}
+        # Append-only ring buffer of dispatch events. Capped at
+        # HISTORY_MAX_ENTRIES; oldest dropped when full. Each entry is a
+        # dict with: ts (ISO), schedule_id, schedule_name, kind
+        # (block | rule | error), action_id, entity_id, value, outcome
+        # (ok | error), error (str | None), rule_idx (int | None).
+        self.history: list[dict[str, Any]] = []
+        self._history_dirty = False
 
     async def async_load(self) -> None:
         self.devices = (await self._store_devices.async_load()) or []
         self.schedules = (await self._store_schedules.async_load()) or []
         stored_settings = (await self._store_settings.async_load()) or {}
         self.settings = {**DEFAULT_SETTINGS, **stored_settings}
+        self.history = (await self._store_history.async_load()) or []
 
         # v1.9 migration: drop legacy scene-as-device entries from v1.8.0.
         # Scenes are now selected per-block via the action's value field; the
@@ -120,6 +131,32 @@ class ChronosStore:
 
     async def _save_settings(self) -> None:
         await self._store_settings.async_save(self.settings)
+
+    async def _save_history(self) -> None:
+        await self._store_history.async_save(self.history)
+
+    # --- History (append-only ring buffer for the History screen) ---
+
+    def append_history(self, entry: dict[str, Any]) -> None:
+        """Add an entry to the in-memory history list, trim to cap, mark
+        dirty. Persisted to disk via flush_history (called periodically by
+        the scheduler so we don't write on every block dispatch)."""
+        self.history.append(entry)
+        if len(self.history) > HISTORY_MAX_ENTRIES:
+            # Drop oldest entries to stay within cap.
+            self.history = self.history[-HISTORY_MAX_ENTRIES:]
+        self._history_dirty = True
+
+    async def flush_history(self) -> None:
+        """Persist the in-memory history buffer to disk if dirty."""
+        if self._history_dirty:
+            await self._save_history()
+            self._history_dirty = False
+
+    async def clear_history(self) -> None:
+        self.history = []
+        self._history_dirty = False
+        await self._save_history()
 
     # --- Devices ---
 

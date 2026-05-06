@@ -63,6 +63,9 @@ export class ChronosOverview extends LitElement {
             <button class="btn" @click=${() => this.card.createAutomationSchedule()} title="${t("overview.new_automation.hint")}">
               ${icon("wand", 14)} ${t("overview.new_automation")}
             </button>
+            <button class="btn" @click=${() => this.card.createServiceSchedule()} title="${t("overview.new_service.hint")}">
+              ${icon("terminal", 14)} ${t("overview.new_service")}
+            </button>
             <button class="btn btn--primary" @click=${() => this.card.navigate("wizard")}>${icon("plus", 14)} ${t("nav.new_schedule")}</button>
           </div>
         </div>

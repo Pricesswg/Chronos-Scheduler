@@ -101,3 +101,37 @@ export async function fetchWeatherAttributes(
 ): Promise<WeatherAttribute[]> {
   return hass.callWS({ type: "chronos/weather/attributes" });
 }
+
+export interface HistoryEntry {
+  ts: string;
+  schedule_id: string;
+  schedule_name: string;
+  device_type: string;
+  kind: "block" | "rule";
+  action_id: string;
+  entity_id: string | null;
+  value: any;
+  outcome: "ok" | "error";
+  error: string | null;
+  rule_idx: number | null;
+}
+
+export interface HistoryFilters {
+  from_ts?: string;
+  to_ts?: string;
+  schedule_id?: string;
+  outcome?: "ok" | "error";
+  kind?: "block" | "rule";
+  limit?: number;
+}
+
+export async function fetchHistory(
+  hass: HomeAssistant,
+  filters: HistoryFilters = {}
+): Promise<HistoryEntry[]> {
+  return hass.callWS({ type: "chronos/history/list", ...filters });
+}
+
+export async function clearHistory(hass: HomeAssistant): Promise<void> {
+  await hass.callWS({ type: "chronos/history/clear" });
+}

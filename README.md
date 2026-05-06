@@ -16,6 +16,9 @@ A single Lovelace card provides:
 - 6-step wizard for guided schedule creation
 - Scene schedules: a single schedule that fires one or more scenes per time block (multi-select picker)
 - Automation schedules: a single schedule that turns on/off or triggers one or more HA automations per time block
+- Service-call schedules: each block invokes any HA service (mqtt.publish, backup.create, script.run, …) with an optional JSON service_data payload
+- Helper entity support: `input_boolean` (flag toggling), `input_number` (numeric values), `input_select` (option selection), so existing automations that use these as conditions don't need rewriting
+- Execution history screen with date range filter, schedule / kind / outcome filters, daily bar chart and detailed event list, useful for debugging schedules that didn't fire as expected
 - Per-block device subset: in a multi-device schedule, each block can target a custom subset of those devices
 - Recurring yearly date ranges to limit a schedule to specific months/days
 - Light advanced parameters (RGB colour, colour temperature, transition) per block
@@ -128,8 +131,12 @@ All schedule, device and weather-rule data is persisted by the integration via W
 | `water_heater.*` | Water heater    | set_temperature, set_operation_mode        |
 | `valve.*`        | Irrigation      | open_valve, close_valve                    |
 | `alarm_control_panel.*` | Alarm    | arm_home, arm_away, arm_night, arm_vacation, disarm, trigger |
+| `input_boolean.*` | Boolean helper | turn_on, turn_off, toggle (typical use: flip flags consumed by your existing automations) |
+| `input_number.*` | Numeric helper  | set_value                                  |
+| `input_select.*` | Select helper   | select_option                              |
 | `scene.*`        | Scene           | turn_on (multi-select per block, see below) |
 | `automation.*`   | Automation      | turn_on, turn_off, trigger (multi-select per block) |
+| (no domain)      | Service         | Generic HA service call: any `domain.service` with optional JSON service_data. Useful for `mqtt.publish`, `backup.create`, `script.run`, debug-style invocations |
 
 ## Weather rules
 
@@ -169,6 +176,40 @@ Scenes and automations are not imported as devices. Instead, create a dedicated 
 - **Schedule automations** — each block picks one or more `automation.*` entities and one of three actions: `turn_on`, `turn_off`, `trigger`.
 
 A single schedule can therefore fire different scenes (or toggle different automations) throughout the day — for example "morning" at 07:00, "movie" at 21:00, "night" at 23:30.
+
+## Helper entities and service calls
+
+Chronos supports HA helper entities directly so you can keep your existing automations and let Chronos drive their inputs:
+
+- `input_boolean.*` — three actions: turn on, turn off, toggle. The most common pattern is to use these as flag conditions in your existing automations and let Chronos flip them at the right times.
+- `input_number.*` — single action `set_value` for numeric helpers used as thresholds.
+- `input_select.*` — single action `select_option` for state-machine helpers; the option name is a free string the user types.
+
+For anything else, the **service-call schedule** invokes an arbitrary HA service per block. The block stores a `domain.service` string and an optional JSON `service_data` payload. Examples:
+
+```yaml
+# Block 1: morning MQTT announce
+service: mqtt.publish
+service_data:
+  topic: home/morning
+  payload: "good morning"
+
+# Block 2: nightly backup
+service: backup.create
+
+# Block 3: trigger a custom script
+service: script.run
+service_data:
+  entity_id: script.evening_routine
+```
+
+Note on `schedule.*` (HA Schedule helper): Chronos does NOT import these as devices because they're inherently read-only state sources, not action targets. If you want to condition a Chronos block on whether an HA Schedule helper is currently active, reference it directly in the weather rule IF expression: `schedule.work_hours == on`.
+
+## Execution history
+
+A dedicated History screen lists every block dispatch and rule trigger Chronos performed, with date-range and outcome filters. Each entry records timestamp, schedule, target entity, action, value, and ok/error status (with the error message when applicable). The page also shows a daily bar chart split between successful and failed executions. The store keeps the last 5000 events on disk.
+
+Useful for debugging "why didn't my schedule fire" or "did the SOC rule trigger last night".
 
 ## Per-block device subset
 

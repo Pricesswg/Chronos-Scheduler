@@ -10,7 +10,11 @@ export type DeviceType =
   | "vacuum"
   | "scene"
   | "automation"
-  | "alarm";
+  | "alarm"
+  | "input_boolean"
+  | "input_number"
+  | "input_select"
+  | "service";
 
 export interface ChronosDevice {
   id: string;
@@ -35,13 +39,14 @@ export interface BlockAction {
 
 export interface ActionExtraSpec {
   key: string;
-  type: "color" | "number" | "enum";
+  type: "color" | "number" | "enum" | "json" | "string";
   label?: string;
   unit?: string;
   min?: number;
   max?: number;
   step?: number;
   options?: string[];
+  placeholder?: string;
 }
 
 export type TimeAnchor = "sunrise" | "sunset";
@@ -148,7 +153,7 @@ export interface Settings {
 }
 
 export interface ActionValueSpec {
-  type: "number" | "enum" | "entity";
+  type: "number" | "enum" | "entity" | "string";
   unit?: string;
   min?: number;
   max?: number;
@@ -161,6 +166,8 @@ export interface ActionValueSpec {
   /** For type="entity": when true the picker stores a list of entity_ids
    * and the backend invokes the action's service once per entity. */
   multi?: boolean;
+  /** For type="string": placeholder shown in the input. */
+  placeholder?: string;
 }
 
 export interface ActionDef {
@@ -192,6 +199,14 @@ export interface ChronosCardConfig {
   /** Force the mobile (drawer) layout below this width in pixels.
    * Defaults to 700. Set to 0 to never use mobile mode. */
   mobile_threshold?: number;
+  /** Manual override for panel-mode top offset detection. "auto" (default)
+   * runs runtime detection on the card's viewport position. true forces
+   * the offset on regardless. false disables it even in detected panel
+   * mode. Useful for kiosk setups or themes that hide the HA app bar. */
+  panel_mode?: "auto" | boolean;
+  /** Pixel offset applied when panel mode is active. Defaults to the value
+   * of HA's --header-height variable, or 56px when that's not exposed. */
+  panel_offset?: number;
 }
 
 export type Screen =
@@ -204,6 +219,7 @@ export type Screen =
   | "live"
   | "wizard"
   | "devices"
+  | "history"
   | "settings"
   | "help";
 
