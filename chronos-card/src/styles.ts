@@ -105,6 +105,10 @@ export const chronosStyles = css`
     overflow: hidden;
     border: 1px solid var(--border);
     position: relative;
+    /* Small top buffer so the sidebar's brand and the topbar don't sit
+     * flush against the HA app bar above the card. Reported as visual
+     * "compenetration" with the HA navigation header on tablet/mobile. */
+    padding-top: 8px;
   }
 
   .sidebar {
@@ -232,6 +236,12 @@ export const chronosStyles = css`
     background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--r-lg); padding: var(--density-pad);
     box-shadow: var(--shadow-xs);
+    /* Same reason as the forecast row: as a flex item inside .col, the
+     * default min-width auto equals min-content and can blow the card out
+     * of the parent width when its inner content (a long horizontal strip,
+     * a wide table, etc.) doesn't shrink. Setting min-width:0 lets the
+     * card honour its parent's bounds. */
+    min-width: 0;
   }
   .card--pad-lg { padding: 22px; }
   .card--ghost { background: var(--bg-soft); }
@@ -491,11 +501,19 @@ export const chronosStyles = css`
   /* Horizontal scroll for the forecast strip. Cells are fixed-size so they
    * don't try to fill the row and never overflow the parent card visually:
    * the row stays inside its container, the user scrolls sideways with
-   * finger or wheel when there are more cells than fit. */
+   * finger or wheel when there are more cells than fit.
+   *
+   * The crucial bit is min-width:0. Flex containers default to
+   * min-width:auto, which equals their min-content size; that means the
+   * row would refuse to shrink below the sum of its cells, breaking out
+   * of the parent card width despite max-width:100%. Setting min-width
+   * explicitly to 0 lets max-width win, the row stays bounded, and the
+   * children scroll inside via overflow-x.
+   */
   .forecast-row {
     display: flex; gap: 8px;
     overflow-x: auto; overflow-y: hidden;
-    max-width: 100%;
+    min-width: 0; max-width: 100%; width: 100%;
     padding-bottom: 4px;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
