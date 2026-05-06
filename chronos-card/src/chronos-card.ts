@@ -125,9 +125,31 @@ export class ChronosCard extends LitElement {
    * default screen mid-session. */
   private _screenInitialised = false;
 
+  /** Detect whether the card is being rendered in a Lovelace "panel" view
+   * (where HA gives the card the full viewport height and overlays its app
+   * bar on top of it instead of pushing the content down). In that mode our
+   * sidebar and topbar would otherwise sit at y=0 of the viewport, behind
+   * the HA app bar. We toggle a `panel-mode` attribute on :host so the CSS
+   * can compensate with the appropriate top padding.
+   *
+   * Heuristic: in normal dashboard the card is below the app bar at roughly
+   * y=56px or more; in panel mode the card's top is at viewport y=0 (or
+   * negative when scrolled). 30px is a generous threshold that distinguishes
+   * the two cases and tolerates HA themes that adjust the bar height. */
+  private _checkPanelMode() {
+    if (!this.isConnected) return;
+    const rect = this.getBoundingClientRect();
+    const isPanel = rect.top < 30;
+    if (this.hasAttribute("panel-mode") !== isPanel) {
+      this.toggleAttribute("panel-mode", isPanel);
+    }
+  }
+
   connectedCallback() {
     super.connectedCallback();
+    this._checkPanelMode();
     this._resizeObserver = new ResizeObserver((entries) => {
+      this._checkPanelMode();
       for (const entry of entries) {
         const threshold = this.config?.mobile_threshold;
         const t = typeof threshold === "number" ? threshold : 700;

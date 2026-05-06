@@ -12,6 +12,19 @@ export const chronosTokens = css`
   :host {
     display: block;
     height: 100%;
+    box-sizing: border-box;
+  }
+  /* Lovelace "panel" view: HA gives us the full viewport height and overlays
+   * its app bar on top of the card instead of pushing it below. Without
+   * compensating padding our sidebar and topbar sit at y=0 of the viewport,
+   * directly under (and visually overlapping) the HA app bar. The host
+   * element exposes a panel-mode attribute set by chronos-card.ts when
+   * runtime detection identifies this layout; the padding then offsets the
+   * card content by the app bar height. */
+  :host([panel-mode]) {
+    padding-top: var(--header-height, 56px);
+  }
+  :host {
     --font-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
 
@@ -105,10 +118,6 @@ export const chronosStyles = css`
     overflow: hidden;
     border: 1px solid var(--border);
     position: relative;
-    /* Small top buffer so the sidebar's brand and the topbar don't sit
-     * flush against the HA app bar above the card. Reported as visual
-     * "compenetration" with the HA navigation header on tablet/mobile. */
-    padding-top: 8px;
   }
 
   .sidebar {
