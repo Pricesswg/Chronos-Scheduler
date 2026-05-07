@@ -89,6 +89,10 @@ const STRINGS: Record<string, Record<Lang, string>> = {
 
   // Overview
   "overview.subtitle": { it: "Schedulazioni configurate · {n} attive su {tot}", en: "Configured schedules · {n} active of {tot}", fr: "Planifications configurées · {n} actives sur {tot}", de: "Konfigurierte Zeitpläne · {n} aktiv von {tot}" },
+  "overview.no_devices": { it: "Nessun dispositivo", en: "No device linked", fr: "Aucun appareil", de: "Kein Gerät verknüpft" },
+  "overview.no_devices.tooltip": { it: "La schedulazione non ha dispositivi: non eseguirà nessuna azione finché non ne aggiungi almeno uno.", en: "This schedule has no devices: it won't fire any action until at least one is linked.", fr: "Cette planification n'a aucun appareil : aucune action ne sera exécutée tant que tu n'en lies pas un.", de: "Dieser Zeitplan hat keine Geräte: er führt keine Aktion aus, bis mindestens eines verknüpft wird." },
+  "editor.no_devices": { it: "Nessun dispositivo collegato", en: "No device linked", fr: "Aucun appareil lié", de: "Kein Gerät verknüpft" },
+  "editor.no_devices.tooltip": { it: "Aggiungi un dispositivo dal selettore qui sotto, oppure questa schedulazione non eseguirà nessuna azione.", en: "Add a device from the picker below, otherwise this schedule won't fire any action.", fr: "Ajoute un appareil depuis le sélecteur ci-dessous, sinon cette planification n'exécutera aucune action.", de: "Füge ein Gerät über den Selektor unten hinzu, sonst führt dieser Zeitplan keine Aktion aus." },
   "overview.kpi.active": { it: "Attive", en: "Active", fr: "Actives", de: "Aktiv" },
   "overview.kpi.weather_rules": { it: "Regole meteo", en: "Weather rules", fr: "Règles météo", de: "Wetterregeln" },
   "overview.kpi.devices": { it: "Dispositivi", en: "Devices", fr: "Appareils", de: "Geräte" },

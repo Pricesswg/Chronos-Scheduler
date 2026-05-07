@@ -49,7 +49,13 @@ export class ChronosEditor extends LitElement {
               <span class="chip ${schedule.enabled ? "chip--on" : ""}"><span class="chip__dot"></span>${schedule.enabled ? t("schedule.active") : t("schedule.disabled")}</span>
               <span class="chip">${icon("repeat", 11)} ${computeRepeat(schedule.days)}</span>
               <span class="chip chip--accent">${deviceIcon(deviceType, 11)} ${typeDef.label}</span>
-              ${deviceType !== "scene" && deviceType !== "automation" ? html`<span class="chip">${icon("device", 11)} ${devices.length}</span>` : nothing}
+              ${!["scene", "automation", "service"].includes(deviceType)
+                ? (devices.length === 0
+                    ? html`<span class="chip" style="background:color-mix(in srgb, var(--danger) 15%, transparent);color:var(--danger);border-color:color-mix(in srgb, var(--danger) 35%, transparent)" title="${t("editor.no_devices.tooltip")}">
+                        ${icon("info", 11)} ${t("editor.no_devices")}
+                      </span>`
+                    : html`<span class="chip">${icon("device", 11)} ${devices.length}</span>`)
+                : nothing}
               ${(schedule.weather_rules || []).filter((r) => r.active).length > 0
                 ? html`<span class="chip chip--weather">${icon("cloud", 11)} ${t("overview.rules_count", { n: (schedule.weather_rules || []).filter((r) => r.active).length })}</span>`
                 : nothing}

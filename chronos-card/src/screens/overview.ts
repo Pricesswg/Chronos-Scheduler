@@ -103,11 +103,15 @@ export class ChronosOverview extends LitElement {
 
                 <div class="sched-card__footer">
                   <div class="sched-card__devices">
-                    ${devs.slice(0, 5).map((d: any) => {
-                      const c = getDeviceColor(d, this.card.hass?.states?.[d.entity_id], this.card._settings);
-                      return html`<div class="device-icon-pill" title="${d.alias}" style="background:${c.soft};color:${c.accent}">${deviceIcon(d.type, 14)}</div>`;
-                    })}
-                    ${devs.length > 5 ? html`<div class="device-icon-pill mono" style="font-size:10px">+${devs.length - 5}</div>` : nothing}
+                    ${devs.length === 0 && !["scene", "automation", "service"].includes(s.device_type)
+                      ? html`<span class="chip" style="background:color-mix(in srgb, var(--danger) 15%, transparent);color:var(--danger);border-color:color-mix(in srgb, var(--danger) 35%, transparent)" title="${t("overview.no_devices.tooltip")}">
+                          ${icon("info", 11)} ${t("overview.no_devices")}
+                        </span>`
+                      : html`${devs.slice(0, 5).map((d: any) => {
+                          const c = getDeviceColor(d, this.card.hass?.states?.[d.entity_id], this.card._settings);
+                          return html`<div class="device-icon-pill" title="${d.alias}" style="background:${c.soft};color:${c.accent}">${deviceIcon(d.type, 14)}</div>`;
+                        })}
+                        ${devs.length > 5 ? html`<div class="device-icon-pill mono" style="font-size:10px">+${devs.length - 5}</div>` : nothing}`}
                   </div>
                   <div style="flex:1"></div>
                   ${activeRules > 0 ? html`<span class="chip chip--weather">${icon("cloud", 11)} ${t("overview.rules_count", { n: activeRules })}</span>` : nothing}

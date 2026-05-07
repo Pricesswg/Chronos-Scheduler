@@ -1,5 +1,5 @@
 DOMAIN = "chronos"
-VERSION = "1.11.3"
+VERSION = "1.11.4"
 STORAGE_VERSION = 1
 STORAGE_KEY_DEVICES = f"{DOMAIN}.devices"
 STORAGE_KEY_SCHEDULES = f"{DOMAIN}.schedules"
@@ -35,6 +35,13 @@ DOMAIN_TO_TYPE = {
 }
 
 SUPPORTED_DOMAINS = set(DOMAIN_TO_TYPE.keys())
+
+# Schedule types that don't iterate the schedule's device_ids list at dispatch
+# time. They reference target entities per-block via the action's value
+# field instead. When the user removes a device that was the last target of a
+# device-based schedule, that schedule is auto-disabled with a warning;
+# deviceless schedules are never affected by device removal.
+DEVICELESS_SCHEDULE_TYPES = frozenset({"scene", "automation", "service"})
 
 ACTIONS_BY_TYPE = {
     "thermostat": [

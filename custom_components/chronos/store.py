@@ -7,6 +7,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 
 from .const import (
+    DEVICELESS_SCHEDULE_TYPES,
     DOMAIN,
     DOMAIN_TO_TYPE,
     HISTORY_MAX_ENTRIES,
@@ -118,6 +119,17 @@ class ChronosStore:
             for rule in s.get("weather_rules") or []:
                 if _migrate_rule(rule):
                     dirty_schedules = True
+            # Issue #4 defensive cleanup: device-based schedules left empty
+            # by previous unlinks (before v1.11.4) might still have
+            # enabled=true. Disable them on first load so the UI matches
+            # reality (the dispatcher already skips them silently).
+            if (
+                s.get("device_type") not in DEVICELESS_SCHEDULE_TYPES
+                and not (s.get("device_ids") or [])
+                and s.get("enabled")
+            ):
+                s["enabled"] = False
+                dirty_schedules = True
         if dirty_devices:
             await self._save_devices()
         if dirty_schedules:
@@ -204,6 +216,18 @@ class ChronosStore:
         self.devices = [d for d in self.devices if d["id"] != device_id]
         for sched in self.schedules:
             sched["device_ids"] = [did for did in sched["device_ids"] if did != device_id]
+            # Issue #4: auto-disable a device-based schedule whose target
+            # list just emptied out, so the user gets clear visual feedback
+            # (toggle off) instead of a schedule that says "active" but
+            # silently dispatches nothing. Deviceless schedule types
+            # (scene/automation/service) reference entities per-block via
+            # the action value, so device removal doesn't affect them.
+            if (
+                sched.get("device_type") not in DEVICELESS_SCHEDULE_TYPES
+                and not sched["device_ids"]
+                and sched.get("enabled")
+            ):
+                sched["enabled"] = False
         await self._save_devices()
         await self._save_schedules()
 
