@@ -1,5 +1,5 @@
 DOMAIN = "chronos"
-VERSION = "1.11.5"
+VERSION = "1.12.0"
 STORAGE_VERSION = 1
 STORAGE_KEY_DEVICES = f"{DOMAIN}.devices"
 STORAGE_KEY_SCHEDULES = f"{DOMAIN}.schedules"
@@ -296,6 +296,35 @@ DEFAULT_SETTINGS = {
     "density": "comfortable",
     "default_timeline_variant": "linear",
     "language": "auto",
+    # Action-kind colors (timeline blocks). Five kinds, one HEX each. Used
+    # in linear/radial/list timelines and in the legend chips. Settable in
+    # Settings > Colors > Action timeline.
+    "color_kind": {
+        "on": "#10b981",
+        "off": "#9ca3af",
+        "set": "#06b6d4",
+        "preset": "#6366f1",
+        "cmd": "#f59e0b",
+    },
+    # Simple on/off device colors. Each entry has an `active` and an
+    # `inactive` HEX. The frontend's getDeviceColor consults this map for
+    # device types that don't have a continuous state mapping.
+    "color_simple": {
+        "plug":          {"active": "#10b981", "inactive": "#9ca3af"},
+        "mower":         {"active": "#10b981", "inactive": "#9ca3af"},
+        "vacuum":        {"active": "#10b981", "inactive": "#9ca3af"},
+        "irrigation":    {"active": "#10b981", "inactive": "#9ca3af"},
+        "alarm":         {"active": "#10b981", "inactive": "#9ca3af"},
+        "input_boolean": {"active": "#10b981", "inactive": "#9ca3af"},
+        "input_select":  {"active": "#10b981", "inactive": "#9ca3af"},
+        "input_number":  {"active": "#10b981", "inactive": "#9ca3af"},
+    },
+    # Range device colors (gradient endpoints). Used by getDeviceColor for
+    # device types whose color reflects a continuous state value.
+    "color_range": {
+        "blind": {"start": "#3c5078", "end": "#c8b4ff"},
+        "fan":   {"start": "#06b6d4", "end": "#3b82f6"},
+    },
 }
 
 EVENT_BLOCK_EXECUTED = f"{DOMAIN}_block_executed"

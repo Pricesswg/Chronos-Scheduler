@@ -31,6 +31,75 @@ export const DEFAULT_PRESET_COLORS: Record<string, string> = {
   none: "#9ca3af",
 };
 
+/** Default colors for action kinds (timeline blocks). Customizable per
+ * setting `color_kind`. The CSS vars `--mode-*` are still defined in
+ * styles.ts as a backstop for the very first render before settings load. */
+export const DEFAULT_KIND_COLORS: Record<string, string> = {
+  on: "#10b981",
+  off: "#9ca3af",
+  set: "#06b6d4",
+  preset: "#6366f1",
+  cmd: "#f59e0b",
+};
+
+/** Default {active, inactive} colors per device type with discrete on/off
+ * state. Used by getSimpleColor when a setting override isn't present. */
+export const DEFAULT_SIMPLE_COLORS: Record<string, { active: string; inactive: string }> = {
+  plug:          { active: "#10b981", inactive: "#9ca3af" },
+  mower:         { active: "#10b981", inactive: "#9ca3af" },
+  vacuum:        { active: "#10b981", inactive: "#9ca3af" },
+  irrigation:    { active: "#10b981", inactive: "#9ca3af" },
+  alarm:         { active: "#10b981", inactive: "#9ca3af" },
+  input_boolean: { active: "#10b981", inactive: "#9ca3af" },
+  input_select:  { active: "#10b981", inactive: "#9ca3af" },
+  input_number:  { active: "#10b981", inactive: "#9ca3af" },
+};
+
+/** Default gradient endpoints for device types with a continuous state. */
+export const DEFAULT_RANGE_COLORS: Record<string, { start: string; end: string }> = {
+  blind: { start: "#3c5078", end: "#c8b4ff" },
+  fan:   { start: "#06b6d4", end: "#3b82f6" },
+};
+
+/** CSS-variable fallbacks for action kinds. Used when the user has NOT
+ * picked a custom color for a given kind: this way HA themes that override
+ * --mode-* tokens still influence Chronos's appearance, instead of being
+ * shadowed by a frozen hex default. */
+const KIND_CSS_FALLBACK: Record<string, string> = {
+  on: "var(--mode-comfort)",
+  off: "var(--mode-off)",
+  set: "var(--mode-eco)",
+  preset: "var(--mode-night)",
+  cmd: "var(--mode-boost)",
+};
+
+/** Resolved color for a given action kind (on/off/set/preset/cmd). User
+ * override in settings.color_kind wins; otherwise we hand back the CSS
+ * variable so themes keep their say. */
+export function getKindColor(kind: string, s: Settings | null): string {
+  const fromSettings = (s as any)?.color_kind?.[kind];
+  if (typeof fromSettings === "string" && fromSettings) return fromSettings;
+  return KIND_CSS_FALLBACK[kind] || DEFAULT_KIND_COLORS[kind] || "#9ca3af";
+}
+
+/** Resolved {active, inactive} pair for a simple-state device type. */
+export function getSimpleColors(deviceType: string, s: Settings | null): { active: string; inactive: string } {
+  const fromSettings = (s as any)?.color_simple?.[deviceType];
+  if (fromSettings && typeof fromSettings === "object" && fromSettings.active && fromSettings.inactive) {
+    return fromSettings;
+  }
+  return DEFAULT_SIMPLE_COLORS[deviceType] || { active: "#10b981", inactive: "#9ca3af" };
+}
+
+/** Resolved {start, end} gradient pair for a range device type. */
+export function getRangeColors(deviceType: string, s: Settings | null): { start: string; end: string } {
+  const fromSettings = (s as any)?.color_range?.[deviceType];
+  if (fromSettings && typeof fromSettings === "object" && fromSettings.start && fromSettings.end) {
+    return fromSettings;
+  }
+  return DEFAULT_RANGE_COLORS[deviceType] || { start: "#3c5078", end: "#c8b4ff" };
+}
+
 export function getStops(s: Settings | null, type: DeviceType): ColorStop[] {
   if (!s) return type === "boiler" ? DEFAULT_TEMP_STOPS_BOILER : DEFAULT_TEMP_STOPS_CLIMATE;
   const key = type === "boiler" ? "color_stops_boiler" : "color_stops_climate";
@@ -117,28 +186,44 @@ export function getDeviceColor(
   if (device.type === "blind") {
     const pos = attrs.current_position;
     if (typeof pos === "number") {
-      const t = pos / 100;
-      const r = Math.round(60 + (200 - 60) * t);
-      const g = Math.round(80 + (180 - 80) * t);
-      const b = Math.round(120 + (255 - 120) * t);
-      const c = `rgb(${r}, ${g}, ${b})`;
-      return { accent: c, soft: `rgba(${r}, ${g}, ${b}, 0.18)`, live: true };
+      const range = getRangeColors("blind", settings);
+      const c = mixAnyColor(range.start, range.end, pos / 100);
+      return { accent: c, soft: hexToSoft(c), live: true };
     }
   }
 
   if (device.type === "fan") {
     const speed = attrs.percentage;
     if (typeof speed === "number" && stateStr === "on") {
-      const t = speed / 100;
-      const c = mixHex("#06b6d4", "#3b82f6", t);
+      const range = getRangeColors("fan", settings);
+      const c = mixAnyColor(range.start, range.end, speed / 100);
       return { accent: c, soft: hexToSoft(c), live: true };
     }
   }
 
-  if (stateStr === "on" || stateStr === "open" || stateStr === "cleaning" || stateStr === "mowing") {
+  // Simple-state devices: pick the user-configured active/inactive colors
+  // based on the entity's HA state. The active states list is intentionally
+  // permissive (covers HA conventions across domains) so most users get
+  // sensible coloring without per-domain tweaks.
+  const ACTIVE_STATES = new Set(["on", "open", "cleaning", "mowing", "armed_home", "armed_away", "armed_night", "armed_vacation", "triggered"]);
+  const INACTIVE_STATES = new Set(["off", "closed", "docked", "unavailable", "unknown", "disarmed", "idle"]);
+  if (DEFAULT_SIMPLE_COLORS[device.type]) {
+    const colors = getSimpleColors(device.type, settings);
+    if (ACTIVE_STATES.has(stateStr) || (device.type === "input_number" && stateStr !== "" && stateStr !== "unavailable" && stateStr !== "unknown")) {
+      return { accent: colors.active, soft: hexToSoft(colors.active), live: true };
+    }
+    if (INACTIVE_STATES.has(stateStr)) {
+      return { accent: colors.inactive, soft: hexToSoft(colors.inactive), live: false };
+    }
+    // Unknown state: lean active to be visually informative.
+    return { accent: colors.active, soft: hexToSoft(colors.active), live: false };
+  }
+
+  // Generic fallback for device types not in any of the buckets above.
+  if (ACTIVE_STATES.has(stateStr)) {
     return { accent: "#10b981", soft: "rgba(16, 185, 129, 0.18)", live: true };
   }
-  if (stateStr === "off" || stateStr === "closed" || stateStr === "docked" || stateStr === "unavailable") {
+  if (INACTIVE_STATES.has(stateStr)) {
     return { accent: "var(--text-muted)", soft: "var(--bg-sunken)", live: false };
   }
 
@@ -176,5 +261,34 @@ function mixHex(a: string, b: string, t: number): string {
   const r = Math.round(ar + (br - ar) * t);
   const g = Math.round(ag + (bg - ag) * t);
   const bv = Math.round(ab + (bb - ab) * t);
+  return `rgb(${r}, ${g}, ${bv})`;
+}
+
+/** Permissive color mixer: accepts both #HEX and rgb()/rgba() input strings.
+ * Returns rgb(...). Defensive against malformed user-provided values; in
+ * that case it falls back to the start color or grey. */
+function mixAnyColor(a: string, b: string, t: number): string {
+  const parse = (c: string): [number, number, number] | null => {
+    if (!c) return null;
+    if (c.startsWith("#")) {
+      const h = c.replace("#", "");
+      if (h.length === 3) {
+        return [parseInt(h[0] + h[0], 16), parseInt(h[1] + h[1], 16), parseInt(h[2] + h[2], 16)];
+      }
+      if (h.length === 6) {
+        return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+      }
+      return null;
+    }
+    const m = c.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+    if (m) return [parseInt(m[1], 10), parseInt(m[2], 10), parseInt(m[3], 10)];
+    return null;
+  };
+  const A = parse(a) || [60, 80, 120];
+  const B = parse(b) || [200, 180, 255];
+  const tt = Math.max(0, Math.min(1, t));
+  const r = Math.round(A[0] + (B[0] - A[0]) * tt);
+  const g = Math.round(A[1] + (B[1] - A[1]) * tt);
+  const bv = Math.round(A[2] + (B[2] - A[2]) * tt);
   return `rgb(${r}, ${g}, ${bv})`;
 }

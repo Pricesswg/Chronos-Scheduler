@@ -152,6 +152,15 @@ export interface Settings {
   color_stops_climate?: { max: number; color: string }[];
   color_stops_boiler?: { max: number; color: string }[];
   color_presets?: Record<string, string>;
+  /** Per-action-kind HEX colors for timeline blocks. Keys: on/off/set/preset/cmd. */
+  color_kind?: Record<string, string>;
+  /** Per-device-type {active, inactive} HEX colors for state-driven coloring
+   * of devices without a continuous range (plug, mower, vacuum, irrigation,
+   * alarm, input_boolean, input_select, input_number). */
+  color_simple?: Record<string, { active: string; inactive: string }>;
+  /** Per-device-type {start, end} gradient endpoints for devices with a
+   * continuous state range (blind position, fan speed). */
+  color_range?: Record<string, { start: string; end: string }>;
   weather_sensor_map?: Record<string, string>;
   language?: "auto" | "it" | "en" | "fr" | "de";
 }

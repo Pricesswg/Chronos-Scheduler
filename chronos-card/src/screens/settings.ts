@@ -7,8 +7,14 @@ import {
   DEFAULT_TEMP_STOPS_CLIMATE,
   DEFAULT_TEMP_STOPS_BOILER,
   DEFAULT_PRESET_COLORS,
+  DEFAULT_KIND_COLORS,
+  DEFAULT_SIMPLE_COLORS,
+  DEFAULT_RANGE_COLORS,
   getStops,
   getPresetColors,
+  getSimpleColors,
+  getRangeColors,
+  getKindColor,
   lightUseState,
   type ColorStop,
 } from "../device-colors";
@@ -207,7 +213,181 @@ export class ChronosSettingsScreen extends LitElement {
           </div>
         </div>
       </div>
+
+      ${this._renderKindColorsSection()}
+      ${this._renderSimpleColorsSection()}
+      ${this._renderRangeColorsSection()}
+      ${this._renderResetAllColors()}
     `;
+  }
+
+  /** Section: action-kind colors used to paint timeline blocks. The five
+   * kinds (on/off/set/preset/cmd) are identifiers, kept in lowercase
+   * literal as the user requested instead of a localised label. */
+  private _renderKindColorsSection() {
+    const s = this.card._settings!;
+    const kinds: ("on" | "off" | "set" | "preset" | "cmd")[] = ["on", "off", "set", "preset", "cmd"];
+    return html`
+      <div class="card">
+        <div class="card__header">
+          <div style="flex:1">
+            <h3 class="card__title">${t("settings.colors.kind.title")}</h3>
+            <p class="card__sub">${t("settings.colors.kind.desc")}</p>
+          </div>
+          <button class="btn btn--sm" @click=${() => this._updateSetting("color_kind", { ...DEFAULT_KIND_COLORS })}>
+            ${icon("repeat", 12)} ${t("common.default")}
+          </button>
+        </div>
+        <div class="grid-2" style="gap:8px">
+          ${kinds.map((k) => {
+            const color = getKindColor(k, s);
+            // CSS variables come back as strings like "var(--mode-comfort)"
+            // which native <input type=color> can't ingest. Use the hex
+            // default whenever the user has no override yet.
+            const inputColor = color.startsWith("#") ? color : (DEFAULT_KIND_COLORS[k] || "#10b981");
+            return html`
+              <div class="row" style="gap:10px;padding:8px 10px;background:var(--bg-sunken);border-radius:var(--r-md);align-items:center">
+                <div style="width:14px;height:14px;border-radius:50%;background:${color};border:1px solid var(--border)"></div>
+                <span class="mono text-sm" style="flex:1">${k}</span>
+                <input type="color" .value=${inputColor}
+                  @change=${(e: Event) => this._updateKindColor(k, (e.target as HTMLInputElement).value)}
+                  style="width:36px;height:28px;padding:0;border:1px solid var(--border-soft);border-radius:6px;background:transparent;cursor:pointer"/>
+              </div>
+            `;
+          })}
+        </div>
+      </div>
+    `;
+  }
+
+  /** Section: simple on/off device colors. One row per type, two pickers
+   * (active / inactive). Used when no continuous range applies. */
+  private _renderSimpleColorsSection() {
+    const s = this.card._settings!;
+    const types = Object.keys(DEFAULT_SIMPLE_COLORS);
+    return html`
+      <div class="card">
+        <div class="card__header">
+          <div style="flex:1">
+            <h3 class="card__title">${t("settings.colors.simple.title")}</h3>
+            <p class="card__sub">${t("settings.colors.simple.desc")}</p>
+          </div>
+          <button class="btn btn--sm" @click=${() => this._updateSetting("color_simple", JSON.parse(JSON.stringify(DEFAULT_SIMPLE_COLORS)))}>
+            ${icon("repeat", 12)} ${t("common.default")}
+          </button>
+        </div>
+        <div class="col" style="gap:6px">
+          ${types.map((dt) => {
+            const c = getSimpleColors(dt, s);
+            return html`
+              <div class="row" style="gap:10px;padding:8px 10px;background:var(--bg-sunken);border-radius:var(--r-md);align-items:center;flex-wrap:wrap">
+                <span class="mono text-sm" style="flex:1;min-width:140px">${t(`device_type.${dt}`)}</span>
+                <span class="text-xs text-mute">${t("settings.colors.active")}</span>
+                <div style="width:14px;height:14px;border-radius:50%;background:${c.active};border:1px solid var(--border)"></div>
+                <input type="color" .value=${c.active}
+                  @change=${(e: Event) => this._updateSimpleColor(dt, "active", (e.target as HTMLInputElement).value)}
+                  style="width:36px;height:28px;padding:0;border:1px solid var(--border-soft);border-radius:6px;background:transparent;cursor:pointer"/>
+                <span class="text-xs text-mute" style="margin-left:8px">${t("settings.colors.inactive")}</span>
+                <div style="width:14px;height:14px;border-radius:50%;background:${c.inactive};border:1px solid var(--border)"></div>
+                <input type="color" .value=${c.inactive}
+                  @change=${(e: Event) => this._updateSimpleColor(dt, "inactive", (e.target as HTMLInputElement).value)}
+                  style="width:36px;height:28px;padding:0;border:1px solid var(--border-soft);border-radius:6px;background:transparent;cursor:pointer"/>
+              </div>
+            `;
+          })}
+        </div>
+      </div>
+    `;
+  }
+
+  /** Section: range-device gradient endpoints (blind position, fan speed).
+   * Each row shows a CSS gradient preview between start and end colors. */
+  private _renderRangeColorsSection() {
+    const s = this.card._settings!;
+    const types = Object.keys(DEFAULT_RANGE_COLORS);
+    return html`
+      <div class="card">
+        <div class="card__header">
+          <div style="flex:1">
+            <h3 class="card__title">${t("settings.colors.range.title")}</h3>
+            <p class="card__sub">${t("settings.colors.range.desc")}</p>
+          </div>
+          <button class="btn btn--sm" @click=${() => this._updateSetting("color_range", JSON.parse(JSON.stringify(DEFAULT_RANGE_COLORS)))}>
+            ${icon("repeat", 12)} ${t("common.default")}
+          </button>
+        </div>
+        <div class="col" style="gap:6px">
+          ${types.map((dt) => {
+            const c = getRangeColors(dt, s);
+            return html`
+              <div class="row" style="gap:10px;padding:8px 10px;background:var(--bg-sunken);border-radius:var(--r-md);align-items:center;flex-wrap:wrap">
+                <span class="mono text-sm" style="flex:1;min-width:140px">${t(`device_type.${dt}`)}</span>
+                <span class="text-xs text-mute">${t("settings.colors.start")}</span>
+                <input type="color" .value=${c.start}
+                  @change=${(e: Event) => this._updateRangeColor(dt, "start", (e.target as HTMLInputElement).value)}
+                  style="width:36px;height:28px;padding:0;border:1px solid var(--border-soft);border-radius:6px;background:transparent;cursor:pointer"/>
+                <div style="flex:0 0 80px;height:14px;border-radius:7px;background:linear-gradient(to right, ${c.start}, ${c.end});border:1px solid var(--border)"></div>
+                <input type="color" .value=${c.end}
+                  @change=${(e: Event) => this._updateRangeColor(dt, "end", (e.target as HTMLInputElement).value)}
+                  style="width:36px;height:28px;padding:0;border:1px solid var(--border-soft);border-radius:6px;background:transparent;cursor:pointer"/>
+                <span class="text-xs text-mute">${t("settings.colors.end")}</span>
+              </div>
+            `;
+          })}
+        </div>
+      </div>
+    `;
+  }
+
+  /** Global reset: restore every color setting (kind, simple, range,
+   * thermostat/boiler stops, presets) to their defaults in one click. */
+  private _renderResetAllColors() {
+    return html`
+      <div class="card" style="background:var(--bg-sunken)">
+        <div class="row" style="gap:12px;align-items:center;flex-wrap:wrap">
+          <div style="flex:1;min-width:200px">
+            <div class="fw-600" style="font-size:13.5px">${t("settings.colors.reset_all.title")}</div>
+            <div class="text-xs text-mute">${t("settings.colors.reset_all.desc")}</div>
+          </div>
+          <button class="btn" style="color:var(--danger)" @click=${() => this._resetAllColors()}>
+            ${icon("repeat", 13)} ${t("settings.colors.reset_all.button")}
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  private _resetAllColors() {
+    if (!confirm(t("settings.colors.reset_all.confirm"))) return;
+    this.card.doUpdateSettings({
+      color_stops_climate: DEFAULT_TEMP_STOPS_CLIMATE.map((s) => ({ ...s })),
+      color_stops_boiler: DEFAULT_TEMP_STOPS_BOILER.map((s) => ({ ...s })),
+      color_presets: { ...DEFAULT_PRESET_COLORS },
+      color_kind: { ...DEFAULT_KIND_COLORS },
+      color_simple: JSON.parse(JSON.stringify(DEFAULT_SIMPLE_COLORS)),
+      color_range: JSON.parse(JSON.stringify(DEFAULT_RANGE_COLORS)),
+      color_light_use_state: true,
+    } as any);
+  }
+
+  private _updateKindColor(kind: string, value: string) {
+    const cur = { ...((this.card._settings as any)?.color_kind || {}) };
+    cur[kind] = value;
+    this._updateSetting("color_kind", cur);
+  }
+
+  private _updateSimpleColor(deviceType: string, side: "active" | "inactive", value: string) {
+    const cur = { ...((this.card._settings as any)?.color_simple || {}) };
+    cur[deviceType] = { ...(cur[deviceType] || DEFAULT_SIMPLE_COLORS[deviceType] || { active: "#10b981", inactive: "#9ca3af" }) };
+    cur[deviceType][side] = value;
+    this._updateSetting("color_simple", cur);
+  }
+
+  private _updateRangeColor(deviceType: string, side: "start" | "end", value: string) {
+    const cur = { ...((this.card._settings as any)?.color_range || {}) };
+    cur[deviceType] = { ...(cur[deviceType] || DEFAULT_RANGE_COLORS[deviceType] || { start: "#3c5078", end: "#c8b4ff" }) };
+    cur[deviceType][side] = value;
+    this._updateSetting("color_range", cur);
   }
 
   private _renderTempStops(

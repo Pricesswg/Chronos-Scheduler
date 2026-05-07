@@ -1,7 +1,13 @@
 import type { ActionDef, BlockAction, DeviceType, Settings } from "./types";
-import { getStops, getPresetColors } from "./device-colors";
+import { getStops, getPresetColors, getKindColor } from "./device-colors";
 import { actionDefLabel } from "./i18n";
 
+/** Mutable map of action-kind colors. Kept as a plain object so consumers
+ * that iterate via Object.entries (timeline legends, week view) keep
+ * working unchanged. setColorSettings() refreshes the map in place
+ * whenever the user-configured palette changes; before settings load it
+ * holds the CSS-var fallback so the very first render still picks up
+ * theme tokens. */
 export const KIND_COLORS: Record<string, string> = {
   on: "var(--mode-comfort)",
   off: "var(--mode-off)",
@@ -14,6 +20,14 @@ let _currentSettings: Settings | null = null;
 
 export function setColorSettings(s: Settings | null) {
   _currentSettings = s;
+  // Refresh the in-place KIND_COLORS map from the user's settings so all
+  // consumers see the updated palette without needing to re-import or
+  // re-render. We keep the CSS-var fallback when the user hasn't
+  // overridden a particular kind, so themes continue to influence the
+  // resting-state colors.
+  for (const k of ["on", "off", "set", "preset", "cmd"]) {
+    KIND_COLORS[k] = s ? getKindColor(k, s) : KIND_COLORS[k];
+  }
 }
 
 function colorForTemp(temp: number, stops: { max: number; color: string }[]): string {
