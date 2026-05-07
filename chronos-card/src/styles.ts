@@ -372,6 +372,11 @@ export const chronosStyles = css`
     transition: filter 120ms, box-shadow 120ms;
     border: 1.5px solid var(--block-edge);
     box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    /* On touch devices the browser by default tries to scroll the page when
+     * the finger drags on a non-scrollable element. touch-action: none stops
+     * that, so our pointermove drag handlers can actually receive the events
+     * and the user can move blocks on phones / tablets. */
+    touch-action: none;
   }
   .tl-block:hover { filter: brightness(1.05); box-shadow: 0 2px 8px rgba(0,0,0,0.18); }
   .tl-block[data-selected="true"] { outline: 2px solid var(--accent); outline-offset: 2px; z-index: 2; }

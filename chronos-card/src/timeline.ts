@@ -40,7 +40,7 @@ export class ChronosTimeline extends LitElement {
     origEnd: number;
   } | null = null;
 
-  private _boundMove: ((e: MouseEvent) => void) | null = null;
+  private _boundMove: ((e: PointerEvent | MouseEvent) => void) | null = null;
   private _boundUp: (() => void) | null = null;
 
   render() {
@@ -163,13 +163,13 @@ export class ChronosTimeline extends LitElement {
             class="tl-block"
             data-selected="${this.selectedIdx === i}"
             style="left:${pct(rs)}%;width:${pct(re - rs)}%;background:${actionColor(this.deviceType, b.action)}"
-            @mousedown=${(e: MouseEvent) => this._onBlockDown(e, i, "move")}
+            @pointerdown=${(e: PointerEvent) => this._onBlockDown(e, i, "move")}
             @click=${(e: MouseEvent) => { e.stopPropagation(); this._fireSelect(i); }}
           >
-            ${this.interactive ? html`<div class="tl-block__handle tl-block__handle--l" @mousedown=${(e: MouseEvent) => this._onBlockDown(e, i, "l")}></div>` : nothing}
+            ${this.interactive ? html`<div class="tl-block__handle tl-block__handle--l" @pointerdown=${(e: PointerEvent) => this._onBlockDown(e, i, "l")}></div>` : nothing}
             <span class="truncate">${actionLabel(this.deviceType, b.action)}</span>
             ${this.height !== "mini" ? html`<span class="mono" style="font-size:10px;opacity:0.85">${fmtHour(rs)}</span>` : nothing}
-            ${this.interactive ? html`<div class="tl-block__handle tl-block__handle--r" @mousedown=${(e: MouseEvent) => this._onBlockDown(e, i, "r")}></div>` : nothing}
+            ${this.interactive ? html`<div class="tl-block__handle tl-block__handle--r" @pointerdown=${(e: PointerEvent) => this._onBlockDown(e, i, "r")}></div>` : nothing}
           </div>
           `;
         })}
@@ -243,7 +243,7 @@ export class ChronosTimeline extends LitElement {
       const x = cx + rMid * Math.cos(a);
       const y = cy + rMid * Math.sin(a);
       return svg`
-        <g style="cursor:${this.interactive ? "ew-resize" : "default"}" @mousedown=${(e: MouseEvent) => this._onRadialHandleDown(e, idx, side)}>
+        <g style="cursor:${this.interactive ? "ew-resize" : "default"}" @pointerdown=${(e: PointerEvent) => this._onRadialHandleDown(e, idx, side)}>
           <circle cx="${x}" cy="${y}" r="9" fill="white" stroke="var(--accent)" stroke-width="2"/>
           <circle cx="${x}" cy="${y}" r="3" fill="var(--accent)"/>
         </g>
@@ -266,7 +266,7 @@ export class ChronosTimeline extends LitElement {
             stroke-width="${this.selectedIdx === i ? 3 : 1.5}"
             stroke-linejoin="round"
             style="cursor:${this.interactive ? "grab" : "pointer"}"
-            @mousedown=${(e: MouseEvent) => this._onRadialHandleDown(e, i, "move")}
+            @pointerdown=${(e: PointerEvent) => this._onRadialHandleDown(e, i, "move")}
             @click=${(e: MouseEvent) => { e.stopPropagation(); this._fireSelect(i); }}
           />
         `;
@@ -370,7 +370,7 @@ export class ChronosTimeline extends LitElement {
   }
 
   // --- Drag logic ---
-  private _onBlockDown(e: MouseEvent, idx: number, handle: "l" | "r" | "move") {
+  private _onBlockDown(e: PointerEvent, idx: number, handle: "l" | "r" | "move") {
     if (!this.interactive) return;
     e.stopPropagation();
     e.preventDefault();
@@ -381,13 +381,19 @@ export class ChronosTimeline extends LitElement {
       origStart: resolveBlockTime(b, "start"),
       origEnd: resolveBlockTime(b, "end"),
     };
-    this._boundMove = (ev: MouseEvent) => this._onDragMove(ev);
+    // Use pointer events so the same drag logic works for mouse, touch and
+    // pen. pointermove on window catches pointer movement even when the
+    // pointer leaves the original element. pointercancel handles the case
+    // where the OS interrupts (e.g. a phone notification, scroll gesture
+    // hijacking on iOS).
+    this._boundMove = (ev: PointerEvent | MouseEvent) => this._onDragMove(ev);
     this._boundUp = () => this._onDragUp();
-    window.addEventListener("mousemove", this._boundMove);
-    window.addEventListener("mouseup", this._boundUp);
+    window.addEventListener("pointermove", this._boundMove as any);
+    window.addEventListener("pointerup", this._boundUp);
+    window.addEventListener("pointercancel", this._boundUp);
   }
 
-  private _onDragMove(e: MouseEvent) {
+  private _onDragMove(e: PointerEvent | MouseEvent) {
     if (!this._drag) return;
     const el = this.shadowRoot?.querySelector(".timeline") as HTMLElement;
     if (!el) return;
@@ -430,13 +436,20 @@ export class ChronosTimeline extends LitElement {
 
   private _onDragUp() {
     this._drag = null;
-    if (this._boundMove) window.removeEventListener("mousemove", this._boundMove);
-    if (this._boundUp) window.removeEventListener("mouseup", this._boundUp);
+    if (this._boundMove) {
+      window.removeEventListener("pointermove", this._boundMove as any);
+      window.removeEventListener("mousemove", this._boundMove as any);
+    }
+    if (this._boundUp) {
+      window.removeEventListener("pointerup", this._boundUp);
+      window.removeEventListener("pointercancel", this._boundUp);
+      window.removeEventListener("mouseup", this._boundUp);
+    }
     this._boundMove = null;
     this._boundUp = null;
   }
 
-  private _onRadialHandleDown(e: MouseEvent, idx: number, handle: "l" | "r" | "move") {
+  private _onRadialHandleDown(e: PointerEvent, idx: number, handle: "l" | "r" | "move") {
     if (!this.interactive) return;
     e.stopPropagation();
     e.preventDefault();
@@ -445,7 +458,7 @@ export class ChronosTimeline extends LitElement {
     const svgEl = this.shadowRoot?.querySelector(".radial") as SVGSVGElement;
     if (!svgEl) return;
 
-    const hoursFromEvent = (ev: MouseEvent) => {
+    const hoursFromEvent = (ev: PointerEvent | MouseEvent) => {
       const rect = svgEl.getBoundingClientRect();
       const size = 420;
       const px = ((ev.clientX - rect.left) / rect.width) * size;
@@ -467,7 +480,7 @@ export class ChronosTimeline extends LitElement {
     // disappears when one block is dragged onto another.
     let draggedRef: Block = b;
 
-    const onMove = (ev: MouseEvent) => {
+    const onMove = (ev: PointerEvent | MouseEvent) => {
       const h = hoursFromEvent(ev);
       const snap = snapToGrid(h);
       const curIdx = this.blocks.indexOf(draggedRef);
@@ -501,12 +514,14 @@ export class ChronosTimeline extends LitElement {
     };
 
     const onUp = () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("pointermove", onMove as any);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
     };
 
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
+    window.addEventListener("pointermove", onMove as any);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
   }
 
   private _onTrackClick(e: MouseEvent) {

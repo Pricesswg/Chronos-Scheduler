@@ -223,6 +223,13 @@ export class ChronosWizard extends LitElement {
                           return html`<option value="${o}" ?selected=${cur === o}>${o}</option>`;
                         })}
                       </select>
+                    ` : def.value.type === "entity" ? this._renderEntityPicker(def.value, block.action?.value)
+                    : def.value.type === "string" ? html`
+                      <input type="text" class="input mono"
+                        .value=${String(block.action?.value ?? "")}
+                        placeholder="${def.value.placeholder || ""}"
+                        @input=${(e: InputEvent) => this._setActionValue((e.target as HTMLInputElement).value)}
+                        style="width:100%"/>
                     ` : nothing}
                   </div>
                 ` : nothing}
@@ -390,7 +397,7 @@ export class ChronosWizard extends LitElement {
     this._blocks = newBlocks;
   }
 
-  private _setActionValue(value: number | string) {
+  private _setActionValue(value: number | string | string[]) {
     if (this._selectedBlockIdx < 0) return;
     const newBlocks = [...this._blocks];
     const cur = newBlocks[this._selectedBlockIdx];
@@ -399,6 +406,52 @@ export class ChronosWizard extends LitElement {
       action: { ...(cur.action || { id: "" }), value } as any,
     };
     this._blocks = newBlocks;
+  }
+
+  /** Render the entity multi-select picker for scene/automation actions
+   * inside the wizard. The user reported that the wizard was missing this
+   * picker, forcing them to create the schedule first and pick entities
+   * only afterwards in the editor. This brings parity with the editor
+   * block panel. Single-select for value.multi != true. */
+  private _renderEntityPicker(spec: any, currentValue: any) {
+    const pool: any[] = spec.domain === "automation"
+      ? this.card._automationEntities
+      : this.card._sceneEntities;
+    const selected: string[] = Array.isArray(currentValue)
+      ? currentValue
+      : (typeof currentValue === "string" && currentValue ? [currentValue] : []);
+    if (!spec.multi) {
+      return html`
+        <select class="input"
+          @change=${(e: Event) => this._setActionValue((e.target as HTMLSelectElement).value)}>
+          <option value="" ?selected=${!currentValue}>${t("editor.scene.pick_placeholder")}</option>
+          ${pool.map((s: any) => html`
+            <option value="${s.entity_id}" ?selected=${currentValue === s.entity_id}>
+              ${s.friendly_name || s.entity_id}
+            </option>
+          `)}
+        </select>
+      `;
+    }
+    return html`
+      <div class="row" style="gap:6px;flex-wrap:wrap">
+        ${pool.length ? pool.map((s: any) => {
+          const id = s.entity_id;
+          const on = selected.includes(id);
+          return html`
+            <button class="btn btn--sm"
+              @click=${() => {
+                const next = on ? selected.filter((x) => x !== id) : [...selected, id];
+                this._setActionValue(next);
+              }}
+              style="background:${on ? "var(--accent)" : "var(--bg-sunken)"};color:${on ? "white" : "var(--text)"};border-color:${on ? "transparent" : "var(--border-soft)"}">
+              ${on ? icon("check", 11) : nothing} ${s.friendly_name || id}
+            </button>
+          `;
+        }) : html`<span class="text-xs text-mute">${t("editor.entity.empty")}</span>`}
+      </div>
+      <span class="field__hint" style="margin-top:4px">${selected.length === 0 ? t("editor.scene.pick_warn") : t("editor.entity.count", { n: selected.length })}</span>
+    `;
   }
 
   private _fmtBlockRange(b: Block): string {
