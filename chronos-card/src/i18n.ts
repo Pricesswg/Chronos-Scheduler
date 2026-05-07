@@ -328,6 +328,7 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "week.subtitle": { it: "Vista a 7 giorni · {n} schedulazioni attive", en: "7-day view · {n} active schedules", fr: "Vue 7 jours · {n} planifications actives", de: "7-Tage-Ansicht · {n} aktive Zeitpläne" },
   "week.legend": { it: "Legenda", en: "Legend", fr: "Légende", de: "Legende" },
   "week.today": { it: "Oggi", en: "Today", fr: "Aujourd'hui", de: "Heute" },
+  "week.filter.title": { it: "Filtra schedulazioni", en: "Filter schedules", fr: "Filtrer les planifications", de: "Zeitpläne filtern" },
 
   // Device detail
   "device.state": { it: "Stato attuale", en: "Current state", fr: "État actuel", de: "Aktueller Zustand" },

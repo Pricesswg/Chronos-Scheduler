@@ -40,7 +40,7 @@ export class ChronosWeek extends LitElement {
         ${enabledSchedules.length ? html`
           <div class="card" style="padding:14px">
             <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">
-              <div class="fw-600 text-sm">${t("common.search") /* "Filtra" key fallback */ === "Filtra" ? "Filtra" : "Filtra schedulazioni"}</div>
+              <div class="fw-600 text-sm">${t("week.filter.title")}</div>
               <div class="row" style="gap:6px">
                 <button class="btn btn--sm" @click=${() => { this._filter = null; }}>
                   ${t("editor.days.all")}

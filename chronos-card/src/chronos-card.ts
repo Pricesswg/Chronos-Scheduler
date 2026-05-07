@@ -178,6 +178,12 @@ export class ChronosCard extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
+    // Apply hass.language as soon as we're connected, so the very first
+    // render goes out in the right language. Without this the first paint
+    // is always Italian (the i18n default) and the user sees a flash of
+    // Italian text before the post-_loadAll re-render swaps it for the
+    // settings-driven language.
+    if (this.hass) this._applyLanguage();
     this._checkPanelMode();
     // Defer one more check so HA's panel layout has time to settle. The
     // first connectedCallback tick can fire before the parent <hui-view>
@@ -212,6 +218,12 @@ export class ChronosCard extends LitElement {
   updated(changed: PropertyValues) {
     if (changed.has("hass") && this.hass) {
       setHassRef(this.hass);
+      // Apply language whenever hass arrives or its language attribute
+      // changes. Previously this only ran on _settings change, which meant
+      // a card whose settings WS hadn't loaded yet (or returned empty)
+      // stayed in the default Italian even when HA was set to English
+      // (issue #3).
+      this._applyLanguage();
     }
     if (changed.has("_settings") && this._settings) {
       if (this._settings.density) this.setAttribute("density", this._settings.density);
