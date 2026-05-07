@@ -629,6 +629,26 @@ class ChronosScheduler:
                         "Chronos: schedule=%s service block has invalid JSON service_data; ignoring it",
                         sched_name,
                     )
+            # Validate the service exists before calling. HA's
+            # ServiceNotFound exception is helpful at the log level, but
+            # the user-facing history shows a verbose Python message; a
+            # clean upfront check produces a friendlier history entry
+            # and a clearer log line. Common cause: the user typed the
+            # service path with the wrong separators (e.g.
+            # `automation_turn.on` instead of `automation.turn_on`).
+            if not self._hass.services.has_service(svc_domain, svc_name):
+                _LOGGER.warning(
+                    "Chronos: schedule=%s service block targets a non-existent service '%s.%s' "
+                    "(check the Servizio HA field, format is 'domain.service_name')",
+                    sched_name, svc_domain, svc_name,
+                )
+                self._store.append_history(_make_history_entry(
+                    sched, kind="block", action_id=action_id,
+                    entity_id=f"{svc_domain}.{svc_name}", value=raw_service,
+                    outcome="error",
+                    error=f"Service {svc_domain}.{svc_name} not registered. Check the service path (format: domain.service_name).",
+                ))
+                return
             try:
                 _LOGGER.info(
                     "Chronos: CALL service %s.%s data=%s schedule=%s",
