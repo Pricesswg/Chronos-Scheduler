@@ -759,6 +759,9 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "history.chart.sub": { it: "Verde: ok · rosso: errori", en: "Green: ok · red: errors", fr: "Vert : ok · rouge : erreurs", de: "Grün: ok · rot: Fehler" },
   "history.clear": { it: "Cancella storico", en: "Clear history", fr: "Effacer l'historique", de: "Verlauf löschen" },
   "history.clear.warn": { it: "Cancella tutti gli eventi storici. Operazione non reversibile.", en: "Erases all stored history events. Cannot be undone.", fr: "Efface tout l'historique stocké. Action irréversible.", de: "Löscht den gesamten gespeicherten Verlauf. Nicht umkehrbar." },
+  "history.copy_error": { it: "Copia il messaggio di errore", en: "Copy the error message", fr: "Copier le message d'erreur", de: "Fehlermeldung kopieren" },
+  "history.copy_done": { it: "Copiato", en: "Copied", fr: "Copié", de: "Kopiert" },
+  "history.copy_failed": { it: "Copia fallita", en: "Copy failed", fr: "Copie échouée", de: "Kopieren fehlgeschlagen" },
 };
 
 /** Etichetta tradotta per un weather attribute key, con fallback al label backend. */

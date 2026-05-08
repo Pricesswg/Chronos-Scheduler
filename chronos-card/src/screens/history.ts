@@ -220,21 +220,70 @@ export class ChronosHistoryScreen extends LitElement {
       ? ""
       : (typeof e.value === "object" ? JSON.stringify(e.value) : String(e.value));
     return html`
-      <div class="row" style="gap:10px;padding:8px 12px;border-radius:6px;background:${isErr ? "color-mix(in srgb, var(--danger) 8%, transparent)" : "var(--bg-sunken)"};border:1px solid ${isErr ? "color-mix(in srgb, var(--danger) 30%, transparent)" : "var(--border-soft)"}">
-        <span class="mono text-xs text-mute" style="min-width:140px;flex-shrink:0">${tsStr}</span>
-        <span class="chip" style="flex-shrink:0;background:${e.kind === "rule" ? "color-mix(in srgb, var(--accent) 12%, transparent)" : "var(--bg)"};color:${e.kind === "rule" ? "var(--accent-ink)" : "var(--text)"}">
-          ${e.kind === "rule" ? icon("cloud", 11) : icon("clock", 11)} ${t("history.kind." + e.kind)}
-        </span>
-        <span class="text-sm fw-600" style="min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.schedule_name}">${e.schedule_name || e.schedule_id}</span>
-        <span class="text-xs text-mute mono" style="min-width:0;flex:2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.entity_id || ""}">
-          ${actionLbl}${valStr ? ` · ${valStr}` : ""}${e.entity_id ? ` → ${e.entity_id}` : ""}
-        </span>
-        <span class="chip" style="flex-shrink:0;background:${isErr ? "var(--danger)" : "var(--ok)"};color:white;border-color:transparent">
-          ${isErr ? t("history.outcome.error") : t("history.outcome.ok")}
-        </span>
-        ${e.error ? html`<span class="text-xs" style="color:var(--danger);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.error}">${e.error}</span>` : nothing}
+      <div class="col" style="gap:0;padding:8px 12px;border-radius:6px;background:${isErr ? "color-mix(in srgb, var(--danger) 8%, transparent)" : "var(--bg-sunken)"};border:1px solid ${isErr ? "color-mix(in srgb, var(--danger) 30%, transparent)" : "var(--border-soft)"};user-select:text">
+        <div class="row" style="gap:10px">
+          <span class="mono text-xs text-mute" style="min-width:140px;flex-shrink:0">${tsStr}</span>
+          <span class="chip" style="flex-shrink:0;background:${e.kind === "rule" ? "color-mix(in srgb, var(--accent) 12%, transparent)" : "var(--bg)"};color:${e.kind === "rule" ? "var(--accent-ink)" : "var(--text)"}">
+            ${e.kind === "rule" ? icon("cloud", 11) : icon("clock", 11)} ${t("history.kind." + e.kind)}
+          </span>
+          <span class="text-sm fw-600" style="min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.schedule_name}">${e.schedule_name || e.schedule_id}</span>
+          <span class="text-xs text-mute mono" style="min-width:0;flex:2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.entity_id || ""}">
+            ${actionLbl}${valStr ? ` · ${valStr}` : ""}${e.entity_id ? ` → ${e.entity_id}` : ""}
+          </span>
+          <span class="chip" style="flex-shrink:0;background:${isErr ? "var(--danger)" : "var(--ok)"};color:white;border-color:transparent">
+            ${isErr ? t("history.outcome.error") : t("history.outcome.ok")}
+          </span>
+        </div>
+        ${e.error ? html`
+          <div class="row" style="gap:8px;margin-top:8px;padding:6px 8px;background:color-mix(in srgb, var(--danger) 6%, var(--bg));border-radius:4px;align-items:flex-start">
+            <span class="text-xs mono" style="color:var(--danger);flex:1;white-space:pre-wrap;word-break:break-word;user-select:text;-webkit-user-select:text">${e.error}</span>
+            <button class="btn btn--icon btn--ghost btn--sm" title="${t("history.copy_error")}"
+              @click=${(ev: Event) => this._copyError(ev, e.error || "")}>
+              ${icon("info", 12)}
+            </button>
+          </div>
+        ` : nothing}
       </div>
     `;
+  }
+
+  /** Copy the error string to the clipboard. Falls back to a textarea +
+   * execCommand for browsers that don't expose clipboard API in non-https
+   * contexts (HA local instances over plain http). Shows a brief inline
+   * confirmation by mutating the button title for ~1.5s. */
+  private async _copyError(ev: Event, text: string) {
+    if (!text) return;
+    const btn = ev.currentTarget as HTMLButtonElement;
+    const ok = await this._writeClipboard(text);
+    if (btn) {
+      const orig = btn.title;
+      btn.title = ok ? t("history.copy_done") : t("history.copy_failed");
+      setTimeout(() => { btn.title = orig; }, 1500);
+    }
+  }
+
+  private async _writeClipboard(text: string): Promise<boolean> {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch {
+      // fall through to legacy path
+    }
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      return ok;
+    } catch {
+      return false;
+    }
   }
 
   private _renderClearModal() {
