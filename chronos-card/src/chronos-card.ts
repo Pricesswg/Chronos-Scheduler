@@ -708,3 +708,18 @@ export class ChronosCard extends LitElement {
   preview: false,
   documentationURL: "https://github.com/Pricesswg/Chronos-Scheduler",
 });
+
+// Diagnostic banner: a single console line on bundle load so users debugging
+// "Custom element not found: chronos-card" (issue #6, typically WebView /
+// embedded-browser timing edge cases) can confirm the bundle actually
+// reached the page and the element registered. Visible in DevTools console.
+// Style is kept innocuous so it doesn't pollute normal logs.
+try {
+  // eslint-disable-next-line no-console
+  console.info(
+    `%c[Chronos] card v${CARD_VERSION} loaded · custom element registered`,
+    "color:#10b981;font-weight:600",
+  );
+} catch {
+  // ignore environments without console (none in browsers, but defensive)
+}

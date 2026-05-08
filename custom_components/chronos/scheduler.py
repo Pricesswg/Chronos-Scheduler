@@ -7,7 +7,7 @@ import re
 from datetime import timedelta
 from typing import Any
 
-from homeassistant.core import HomeAssistant
+from homeassistant.core import Context, HomeAssistant
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.util import dt as dt_util
 
@@ -91,6 +91,27 @@ def _make_history_entry(
         "error": error,
         "rule_idx": rule_idx,
     }
+
+
+def _fire_with_context(
+    hass: HomeAssistant,
+    event_type: str,
+    data: dict[str, Any],
+    sched: dict,
+) -> Context:
+    """Fire a Chronos event with its own Context, augment the data with
+    schedule name (snapshotted for the logbook describer), and return a
+    child Context whose parent_id points at the just-fired event. The
+    caller passes that child Context to async_call so HA chains the
+    resulting state_changed back to our event in the logbook timeline."""
+    parent_ctx = Context()
+    enriched = {
+        "schedule_id": str(sched.get("id", "")),
+        "schedule_name": sched.get("name", ""),
+        **data,
+    }
+    hass.bus.async_fire(event_type, enriched, context=parent_ctx)
+    return Context(parent_id=parent_ctx.id)
 
 
 class ChronosScheduler:
@@ -654,16 +675,17 @@ class ChronosScheduler:
                     "Chronos: CALL service %s.%s data=%s schedule=%s",
                     svc_domain, svc_name, service_data, sched_name,
                 )
-                await self._hass.services.async_call(
-                    svc_domain, svc_name, service_data, blocking=False
-                )
-                self._hass.bus.async_fire(EVENT_BLOCK_EXECUTED, {
-                    "schedule_id": sched["id"],
+                # Fire our event first so HA's logbook can attribute the
+                # subsequent state_changed back to "Chronos · <sched>".
+                child_ctx = _fire_with_context(self._hass, EVENT_BLOCK_EXECUTED, {
                     "device_id": None,
                     "entity_id": f"{svc_domain}.{svc_name}",
                     "action_id": action_id,
                     "value": raw_service,
-                })
+                }, sched)
+                await self._hass.services.async_call(
+                    svc_domain, svc_name, service_data, blocking=False, context=child_ctx,
+                )
                 self._store.append_history(_make_history_entry(
                     sched, kind="block", action_id=action_id,
                     entity_id=f"{svc_domain}.{svc_name}", value=raw_service,
@@ -679,10 +701,11 @@ class ChronosScheduler:
                 )
                 self._hass.bus.async_fire(EVENT_COMMAND_ERROR, {
                     "schedule_id": sched["id"],
+                    "schedule_name": sched_name,
                     "device_id": None,
                     "entity_id": f"{svc_domain}.{svc_name}",
                     "error": f"Failed to call {svc_domain}.{svc_name}",
-                })
+                }, context=Context())
                 self._store.append_history(_make_history_entry(
                     sched, kind="block", action_id=action_id,
                     entity_id=f"{svc_domain}.{svc_name}", value=raw_service,
@@ -714,17 +737,16 @@ class ChronosScheduler:
                         "Chronos: CALL service %s.%s data={entity_id: %s} schedule=%s",
                         domain, service, ent, sched_name,
                     )
-                    await self._hass.services.async_call(
-                        domain, service, {"entity_id": ent}, blocking=False
-                    )
-                    executed.append(ent)
-                    self._hass.bus.async_fire(EVENT_BLOCK_EXECUTED, {
-                        "schedule_id": sched["id"],
+                    child_ctx = _fire_with_context(self._hass, EVENT_BLOCK_EXECUTED, {
                         "device_id": None,
                         "entity_id": ent,
                         "action_id": action_id,
                         "value": ent,
-                    })
+                    }, sched)
+                    await self._hass.services.async_call(
+                        domain, service, {"entity_id": ent}, blocking=False, context=child_ctx,
+                    )
+                    executed.append(ent)
                     self._store.append_history(_make_history_entry(
                         sched, kind="block", action_id=action_id,
                         entity_id=ent,
@@ -810,18 +832,17 @@ class ChronosScheduler:
                 domain, service, service_data, sched_name,
             )
             try:
-                await self._hass.services.async_call(
-                    domain, service, service_data, blocking=False
-                )
-                executed_count += 1
-                executed_entities.append(device["entity_id"])
-                self._hass.bus.async_fire(EVENT_BLOCK_EXECUTED, {
-                    "schedule_id": sched["id"],
+                child_ctx = _fire_with_context(self._hass, EVENT_BLOCK_EXECUTED, {
                     "device_id": device_id,
                     "entity_id": device["entity_id"],
                     "action_id": action_id,
                     "value": value,
-                })
+                }, sched)
+                await self._hass.services.async_call(
+                    domain, service, service_data, blocking=False, context=child_ctx,
+                )
+                executed_count += 1
+                executed_entities.append(device["entity_id"])
                 self._store.append_history(_make_history_entry(
                     sched, kind="block", action_id=action_id,
                     entity_id=device["entity_id"], value=value,
@@ -832,10 +853,11 @@ class ChronosScheduler:
                 )
                 self._hass.bus.async_fire(EVENT_COMMAND_ERROR, {
                     "schedule_id": sched["id"],
+                    "schedule_name": sched_name,
                     "device_id": device_id,
                     "entity_id": device["entity_id"],
                     "error": f"Failed to call {domain}.{service}",
-                })
+                }, context=Context())
                 self._store.append_history(_make_history_entry(
                     sched, kind="block", action_id=action_id,
                     entity_id=device["entity_id"], value=value,
@@ -874,12 +896,16 @@ class ChronosScheduler:
             matched = await self._evaluate_rule(rule)
             if not matched:
                 continue
+            # Fire with its own Context so the logbook describer attributes
+            # the skipped block to "Chronos · <sched>" rather than to the
+            # opaque service that didn't fire.
             self._hass.bus.async_fire(EVENT_RULE_TRIGGERED, {
                 "schedule_id": sched["id"],
                 "schedule_name": sched_name,
                 "rule_if": rule.get("if", ""),
                 "rule_then": rule.get("then", ""),
-            })
+                "action_id": "skip",
+            }, context=Context())
             if self._store.settings.get("notify_rule_triggered"):
                 await self._notify(
                     f"Regola meteo attivata: {rule.get('if', '')} → {rule.get('then', '')}",
