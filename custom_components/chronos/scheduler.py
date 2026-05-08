@@ -697,19 +697,20 @@ class ChronosScheduler:
                     )
             except Exception as ex:
                 _LOGGER.exception(
-                    "Chronos: %s.%s failed (service block)", svc_domain, svc_name
+                    "Chronos: %s.%s failed (service block, exception_class=%s)",
+                    svc_domain, svc_name, type(ex).__name__,
                 )
                 self._hass.bus.async_fire(EVENT_COMMAND_ERROR, {
                     "schedule_id": sched["id"],
                     "schedule_name": sched_name,
                     "device_id": None,
                     "entity_id": f"{svc_domain}.{svc_name}",
-                    "error": f"Failed to call {svc_domain}.{svc_name}",
+                    "error": f"{type(ex).__name__}: {str(ex)[:200]}",
                 }, context=Context())
                 self._store.append_history(_make_history_entry(
                     sched, kind="block", action_id=action_id,
                     entity_id=f"{svc_domain}.{svc_name}", value=raw_service,
-                    outcome="error", error=str(ex)[:200],
+                    outcome="error", error=f"{type(ex).__name__}: {str(ex)[:200]}",
                 ))
             return
 
@@ -753,11 +754,18 @@ class ChronosScheduler:
                     ))
                 except Exception as ex:
                     _LOGGER.exception(
-                        "Chronos: %s.%s failed for %s", domain, service, ent
+                        "Chronos: %s.%s failed for %s (exception_class=%s)",
+                        domain, service, ent, type(ex).__name__,
                     )
+                    # Store the exception class name alongside the message so
+                    # the History screen distinguishes ServiceNotFound (HA
+                    # service registry mismatch) from entity-level errors,
+                    # ValueError, etc. — the kind of detail a quick
+                    # str(ex)[:200] used to lose.
                     self._store.append_history(_make_history_entry(
                         sched, kind="block", action_id=action_id,
-                        entity_id=ent, outcome="error", error=str(ex)[:200],
+                        entity_id=ent, outcome="error",
+                        error=f"{type(ex).__name__}: {str(ex)[:200]}",
                     ))
             if executed and self._store.settings.get("notify_block_executed", True):
                 await self._notify(
@@ -849,19 +857,20 @@ class ChronosScheduler:
                 ))
             except Exception as ex:
                 _LOGGER.exception(
-                    "Chronos: ERROR calling %s.%s for %s", domain, service, device["entity_id"]
+                    "Chronos: ERROR calling %s.%s for %s (exception_class=%s)",
+                    domain, service, device["entity_id"], type(ex).__name__,
                 )
                 self._hass.bus.async_fire(EVENT_COMMAND_ERROR, {
                     "schedule_id": sched["id"],
                     "schedule_name": sched_name,
                     "device_id": device_id,
                     "entity_id": device["entity_id"],
-                    "error": f"Failed to call {domain}.{service}",
+                    "error": f"{type(ex).__name__}: {str(ex)[:200]}",
                 }, context=Context())
                 self._store.append_history(_make_history_entry(
                     sched, kind="block", action_id=action_id,
                     entity_id=device["entity_id"], value=value,
-                    outcome="error", error=str(ex)[:200],
+                    outcome="error", error=f"{type(ex).__name__}: {str(ex)[:200]}",
                 ))
                 if self._store.settings.get("notify_command_error"):
                     await self._notify(
