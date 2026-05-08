@@ -51,15 +51,18 @@ A typical first schedule: turn on the living room light from sunset to 23:00. Pi
 
 ### Through HACS (recommended)
 
-1. HACS → Integrations → top-right menu → Custom repositories
-2. Add `https://github.com/Pricesswg/Chronos-Scheduler` as Integration
-3. Search for "Chronos Scheduler" in HACS, click Download
-4. Restart Home Assistant
-5. Settings → Devices & Services → Add Integration → Chronos Scheduler
-6. Add the card to any dashboard:
-   ```yaml
-   type: custom:chronos-card
-   ```
+[![Add to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Pricesswg&repository=Chronos-Scheduler&category=integration)
+
+1. Click the badge above to open HACS with this repository pre-filled, then click **Add**
+2. Search for "Chronos Scheduler" in HACS, click **Download**
+3. Restart Home Assistant
+4. Click the badge below to add the integration:
+
+[![Add Chronos Scheduler integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=chronos)
+
+5. Add the card to any dashboard:
+
+    type: custom:chronos-card
 
 The frontend card is loaded automatically by the integration on every startup via two mechanisms:
 
