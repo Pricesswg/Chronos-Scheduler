@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import operator
@@ -8,6 +9,7 @@ from datetime import timedelta
 from typing import Any
 
 from homeassistant.core import Context, HomeAssistant
+from homeassistant.exceptions import ServiceNotFound
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.util import dt as dt_util
 
@@ -733,39 +735,72 @@ class ChronosScheduler:
                 return
             executed: list[str] = []
             for ent in entity_ids:
-                try:
-                    _LOGGER.info(
-                        "Chronos: CALL service %s.%s data={entity_id: %s} schedule=%s",
-                        domain, service, ent, sched_name,
-                    )
-                    child_ctx = _fire_with_context(self._hass, EVENT_BLOCK_EXECUTED, {
-                        "device_id": None,
-                        "entity_id": ent,
-                        "action_id": action_id,
-                        "value": ent,
-                    }, sched)
-                    await self._hass.services.async_call(
-                        domain, service, {"entity_id": ent}, blocking=False, context=child_ctx,
-                    )
-                    executed.append(ent)
-                    self._store.append_history(_make_history_entry(
-                        sched, kind="block", action_id=action_id,
-                        entity_id=ent,
-                    ))
-                except Exception as ex:
-                    _LOGGER.exception(
-                        "Chronos: %s.%s failed for %s (exception_class=%s)",
-                        domain, service, ent, type(ex).__name__,
-                    )
-                    # Store the exception class name alongside the message so
-                    # the History screen distinguishes ServiceNotFound (HA
-                    # service registry mismatch) from entity-level errors,
-                    # ValueError, etc. — the kind of detail a quick
-                    # str(ex)[:200] used to lose.
+                # ServiceNotFound on a core service like automation.turn_on
+                # almost always means a transient state where HA's service
+                # registry has the domain unregistered for a brief window
+                # (component reload, restart, slow boot). Retry once after
+                # a short backoff before giving up. See issue follow-up on
+                # cat-presence light schedules where automation.turn_on
+                # intermittently returned ServiceNotFound on HA 2026.4.4.
+                attempts = 0
+                last_ex: Exception | None = None
+                while attempts < 2:
+                    attempts += 1
+                    try:
+                        _LOGGER.info(
+                            "Chronos: CALL service %s.%s data={entity_id: %s} schedule=%s attempt=%d",
+                            domain, service, ent, sched_name, attempts,
+                        )
+                        if not self._hass.services.has_service(domain, service):
+                            registered = sorted(self._hass.services.async_services_for_domain(domain).keys())
+                            _LOGGER.warning(
+                                "Chronos: %s.%s NOT registered before call (attempt=%d). "
+                                "Registered services for domain '%s': %s",
+                                domain, service, attempts, domain, registered,
+                            )
+                            if attempts < 2:
+                                await asyncio.sleep(0.6)
+                                continue
+                            raise ServiceNotFound(domain, service)
+                        child_ctx = _fire_with_context(self._hass, EVENT_BLOCK_EXECUTED, {
+                            "device_id": None,
+                            "entity_id": ent,
+                            "action_id": action_id,
+                            "value": ent,
+                        }, sched)
+                        await self._hass.services.async_call(
+                            domain, service, {"entity_id": ent}, blocking=False, context=child_ctx,
+                        )
+                        executed.append(ent)
+                        self._store.append_history(_make_history_entry(
+                            sched, kind="block", action_id=action_id,
+                            entity_id=ent,
+                        ))
+                        last_ex = None
+                        break
+                    except ServiceNotFound as ex:
+                        last_ex = ex
+                        _LOGGER.warning(
+                            "Chronos: ServiceNotFound %s.%s on attempt %d for entity %s; "
+                            "retrying after 600ms" if attempts < 2 else
+                            "Chronos: ServiceNotFound %s.%s after retry, giving up for entity %s",
+                            domain, service, attempts, ent,
+                        )
+                        if attempts < 2:
+                            await asyncio.sleep(0.6)
+                            continue
+                    except Exception as ex:
+                        last_ex = ex
+                        _LOGGER.exception(
+                            "Chronos: %s.%s failed for %s (exception_class=%s)",
+                            domain, service, ent, type(ex).__name__,
+                        )
+                        break
+                if last_ex is not None:
                     self._store.append_history(_make_history_entry(
                         sched, kind="block", action_id=action_id,
                         entity_id=ent, outcome="error",
-                        error=f"{type(ex).__name__}: {str(ex)[:200]}",
+                        error=f"{type(last_ex).__name__}: {str(last_ex)[:200]}",
                     ))
             if executed and self._store.settings.get("notify_block_executed", True):
                 await self._notify(
