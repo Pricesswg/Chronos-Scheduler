@@ -118,6 +118,15 @@ export const chronosStyles = css`
     overflow: hidden;
     border: 1px solid var(--border);
     position: relative;
+    /* Establish a fresh stacking context so position:sticky / absolute /
+     * z-index children (sidebar, topbar, drawers) can't escape the card
+     * boundary in browsers where border-radius + overflow:hidden alone
+     * fails to clip composited layers (Safari / iOS WebKit notably). */
+    isolation: isolate;
+    /* Belt-and-braces clipping: inset rounds defeat Safari's known
+     * issue where overflow:hidden doesn't clip transform-promoted or
+     * sticky descendants against the rounded corners. */
+    clip-path: inset(0 round var(--r-lg));
   }
 
   .sidebar {
