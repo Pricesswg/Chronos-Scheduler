@@ -365,10 +365,16 @@ export class ChronosEditor extends LitElement {
   }
 
   private _toHHMM(hour: number): string {
-    const safe = Number.isFinite(hour) ? Math.max(0, Math.min(23.999, hour)) : 0;
-    let hh = Math.floor(safe);
+    if (!Number.isFinite(hour)) return "00:00";
+    // Clamp at 23:59 because <input type="time"> rejects 24:00. Any
+    // value at or above 23.99 round-trips to 23:59 so the picker and
+    // our fmtHour-based labels stay consistent (issue #7: an end=24
+    // block previously showed 24:00 in the chip but 23:00 in the
+    // picker because the picker can't represent 24).
+    const safe = Math.max(0, Math.min(23 + 59 / 60, hour));
+    const hh = Math.floor(safe);
     let mm = Math.round((safe - hh) * 60);
-    if (mm >= 60) { mm = 0; hh = Math.min(23, hh + 1); }
+    if (mm >= 60) mm = 59;
     return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
   }
 

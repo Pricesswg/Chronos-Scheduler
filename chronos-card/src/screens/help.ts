@@ -4,6 +4,7 @@ import { chronosStyles } from "../styles";
 import { icon, deviceIcon } from "../icons";
 import { t } from "../i18n";
 import { actionColor } from "../actions";
+import { DAY_END_HOUR } from "../utils";
 import type { ChronosCard } from "../chronos-card";
 import type { Block, DeviceType, Schedule, WeatherRule } from "../types";
 
@@ -25,7 +26,7 @@ const RECIPES: Recipe[] = [
     blocks: [
       { start: 0, end: 7, action: { id: "set_temperature", value: 18 } },
       { start: 7, end: 22, action: { id: "set_temperature", value: 21 } },
-      { start: 22, end: 24, action: { id: "set_temperature", value: 18 } },
+      { start: 22, end: DAY_END_HOUR, action: { id: "set_temperature", value: 18 } },
     ],
     weather_rules: [
       { if: "temperature > 22", then: "Skip", active: true, effect: "skip", block_index: null },
@@ -90,7 +91,7 @@ const RECIPES: Recipe[] = [
     blocks: [
       { start: 0, end: 6, action: { id: "set_operation", value: "eco" } },
       { start: 6, end: 23, action: { id: "set_operation", value: "electric" } },
-      { start: 23, end: 24, action: { id: "set_operation", value: "eco" } },
+      { start: 23, end: DAY_END_HOUR, action: { id: "set_operation", value: "eco" } },
     ],
     weather_rules: [],
   },
@@ -116,7 +117,7 @@ const RECIPES: Recipe[] = [
     blocks: [
       { start: 0, end: 7, action: { id: "arm_night" } },
       { start: 7, end: 23, action: { id: "disarm" } },
-      { start: 23, end: 24, action: { id: "arm_night" } },
+      { start: 23, end: DAY_END_HOUR, action: { id: "arm_night" } },
     ],
     weather_rules: [],
   },
@@ -128,7 +129,7 @@ const RECIPES: Recipe[] = [
     blocks: [
       // Baseline minimum temperature; the rule below boosts it whenever the
       // off-grid battery is full and there's still daylight to keep recharging.
-      { start: 0, end: 24, action: { id: "set_temperature", value: 35 } },
+      { start: 0, end: DAY_END_HOUR, action: { id: "set_temperature", value: 35 } },
     ],
     weather_rules: [
       {

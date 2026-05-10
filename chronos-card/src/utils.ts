@@ -1,3 +1,10 @@
+/** Canonical "end of day" value for time blocks, as a fractional hour.
+ * 23 + 59/60 == 23:59. We never store 24:00 because <input type="time">
+ * caps at 23:59 and a stored 24 would render inconsistently between the
+ * native picker and our fmtHour-based labels (issue #7: the picker showed
+ * 23:00 while the chip showed 24:00 for the same value). */
+export const DAY_END_HOUR = 23 + 59 / 60;
+
 export function fmtHour(h: number): string {
   const hh = Math.floor(h);
   const mm = Math.round((h - hh) * 60);

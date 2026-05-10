@@ -115,6 +115,19 @@ class ChronosStore:
                     if len(cleaned) != len(blk_ids):
                         blk["device_ids"] = cleaned
                         dirty_schedules = True
+                # Issue #7: blocks created before v1.12.6 may store end == 24
+                # (the wizard's old default). The native <input type="time">
+                # caps at 23:59 and our editor would show 23:00 for such
+                # blocks while the chip header rendered 24:00 — visually
+                # inconsistent. Functionally a block that ends at 23:59
+                # covers the same range (the dispatcher uses start <= h < end
+                # at minute resolution), so this migration is lossless.
+                if blk.get("end") in (24, 24.0):
+                    blk["end"] = 23 + 59 / 60
+                    dirty_schedules = True
+                if blk.get("start") in (24, 24.0):
+                    blk["start"] = 23 + 59 / 60
+                    dirty_schedules = True
             # Migra le weather_rules al nuovo schema (v1.7+)
             for rule in s.get("weather_rules") or []:
                 if _migrate_rule(rule):

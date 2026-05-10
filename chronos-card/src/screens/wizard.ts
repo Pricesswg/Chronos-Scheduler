@@ -3,7 +3,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { chronosStyles } from "../styles";
 import { icon, deviceIcon } from "../icons";
 import { defaultAction, getActionsForType, getActionDef, actionColor } from "../actions";
-import { getDays, DEVICE_TYPES, computeRepeat } from "../utils";
+import { getDays, DEVICE_TYPES, computeRepeat, DAY_END_HOUR } from "../utils";
 import { t, actionDefLabel, actionValueLabel } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
 import type { Block, DeviceType, Schedule } from "../types";
@@ -339,7 +339,7 @@ export class ChronosWizard extends LitElement {
     return [
       { start: 0, end: 7, action: { ...da } },
       { start: 7, end: 22, action: { ...da } },
-      { start: 22, end: 24, action: { ...da } },
+      { start: 22, end: DAY_END_HOUR, action: { ...da } },
     ];
   }
 

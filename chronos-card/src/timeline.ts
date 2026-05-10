@@ -2,7 +2,7 @@ import { LitElement, html, svg, nothing, PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { chronosStyles } from "./styles";
 import { actionColor, actionLabel, getActionDef } from "./actions";
-import { fmtHour, clamp, snapToGrid, resolveBlockTime } from "./utils";
+import { fmtHour, clamp, snapToGrid, resolveBlockTime, DAY_END_HOUR } from "./utils";
 import { defaultAction } from "./actions";
 import { actionDefLabel } from "./i18n";
 import type { Block, DeviceType, WeatherRule } from "./types";
@@ -412,7 +412,7 @@ export class ChronosTimeline extends LitElement {
       delete b.start_anchor;
       delete b.start_offset;
     } else if (this._drag.handle === "r") {
-      const newEnd = clamp(snap, resolveBlockTime(b, "start") + 0.25, 24);
+      const newEnd = clamp(snap, resolveBlockTime(b, "start") + 0.25, DAY_END_HOUR);
       b.end = newEnd;
       delete b.end_anchor;
       delete b.end_offset;
@@ -420,7 +420,7 @@ export class ChronosTimeline extends LitElement {
       const dx = e.clientX - this._drag.startX;
       const dh = (dx / rect.width) * 24;
       const duration = this._drag.origEnd - this._drag.origStart;
-      let s = clamp(this._drag.origStart + dh, 0, 24 - duration);
+      let s = clamp(this._drag.origStart + dh, 0, DAY_END_HOUR - duration);
       s = snapToGrid(s);
       b.start = s;
       b.end = s + duration;
@@ -492,7 +492,7 @@ export class ChronosTimeline extends LitElement {
         delete block.start_anchor;
         delete block.start_offset;
       } else if (handle === "r") {
-        block.end = clamp(snap, resolveBlockTime(block, "start") + 0.25, 24);
+        block.end = clamp(snap, resolveBlockTime(block, "start") + 0.25, DAY_END_HOUR);
         delete block.end_anchor;
         delete block.end_offset;
       } else {
@@ -500,7 +500,7 @@ export class ChronosTimeline extends LitElement {
         const dur = origEnd - origStart;
         let s = origStart + dh;
         s = snapToGrid(s);
-        s = clamp(s, 0, 24 - dur);
+        s = clamp(s, 0, DAY_END_HOUR - dur);
         block.start = s;
         block.end = s + dur;
         delete block.start_anchor;
@@ -531,9 +531,9 @@ export class ChronosTimeline extends LitElement {
     const el = this.shadowRoot?.querySelector(".timeline") as HTMLElement;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const h = clamp(((e.clientX - rect.left) / rect.width) * 24, 0, 24);
+    const h = clamp(((e.clientX - rect.left) / rect.width) * 24, 0, DAY_END_HOUR);
     const start = Math.max(0, snapToGrid(h) - 0.5);
-    const end = Math.min(24, start + 1);
+    const end = Math.min(DAY_END_HOUR, start + 1);
     const conflict = this.blocks.some((b) => {
       const bs = resolveBlockTime(b, "start");
       const be = resolveBlockTime(b, "end");
