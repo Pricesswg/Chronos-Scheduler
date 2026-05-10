@@ -83,6 +83,12 @@ def async_describe_events(
             "entity_id": entity,
         }
 
-    async_describe_event(DOMAIN, EVENT_BLOCK_EXECUTED, describe_block)
+    # Issue #5 follow-up: do NOT describe EVENT_BLOCK_EXECUTED. The
+    # scheduler now emits a logbook.log entry alongside each successful
+    # dispatch, which HA's logbook indexes by entity_id (so it shows up
+    # in entity-filtered searches, not just the global timeline).
+    # Describing EVENT_BLOCK_EXECUTED here would result in two Chronos
+    # rows per dispatch in the unfiltered view, doubling noise without
+    # adding information.
     async_describe_event(DOMAIN, EVENT_RULE_TRIGGERED, describe_rule)
     async_describe_event(DOMAIN, EVENT_COMMAND_ERROR, describe_error)

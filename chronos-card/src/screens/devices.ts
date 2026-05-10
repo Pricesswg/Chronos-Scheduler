@@ -253,19 +253,24 @@ export class ChronosDevicesScreen extends LitElement {
             ${filtered.map((e) => {
               const type = e.type || "plug";
               const def = DEVICE_TYPES[type] || { label: type };
+              // Issue #8: force wrap so on narrow viewports (e.g. HA's
+              // edit-card preview pane on Macbook, or any window resize
+              // that doesn't trip the 600px breakpoint) the chip and
+              // import button drop to a second row instead of being
+              // clipped on the right edge.
               return html`
-                <div class="device-row" style="background:var(--bg-sunken);padding:10px 12px">
+                <div class="device-row" style="background:var(--bg-sunken);padding:10px 12px;flex-wrap:wrap;row-gap:8px">
                   <div class="device-row__icon">${deviceIcon(type, 16)}</div>
-                  <div class="device-row__main">
+                  <div class="device-row__main" style="min-width:160px;flex:1 1 200px">
                     <div class="device-row__name">${e.friendly_name}</div>
                     <div class="device-row__meta"><span class="mono">${e.entity_id}</span> · ${e.area || ""}</div>
                   </div>
                   <input class="input" placeholder="${t("devices.alias.placeholder")}"
                     .value=${this._pickedAlias[e.entity_id] || ""}
                     @input=${(ev: InputEvent) => { this._pickedAlias = { ...this._pickedAlias, [e.entity_id]: (ev.target as HTMLInputElement).value }; }}
-                    style="width:160px;font-size:12px"/>
-                  <span class="chip chip--accent">${deviceTypeLabel(type, def.label)}</span>
-                  <button class="btn btn--sm btn--primary" @click=${async () => {
+                    style="flex:1 1 140px;min-width:120px;max-width:200px;font-size:12px"/>
+                  <span class="chip chip--accent" style="flex-shrink:0">${deviceTypeLabel(type, def.label)}</span>
+                  <button class="btn btn--sm btn--primary" style="flex-shrink:0" @click=${async () => {
                     await this.card.doAddDevice(e.entity_id, this._pickedAlias[e.entity_id] || undefined);
                     this._pickedAlias = { ...this._pickedAlias, [e.entity_id]: "" };
                   }}>${icon("plus", 12)} ${t("devices.import")}</button>

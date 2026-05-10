@@ -116,6 +116,46 @@ def _fire_with_context(
     return Context(parent_id=parent_ctx.id)
 
 
+async def _log_to_logbook(
+    hass: HomeAssistant,
+    sched: dict,
+    *,
+    action_id: str,
+    entity_id: str | None,
+    extra: str = "",
+) -> None:
+    """Write a logbook entry via HA's `logbook.log` service. Issue #5:
+    the chronos custom event was visible in the global Activity timeline
+    via async_describe_event, but not when the user filtered the timeline
+    by a specific entity. logbook.log writes a LOGBOOK_ENTRY which HA
+    indexes by entity_id, so the resulting line appears in both the
+    unfiltered view and in entity-scoped searches. We keep firing the
+    chronos_block_executed event for our own History screen consumers
+    (the WS endpoint reads the in-store ring buffer, not the logbook).
+    """
+    if not entity_id:
+        return
+    try:
+        msg = f"executed action {action_id}"
+        if extra:
+            msg = f"{msg} ({extra})"
+        await hass.services.async_call(
+            "logbook",
+            "log",
+            {
+                "name": f"Chronos · {sched.get('name', '?')}",
+                "message": msg,
+                "domain": "chronos",
+                "entity_id": entity_id,
+            },
+            blocking=False,
+        )
+    except Exception:
+        # Logbook is non-critical: don't let a logbook.log hiccup break
+        # the actual dispatch. Errors are logged at debug level only.
+        _LOGGER.debug("Chronos: logbook.log failed for %s", entity_id, exc_info=True)
+
+
 class ChronosScheduler:
     def __init__(self, hass: HomeAssistant, store: ChronosStore) -> None:
         self._hass = hass
@@ -692,6 +732,13 @@ class ChronosScheduler:
                     sched, kind="block", action_id=action_id,
                     entity_id=f"{svc_domain}.{svc_name}", value=raw_service,
                 ))
+                # Logbook entry tagged with the service path so HA's
+                # entity-filter search shows the Chronos attribution.
+                await _log_to_logbook(
+                    self._hass, sched,
+                    action_id=action_id,
+                    entity_id=f"{svc_domain}.{svc_name}",
+                )
                 if self._store.settings.get("notify_block_executed", True):
                     await self._notify(
                         f"{svc_domain}.{svc_name}",
@@ -776,6 +823,10 @@ class ChronosScheduler:
                             sched, kind="block", action_id=action_id,
                             entity_id=ent,
                         ))
+                        await _log_to_logbook(
+                            self._hass, sched,
+                            action_id=action_id, entity_id=ent,
+                        )
                         last_ex = None
                         break
                     except ServiceNotFound as ex:
@@ -890,6 +941,15 @@ class ChronosScheduler:
                     sched, kind="block", action_id=action_id,
                     entity_id=device["entity_id"], value=value,
                 ))
+                value_str = ""
+                if value not in (None, ""):
+                    value_str = f"value={value}"
+                await _log_to_logbook(
+                    self._hass, sched,
+                    action_id=action_id,
+                    entity_id=device["entity_id"],
+                    extra=value_str,
+                )
             except Exception as ex:
                 _LOGGER.exception(
                     "Chronos: ERROR calling %s.%s for %s (exception_class=%s)",
