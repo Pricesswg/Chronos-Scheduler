@@ -789,9 +789,18 @@ class ChronosScheduler:
                 # a short backoff before giving up. See issue follow-up on
                 # cat-presence light schedules where automation.turn_on
                 # intermittently returned ServiceNotFound on HA 2026.4.4.
+                # Three attempts with growing backoff so a wider race
+                # window during HA reloads is covered (0.6s + 1.2s = up
+                # to ~1.8s of total tolerance). The diagnostic dump of
+                # currently-registered services is wrapped in its own
+                # try because async_services_for_domain isn't stable
+                # across HA versions; if it raises (AttributeError on
+                # older / removed API), the dump is skipped without
+                # aborting the retry path itself.
+                MAX_ATTEMPTS = 3
                 attempts = 0
                 last_ex: Exception | None = None
-                while attempts < 2:
+                while attempts < MAX_ATTEMPTS:
                     attempts += 1
                     try:
                         _LOGGER.info(
@@ -799,14 +808,19 @@ class ChronosScheduler:
                             domain, service, ent, sched_name, attempts,
                         )
                         if not self._hass.services.has_service(domain, service):
-                            registered = sorted(self._hass.services.async_services_for_domain(domain).keys())
+                            registered: list[str] = []
+                            try:
+                                all_services = self._hass.services.async_services()
+                                registered = sorted((all_services.get(domain) or {}).keys())
+                            except Exception:
+                                _LOGGER.debug("Chronos: async_services() not callable; skipping registry dump", exc_info=True)
                             _LOGGER.warning(
                                 "Chronos: %s.%s NOT registered before call (attempt=%d). "
                                 "Registered services for domain '%s': %s",
                                 domain, service, attempts, domain, registered,
                             )
-                            if attempts < 2:
-                                await asyncio.sleep(0.6)
+                            if attempts < MAX_ATTEMPTS:
+                                await asyncio.sleep(0.6 * attempts)
                                 continue
                             raise ServiceNotFound(domain, service)
                         child_ctx = _fire_with_context(self._hass, EVENT_BLOCK_EXECUTED, {
@@ -832,13 +846,11 @@ class ChronosScheduler:
                     except ServiceNotFound as ex:
                         last_ex = ex
                         _LOGGER.warning(
-                            "Chronos: ServiceNotFound %s.%s on attempt %d for entity %s; "
-                            "retrying after 600ms" if attempts < 2 else
-                            "Chronos: ServiceNotFound %s.%s after retry, giving up for entity %s",
-                            domain, service, attempts, ent,
+                            "Chronos: ServiceNotFound %s.%s on attempt %d/%d for entity %s",
+                            domain, service, attempts, MAX_ATTEMPTS, ent,
                         )
-                        if attempts < 2:
-                            await asyncio.sleep(0.6)
+                        if attempts < MAX_ATTEMPTS:
+                            await asyncio.sleep(0.6 * attempts)
                             continue
                     except Exception as ex:
                         last_ex = ex

@@ -1,2 +1,2 @@
 // Aggiornato automaticamente da scripts/release.sh
-export const CARD_VERSION = "1.12.7";
+export const CARD_VERSION = "1.12.8";
