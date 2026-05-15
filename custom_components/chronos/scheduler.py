@@ -661,13 +661,18 @@ class ChronosScheduler:
             )
             return
 
-        service_str = action_def["service"]
-        domain, service = service_str.split(".", 1)
-
         # Service-type schedules invoke an arbitrary HA service. The block's
         # value holds the "domain.service_name" string, and an optional
         # `service_data` extras carries the JSON params dict. No device
         # iteration. Useful for mqtt.publish, backup.create, script.run, etc.
+        #
+        # Issue #10: for device_type=="service" the action def's `service`
+        # field is intentionally an empty string (the real service comes
+        # from action.value, parsed inside the branch below). Splitting
+        # that empty string with "".split(".", 1) returns [""], a single
+        # element, so the unpacking into (domain, service) below would
+        # raise ValueError before we even reach the service branch.
+        # Branch on device_type FIRST and parse the appropriate source.
         if device_type == "service":
             raw_service = action.get("value")
             if not raw_service or "." not in str(raw_service):
@@ -762,6 +767,19 @@ class ChronosScheduler:
                     outcome="error", error=f"{type(ex).__name__}: {str(ex)[:200]}",
                 ))
             return
+
+        # For every other device type the service is statically defined in
+        # the action def (e.g. "automation.turn_on", "light.turn_off"); split
+        # it once here and reuse domain/service below. The earlier service-
+        # branch return already handled the dynamic-service case.
+        service_str = action_def["service"]
+        if "." not in service_str:
+            _LOGGER.warning(
+                "Chronos: action def for %s.%s has invalid service '%s' (expected 'domain.service'). schedule=%s",
+                device_type, action_id, service_str, sched_name,
+            )
+            return
+        domain, service = service_str.split(".", 1)
 
         # Scene- and automation-type schedules don't iterate the schedule's
         # device list: the action's `value` is the entity_id (or list of
