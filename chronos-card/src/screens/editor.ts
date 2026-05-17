@@ -242,7 +242,10 @@ export class ChronosEditor extends LitElement {
                     </div>
                     <span class="field__hint mono" style="margin-top:4px">${currentActionDef?.service || ""}</span>
                   </div>
-                  ${currentActionDef?.value ? html`
+                  ${deviceType === "irrigation" && block.action?.id === "turn_on"
+                    ? this._renderIrrigationMode(schedule, block)
+                    : nothing}
+                  ${currentActionDef?.value && !(deviceType === "irrigation" && block.action?.mode === "sequential") ? html`
                     <div class="field">
                       <label class="field__label">${actionValueLabel(deviceType, block.action.id, currentActionDef.value.label) || t("common.value")} ${currentActionDef.value.unit ? html`<span class="text-mute">(${currentActionDef.value.unit})</span>` : nothing}</label>
                       ${currentActionDef.value.type === "number" ? html`
@@ -534,6 +537,107 @@ export class ChronosEditor extends LitElement {
    * automations). When `spec.multi` is true the picker becomes a chip-toggle
    * grid; otherwise it falls back to a single-select dropdown. The stored
    * value is `string` (single mode), `string[]` (multi mode), or `undefined`. */
+  /** Irrigation: global vs sequential mode toggle, and when sequential the
+   * ordered per-valve duration list built from the schedule's valves. */
+  private _renderIrrigationMode(schedule: Schedule, block: Block) {
+    const mode = block.action?.mode === "sequential" ? "sequential" : "global";
+    const valves = (schedule.device_ids || [])
+      .map((id) => this.card._devices.find((d) => d.id === id))
+      .filter((d): d is NonNullable<typeof d> => !!d && d.type === "irrigation");
+    const seq = block.action?.sequence || [];
+    const seqByEntity = new Map(seq.map((s) => [s.entity_id, s.minutes]));
+    const total = valves.reduce((acc, v) => acc + (seqByEntity.get(v.entity_id) ?? 0), 0);
+    return html`
+      <div class="field" style="border-top:1px dashed var(--border-soft);padding-top:10px;margin-top:6px">
+        <label class="field__label">${t("editor.irrigation.mode")}</label>
+        <div class="segmented" style="margin-bottom:8px">
+          <button data-active="${mode === "global"}" @click=${() => this._setIrrigationMode(schedule.id, "global")}>
+            ${t("editor.irrigation.mode.global")}
+          </button>
+          <button data-active="${mode === "sequential"}" @click=${() => this._setIrrigationMode(schedule.id, "sequential")}>
+            ${t("editor.irrigation.mode.sequential")}
+          </button>
+        </div>
+        ${mode === "sequential" ? html`
+          <span class="field__hint" style="display:block;margin-bottom:8px">${t("editor.irrigation.seq.hint")}</span>
+          ${!valves.length
+            ? html`<span class="text-xs" style="color:var(--warn)">${t("editor.irrigation.seq.no_valves")}</span>`
+            : html`<div class="col" style="gap:6px">
+                ${valves.map((v, i) => html`
+                  <div class="row" style="gap:8px;align-items:center;padding:8px 10px;background:var(--bg-sunken);border-radius:var(--r-md)">
+                    <span class="mono text-xs text-mute" style="width:18px;text-align:right">${i + 1}</span>
+                    <div style="flex:1;min-width:0">
+                      <div class="text-sm fw-600 truncate">${v.alias}</div>
+                      <div class="text-xs text-mute mono truncate">${v.entity_id}</div>
+                    </div>
+                    <input type="number" class="input mono" min="1" max="240" step="1"
+                      .value=${String(seqByEntity.get(v.entity_id) ?? "")}
+                      placeholder="min"
+                      @input=${(e: InputEvent) => {
+                        const n = parseInt((e.target as HTMLInputElement).value, 10);
+                        this._setSeqMinutes(schedule.id, v.entity_id, isNaN(n) ? 0 : n);
+                      }}
+                      style="width:80px;text-align:right;font-weight:600"/>
+                    <span class="mono text-mute text-xs" style="width:24px">min</span>
+                  </div>
+                `)}
+                <div class="row" style="justify-content:flex-end;gap:6px;margin-top:4px">
+                  <span class="text-xs text-mute">${t("editor.irrigation.seq.total")}</span>
+                  <span class="mono fw-600">${total} min</span>
+                </div>
+              </div>`}
+        ` : nothing}
+      </div>
+    `;
+  }
+
+  private _setIrrigationMode(schedId: string, mode: "global" | "sequential") {
+    const sched = this.card._schedules.find((s) => s.id === schedId);
+    if (!sched) return;
+    const blocks = [...sched.blocks];
+    const b = { ...blocks[this._selectedBlockIdx] };
+    const action: any = { ...(b.action || { id: "turn_on" }) };
+    if (mode === "global") {
+      action.mode = "global";
+      delete action.sequence;
+    } else {
+      action.mode = "sequential";
+      // Seed the sequence from the schedule's valves so the user sees a
+      // row per station immediately, defaulting each to the current
+      // global value (or 10 min).
+      const seeded = (sched.device_ids || [])
+        .map((id) => this.card._devices.find((d) => d.id === id))
+        .filter((d): d is NonNullable<typeof d> => !!d && d.type === "irrigation")
+        .map((d) => ({
+          entity_id: d.entity_id,
+          minutes:
+            (action.sequence || []).find((s: any) => s.entity_id === d.entity_id)?.minutes
+            ?? (typeof action.value === "number" ? action.value : 10),
+        }));
+      action.sequence = seeded;
+    }
+    b.action = action;
+    blocks[this._selectedBlockIdx] = b;
+    this._commitBlocks(schedId, blocks, b);
+  }
+
+  private _setSeqMinutes(schedId: string, entityId: string, minutes: number) {
+    const sched = this.card._schedules.find((s) => s.id === schedId);
+    if (!sched) return;
+    const blocks = [...sched.blocks];
+    const b = { ...blocks[this._selectedBlockIdx] };
+    const action: any = { ...(b.action || { id: "turn_on" }) };
+    const seq = [...(action.sequence || [])];
+    const idx = seq.findIndex((s: any) => s.entity_id === entityId);
+    if (idx >= 0) seq[idx] = { ...seq[idx], minutes };
+    else seq.push({ entity_id: entityId, minutes });
+    action.sequence = seq;
+    action.mode = "sequential";
+    b.action = action;
+    blocks[this._selectedBlockIdx] = b;
+    this._commitBlocks(schedId, blocks, b);
+  }
+
   private _renderEntityPicker(schedId: string, block: Block, spec: any) {
     const pool: any[] = spec.domain === "automation"
       ? this.card._automationEntities

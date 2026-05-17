@@ -56,9 +56,15 @@ class ChronosStore:
         self._store_schedules = Store(hass, STORAGE_VERSION, STORAGE_KEY_SCHEDULES)
         self._store_settings = Store(hass, STORAGE_VERSION, STORAGE_KEY_SETTINGS)
         self._store_history = Store(hass, STORAGE_VERSION, STORAGE_KEY_HISTORY)
+        self._store_sequences = Store(hass, STORAGE_VERSION, STORAGE_KEY_SEQUENCES)
         self.devices: list[dict[str, Any]] = []
         self.schedules: list[dict[str, Any]] = []
         self.settings: dict[str, Any] = {}
+        # Map of currently-running sequential irrigation programs, keyed by
+        # f"{schedule_id}:{block_idx}". Each value: {schedule_id,
+        # schedule_name, entity_ids: [...], started_at: ISO}. Persisted on
+        # every change so a restart can defensively close still-open valves.
+        self.active_sequences: dict[str, dict[str, Any]] = {}
         # Append-only ring buffer of dispatch events. Capped at
         # HISTORY_MAX_ENTRIES; oldest dropped when full. Each entry is a
         # dict with: ts (ISO), schedule_id, schedule_name, kind
@@ -73,6 +79,7 @@ class ChronosStore:
         stored_settings = (await self._store_settings.async_load()) or {}
         self.settings = {**DEFAULT_SETTINGS, **stored_settings}
         self.history = (await self._store_history.async_load()) or []
+        self.active_sequences = (await self._store_sequences.async_load()) or {}
 
         # v1.9 migration: drop legacy scene-as-device entries from v1.8.0.
         # Scenes are now selected per-block via the action's value field; the
@@ -156,6 +163,25 @@ class ChronosStore:
 
     async def _save_settings(self) -> None:
         await self._store_settings.async_save(self.settings)
+
+    async def _save_sequences(self) -> None:
+        await self._store_sequences.async_save(self.active_sequences)
+
+    async def set_active_sequence(self, key: str, info: dict[str, Any]) -> None:
+        """Mark a sequential irrigation program as in-flight and persist it
+        immediately (small dict, written rarely: start/end of a program)."""
+        self.active_sequences[key] = info
+        await self._save_sequences()
+
+    async def clear_active_sequence(self, key: str) -> None:
+        if key in self.active_sequences:
+            del self.active_sequences[key]
+            await self._save_sequences()
+
+    async def clear_all_sequences(self) -> None:
+        if self.active_sequences:
+            self.active_sequences = {}
+            await self._save_sequences()
 
     async def _save_history(self) -> None:
         await self._store_history.async_save(self.history)

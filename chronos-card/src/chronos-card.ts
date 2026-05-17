@@ -342,10 +342,56 @@ export class ChronosCard extends LitElement {
   async saveCurrentSchedule() {
     const sched = this._schedules.find((s) => s.id === this._selectedId);
     if (!sched) return;
+    // Sequential-irrigation valve-conflict guard. Warn always; hard-block
+    // the save only when the user opted in (Settings → Irrigation).
+    const conflict = this._findIrrigationConflict(sched);
+    if (conflict) {
+      const blockEnabled = !!(this._settings as any)?.irrigation_conflict_block;
+      if (blockEnabled) {
+        alert(t("editor.irrigation.conflict.blocked"));
+        return;
+      }
+      const proceed = confirm(
+        t("editor.irrigation.conflict.warn", { valve: conflict }) + "\n\n" + t("common.confirm") + "?"
+      );
+      if (!proceed) return;
+    }
     const saved = await wsSaveSchedule(this.hass, sched);
     const idx = this._schedules.findIndex((s) => s.id === saved.id);
     if (idx >= 0) this._schedules = [...this._schedules.slice(0, idx), saved, ...this._schedules.slice(idx + 1)];
     this._savedSchedules = JSON.parse(JSON.stringify(this._schedules));
+  }
+
+  /** Returns the entity_id of the first valve shared between this
+   * schedule's sequential irrigation blocks and another schedule whose
+   * day mask overlaps and which also runs a sequential program on the
+   * same valve. null when no conflict. Heuristic on day overlap only:
+   * exact time-window math is unnecessary because two sequential
+   * programs that can run on the same day on the same valve are already
+   * a hazard worth flagging. */
+  private _findIrrigationConflict(sched: Schedule): string | null {
+    if (sched.device_type !== "irrigation") return null;
+    const myValves = new Set<string>();
+    for (const b of sched.blocks || []) {
+      if (b.action?.mode === "sequential") {
+        for (const s of b.action.sequence || []) myValves.add(s.entity_id);
+      }
+    }
+    if (!myValves.size) return null;
+    const dayOverlap = (a: number[], b: number[]) =>
+      a.some((v, i) => v && b[i]);
+    for (const other of this._schedules) {
+      if (other.id === sched.id || other.device_type !== "irrigation") continue;
+      if (!other.enabled || !sched.enabled) continue;
+      if (!dayOverlap(sched.days || [], other.days || [])) continue;
+      for (const b of other.blocks || []) {
+        if (b.action?.mode !== "sequential") continue;
+        for (const s of b.action.sequence || []) {
+          if (myValves.has(s.entity_id)) return s.entity_id;
+        }
+      }
+    }
+    return null;
   }
 
   updateScheduleLocal(id: string, patch: Partial<Schedule>) {

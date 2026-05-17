@@ -143,6 +143,22 @@ export class ChronosSettingsScreen extends LitElement {
           </div>
         </div>
 
+        <div class="card">
+          <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("settings.irrigation.title")}</h3></div></div>
+          <div class="device-row" style="border-radius:0;padding:8px 0">
+            <div class="device-row__main">
+              <div class="device-row__name">${t("settings.irrigation.conflict_block.title")}</div>
+              <div class="device-row__meta" style="font-family:var(--font-sans)">${t("settings.irrigation.conflict_block.desc")}</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" .checked=${!!(s as any).irrigation_conflict_block}
+                @change=${(e: Event) => this._updateSetting("irrigation_conflict_block", (e.target as HTMLInputElement).checked)}/>
+              <span class="switch__track"></span>
+              <span class="switch__thumb"></span>
+            </label>
+          </div>
+        </div>
+
         ${this._renderColorsSection()}
       </div>
     `;

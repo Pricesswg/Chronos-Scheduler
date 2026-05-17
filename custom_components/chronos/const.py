@@ -1,10 +1,14 @@
 DOMAIN = "chronos"
-VERSION = "1.12.9"
+VERSION = "1.13.0"
 STORAGE_VERSION = 1
 STORAGE_KEY_DEVICES = f"{DOMAIN}.devices"
 STORAGE_KEY_SCHEDULES = f"{DOMAIN}.schedules"
 STORAGE_KEY_SETTINGS = f"{DOMAIN}.settings"
 STORAGE_KEY_HISTORY = f"{DOMAIN}.history"
+# Tracks in-flight sequential irrigation programs so that, after an HA or
+# integration restart mid-watering, Chronos can defensively close the
+# valves that were left open and record a restart-abort history event.
+STORAGE_KEY_SEQUENCES = f"{DOMAIN}.sequences"
 
 # Maximum number of history entries kept on disk. Older entries are dropped
 # in FIFO order when this limit is reached. 5000 entries is roughly several
@@ -325,6 +329,10 @@ DEFAULT_SETTINGS = {
         "blind": {"start": "#3c5078", "end": "#c8b4ff"},
         "fan":   {"start": "#06b6d4", "end": "#3b82f6"},
     },
+    # When true the card refuses to save an irrigation schedule whose
+    # sequential program overlaps in time with another that shares a
+    # valve (water pressure hazard). Default off: warn only, user decides.
+    "irrigation_conflict_block": False,
 }
 
 EVENT_BLOCK_EXECUTED = f"{DOMAIN}_block_executed"

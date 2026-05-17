@@ -107,7 +107,7 @@ export interface HistoryEntry {
   schedule_id: string;
   schedule_name: string;
   device_type: string;
-  kind: "block" | "rule";
+  kind: "block" | "rule" | "system";
   action_id: string;
   entity_id: string | null;
   value: any;

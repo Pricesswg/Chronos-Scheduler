@@ -223,12 +223,14 @@ export class ChronosHistoryScreen extends LitElement {
       <div class="col" style="gap:0;padding:8px 12px;border-radius:6px;background:${isErr ? "color-mix(in srgb, var(--danger) 8%, transparent)" : "var(--bg-sunken)"};border:1px solid ${isErr ? "color-mix(in srgb, var(--danger) 30%, transparent)" : "var(--border-soft)"};user-select:text">
         <div class="row" style="gap:10px">
           <span class="mono text-xs text-mute" style="min-width:140px;flex-shrink:0">${tsStr}</span>
-          <span class="chip" style="flex-shrink:0;background:${e.kind === "rule" ? "color-mix(in srgb, var(--accent) 12%, transparent)" : "var(--bg)"};color:${e.kind === "rule" ? "var(--accent-ink)" : "var(--text)"}">
-            ${e.kind === "rule" ? icon("cloud", 11) : icon("clock", 11)} ${t("history.kind." + e.kind)}
+          <span class="chip" style="flex-shrink:0;background:${e.kind === "rule" ? "color-mix(in srgb, var(--accent) 12%, transparent)" : e.kind === "system" ? "color-mix(in srgb, var(--warn) 14%, transparent)" : "var(--bg)"};color:${e.kind === "rule" ? "var(--accent-ink)" : e.kind === "system" ? "var(--warn)" : "var(--text)"}">
+            ${e.kind === "rule" ? icon("cloud", 11) : e.kind === "system" ? icon("repeat", 11) : icon("clock", 11)} ${t("history.kind." + e.kind)}
           </span>
           <span class="text-sm fw-600" style="min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.schedule_name}">${e.schedule_name || e.schedule_id}</span>
           <span class="text-xs text-mute mono" style="min-width:0;flex:2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.entity_id || ""}">
-            ${actionLbl}${valStr ? ` · ${valStr}` : ""}${e.entity_id ? ` → ${e.entity_id}` : ""}
+            ${e.kind === "system"
+              ? t("history.system." + e.action_id) || e.action_id
+              : html`${actionLbl}${valStr ? ` · ${valStr}` : ""}${e.entity_id ? ` → ${e.entity_id}` : ""}`}
           </span>
           <span class="chip" style="flex-shrink:0;background:${isErr ? "var(--danger)" : "var(--ok)"};color:white;border-color:transparent">
             ${isErr ? t("history.outcome.error") : t("history.outcome.ok")}

@@ -214,6 +214,21 @@ A dedicated History screen lists every block dispatch and rule trigger Chronos p
 
 Useful for debugging "why didn't my schedule fire" or "did the SOC rule trigger last night".
 
+## Sequential irrigation
+
+Irrigation schedules support two duration modes per time block:
+
+- **Global duration** (default): every valve in the block opens in parallel for the same single duration. This is the original behaviour and is unchanged.
+- **Per-valve sequence**: Chronos opens the valves one at a time, each for its own number of minutes, then moves to the next. Total program length is the sum of the individual times. Useful for multi-station controllers where stations must run in sequence (water-pressure constraints).
+
+The mode is chosen in the block editor when the schedule type is irrigation. In sequential mode a row is shown per valve with its own minutes field and a running total.
+
+Safety notes:
+
+- The valve run-time is owned by Chronos (it opens the valve, waits, then closes it). If Home Assistant or the integration restarts mid-program, the valves that were open are closed defensively on the next startup and a restart event is written to the History screen (System kind). This recovery is always on.
+- Weather rules are evaluated once, at program start. A skip rule prevents the program from starting; once running it runs to completion.
+- If two sequential programs can run on overlapping days and share a valve, the editor warns on save. `Settings → Irrigation → Block save on valve conflict` (off by default) turns that warning into a hard block.
+
 ## Per-block device subset
 
 In a multi-device schedule, each time block can target a custom subset of the schedule's devices. The block detail panel shows an "Active devices for this block" chip selector with an "All" pill (default). Toggling individual chips restricts the dispatch for that block only — useful when, say, only 3 of 4 lights should turn on between 22:00 and 23:00, but all 4 should turn off at 06:00.

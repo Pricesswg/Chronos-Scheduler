@@ -35,6 +35,15 @@ export interface BlockAction {
    * rgb_color, color_temp_kelvin, transition). Keys come from the action def's
    * `extras` array exposed by the backend. */
   extras?: Record<string, any>;
+  /** Irrigation only. "global" (default / undefined) = current behaviour:
+   * all valves of the block fire in parallel with the single `value`
+   * duration. "sequential" = Chronos runs the stations one at a time using
+   * the per-valve durations in `sequence`. */
+  mode?: "global" | "sequential";
+  /** Irrigation sequential mode: ordered list of stations. The scheduler
+   * opens each valve, waits its minutes, closes it, then moves to the
+   * next. Total program length = sum of all minutes. */
+  sequence?: { entity_id: string; minutes: number }[];
 }
 
 export interface ActionExtraSpec {
@@ -163,6 +172,11 @@ export interface Settings {
   color_range?: Record<string, { start: string; end: string }>;
   weather_sensor_map?: Record<string, string>;
   language?: "auto" | "it" | "en" | "fr" | "de";
+  /** When true, the editor blocks saving an irrigation schedule whose
+   * sequential program overlaps in time with another sequential program
+   * that shares a valve (water-pressure hazard). Default false: only a
+   * non-blocking warning is shown and the user decides. */
+  irrigation_conflict_block?: boolean;
 }
 
 export interface ActionValueSpec {
