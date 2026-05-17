@@ -8,9 +8,10 @@ import re
 from datetime import timedelta
 from typing import Any
 
-from homeassistant.core import Context, HomeAssistant
+from homeassistant.core import Context, CoreState, HomeAssistant
 from homeassistant.exceptions import ServiceNotFound
 from homeassistant.helpers.event import async_track_time_interval
+from homeassistant.helpers.start import async_at_started
 from homeassistant.util import dt as dt_util
 
 from .const import (
@@ -162,6 +163,7 @@ class ChronosScheduler:
         self._store = store
         self._unsub_tick = None
         self._unsub_weather = None
+        self._unsub_started = None
         self._last_executed: dict[str, Any] = {}
         # Per-rule edge-trigger state: key = f"{schedule_id}:{rule_idx}"
         # value = {"last_eval": bool, "last_fire": datetime|None}
@@ -198,7 +200,21 @@ class ChronosScheduler:
             len(self._store.schedules),
             len(self._store.devices),
         )
-        # Esegui un primo tick subito così l'utente non aspetta fino al minuto dopo
+        # Il primo tick fa "catch-up": applica subito la fascia attiva senza
+        # far aspettare l'utente fino al minuto dopo. Ma all'avvio di HA
+        # Chronos può essere caricato PRIMA dell'integrazione `automation` /
+        # `scene`: un catch-up immediato chiamerebbe automation.turn_on prima
+        # che il servizio sia registrato e otterrebbe un ServiceNotFound
+        # fasullo (la fascia poi parte regolarmente al tick successivo, ma
+        # l'utente vede un errore in History). async_at_started esegue il
+        # callback subito se HA è gia' running (reload / install a caldo),
+        # altrimenti lo rinvia all'evento homeassistant_started (boot a
+        # freddo), quando i servizi core sono registrati.
+        self._unsub_started = async_at_started(self._hass, self._async_first_tick)
+
+    async def _async_first_tick(self, _hass: HomeAssistant) -> None:
+        # Invocato da async_at_started: a questo punto HA è in stato running.
+        self._unsub_started = None
         try:
             await self._tick(dt_util.utcnow())
         except Exception:
@@ -228,6 +244,12 @@ class ChronosScheduler:
         if self._unsub_weather:
             self._unsub_weather()
             self._unsub_weather = None
+        # Se ci scolleghiamo prima che HA finisca l'avvio (unload durante il
+        # boot), annulla il callback differito così non scatta su un
+        # scheduler già fermo.
+        if self._unsub_started:
+            self._unsub_started()
+            self._unsub_started = None
         # Cancel running irrigation sequences. We DON'T close the valves
         # here: a clean stop is usually part of a restart, and the next
         # start() will run _recover_interrupted_sequences() which closes
@@ -303,6 +325,18 @@ class ChronosScheduler:
             _LOGGER.exception("Chronos: history flush failed on restart recovery")
 
     async def _tick(self, now) -> None:
+        # Difesa: async_track_time_interval scatta sull'orologio a
+        # prescindere dallo stato di HA. Se un tick cade mentre HA non è
+        # ancora `running` (boot oltre il minuto), saltalo: servizi core
+        # come automation.turn_on potrebbero non essere ancora registrati
+        # e produrremmo un ServiceNotFound fasullo. Al primo tick utile, a
+        # HA avviato, la fascia attiva viene comunque applicata (catch-up).
+        if self._hass.state is not CoreState.running:
+            _LOGGER.debug(
+                "Chronos: tick saltato, HA non ancora running (state=%s)",
+                self._hass.state,
+            )
+            return
         local_now = dt_util.as_local(now) if now.tzinfo else now
         current_hour = local_now.hour + local_now.minute / 60
         weekday = local_now.weekday()
