@@ -27,6 +27,7 @@ A single Lovelace card provides:
 - Recurring yearly date ranges to limit a schedule to specific months/days
 - Light advanced parameters (RGB colour, colour temperature, transition) per block
 - Per-device and global settings (theme follows Home Assistant, color customisation, sensor-level weather overrides)
+- Help screen with 12 ready-made recipes (thermostat day/night, sunset lights, wind-safe blinds, rain-skip irrigation, heat-scaled fan, summer shading, solar-surplus loads, seasonal pool pump, …), quick start, FAQ and glossary
 
 All persisted by Home Assistant, accessible via WebSocket API, and auto-registered as a custom card.
 

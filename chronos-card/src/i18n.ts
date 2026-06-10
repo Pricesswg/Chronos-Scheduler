@@ -635,6 +635,56 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   },
   "recipe.boiler_offgrid_soc.preset_name": { it: "Boiler off-grid", en: "Off-grid water heater", fr: "Chauffe-eau off-grid", de: "Off-grid-Boiler" },
 
+  "recipe.fan_heat_scale.title": { it: "Ventilatore proporzionale al caldo", en: "Fan speed scales with heat", fr: "Ventilateur proportionnel à la chaleur", de: "Ventilator skaliert mit der Hitze" },
+  "recipe.fan_heat_scale.when": { it: "Ventilatore acceso 12-20, velocità che sale da 30% a 100% man mano che la temperatura passa da 24°C a 34°C.", en: "Fan on 12:00-20:00, speed rising from 30% to 100% as temperature goes from 24°C to 34°C.", fr: "Ventilateur 12h-20h, vitesse de 30% à 100% quand la température passe de 24°C à 34°C.", de: "Ventilator 12-20 Uhr, Drehzahl steigt von 30% auf 100%, wenn die Temperatur von 24°C auf 34°C klettert." },
+  "recipe.fan_heat_scale.howto": {
+    it: "Mostra l'effetto scale_value: il valore dell'azione viene ricalcolato di continuo interpolando la temperatura sull'intervallo configurato. Adatta i due intervalli (temperatura e velocità) al tuo clima.",
+    en: "Showcases the scale_value effect: the action value is continuously recomputed by interpolating temperature over the configured range. Adjust both ranges (temperature and speed) to your climate.",
+    fr: "Illustre l'effet scale_value : la valeur de l'action est recalculée en continu en interpolant la température sur la plage configurée. Adapte les deux plages (température et vitesse) à ton climat.",
+    de: "Zeigt den scale_value-Effekt: Der Aktionswert wird laufend per Interpolation der Temperatur über den konfigurierten Bereich neu berechnet. Beide Bereiche (Temperatur und Drehzahl) ans Klima anpassen.",
+  },
+  "recipe.fan_heat_scale.preset_name": { it: "Ventilatore anti-afa", en: "Heat-scaled fan", fr: "Ventilateur anti-canicule", de: "Hitze-Ventilator" },
+
+  "recipe.blinds_summer_shade.title": { it: "Tapparelle anti-calore estive", en: "Summer heat-shading blinds", fr: "Volets anti-chaleur d'été", de: "Sommer-Hitzeschutz für Rollläden" },
+  "recipe.blinds_summer_shade.when": { it: "Aperte dall'alba al tramonto, ma scendono al 25% quando il sole è alto E fa più di 28°C. Attiva solo dall'1 giugno al 15 settembre.", en: "Open sunrise to sunset, but drop to 25% when the sun is high AND it is above 28°C. Active June 1 to September 15 only.", fr: "Ouverts du lever au coucher, mais descendent à 25% quand le soleil est haut ET qu'il fait plus de 28°C. Actif du 1er juin au 15 septembre.", de: "Offen von Sonnenauf- bis -untergang, fahren aber auf 25%, wenn die Sonne hoch steht UND es über 28°C hat. Nur vom 1. Juni bis 15. September aktiv." },
+  "recipe.blinds_summer_shade.howto": {
+    it: "Combina una condizione multipla (sun.elevation > 40 AND temperature > 28), un force_action con valore e l'intervallo date ricorrente. La regola scatta al massimo una volta al giorno.",
+    en: "Combines a compound condition (sun.elevation > 40 AND temperature > 28), a force_action with value and the recurring date range. The rule fires at most once per day.",
+    fr: "Combine une condition multiple (sun.elevation > 40 AND temperature > 28), un force_action avec valeur et la plage de dates récurrente. La règle se déclenche au plus une fois par jour.",
+    de: "Kombiniert eine Mehrfach-Bedingung (sun.elevation > 40 AND temperature > 28), ein force_action mit Wert und den wiederkehrenden Datumsbereich. Die Regel feuert höchstens einmal pro Tag.",
+  },
+  "recipe.blinds_summer_shade.preset_name": { it: "Ombra estiva", en: "Summer shade", fr: "Ombre d'été", de: "Sommerschatten" },
+
+  "recipe.pv_surplus_plug.title": { it: "Carico differito su surplus solare", en: "Deferred load on solar surplus", fr: "Charge différée sur surplus solaire", de: "Verschobene Last bei Solarüberschuss" },
+  "recipe.pv_surplus_plug.when": { it: "Una presa (lavatrice, scaldacqua, caricabatterie) si accende 11-14, ma solo se l'irradianza supera 500 W/m². Nei giorni coperti la fascia viene saltata.", en: "A plug (washing machine, water heater, charger) turns on 11:00-14:00, but only if solar irradiance exceeds 500 W/m². On overcast days the block is skipped.", fr: "Une prise (lave-linge, chauffe-eau, chargeur) s'allume 11h-14h, mais seulement si l'irradiance dépasse 500 W/m². Les jours couverts, le créneau est sauté.", de: "Eine Steckdose (Waschmaschine, Boiler, Ladegerät) schaltet 11-14 Uhr ein, aber nur wenn die Einstrahlung 500 W/m² übersteigt. An trüben Tagen wird der Block übersprungen." },
+  "recipe.pv_surplus_plug.howto": {
+    it: "L'attributo solar_radiation richiede una stazione meteo o un override sensore (Impostazioni → Sorgente meteo). In alternativa cambia la condizione su un sensor.* di potenza FV.",
+    en: "The solar_radiation attribute needs a weather station or a sensor override (Settings → Weather source). Alternatively, point the condition at a PV power sensor.* entity.",
+    fr: "L'attribut solar_radiation demande une station météo ou un override capteur (Réglages → Source météo). Sinon, pointe la condition vers un sensor.* de puissance PV.",
+    de: "Das Attribut solar_radiation braucht eine Wetterstation oder einen Sensor-Override (Einstellungen → Wetterquelle). Alternativ die Bedingung auf einen PV-Leistungs-sensor.* richten.",
+  },
+  "recipe.pv_surplus_plug.preset_name": { it: "Carico su surplus FV", en: "PV surplus load", fr: "Charge surplus PV", de: "PV-Überschusslast" },
+
+  "recipe.vacuum_weekday_morning.title": { it: "Robot aspirapolvere nei feriali", en: "Weekday robot vacuum", fr: "Robot aspirateur en semaine", de: "Saugroboter an Werktagen" },
+  "recipe.vacuum_weekday_morning.when": { it: "Pulizia alle 10:00 dal lunedì al venerdì, quando la casa è vuota. Nessuna regola meteo: solo maschera giorni.", en: "Cleaning at 10:00 Monday to Friday, while the house is empty. No weather rules: just the day mask.", fr: "Nettoyage à 10h du lundi au vendredi, quand la maison est vide. Pas de règle météo : juste le masque des jours.", de: "Reinigung um 10:00 Montag bis Freitag, wenn das Haus leer ist. Keine Wetterregeln: nur die Tagesmaske." },
+  "recipe.vacuum_weekday_morning.howto": {
+    it: "Il robot torna in base da solo a fine ciclo. Se vuoi saltare la pulizia quando sei a casa, aggiungi una regola skip su un input_boolean o un sensore di presenza.",
+    en: "The robot docks itself when done. To skip cleaning when you are home, add a skip rule on an input_boolean or a presence sensor.",
+    fr: "Le robot retourne seul à sa base. Pour sauter le nettoyage quand tu es chez toi, ajoute une règle skip sur un input_boolean ou un capteur de présence.",
+    de: "Der Roboter dockt nach dem Zyklus selbst an. Um die Reinigung bei Anwesenheit zu überspringen, eine Skip-Regel auf ein input_boolean oder einen Präsenzsensor legen.",
+  },
+  "recipe.vacuum_weekday_morning.preset_name": { it: "Pulizia feriale", en: "Weekday cleaning", fr: "Nettoyage en semaine", de: "Werktagsreinigung" },
+
+  "recipe.pool_pump_season.title": { it: "Pompa piscina stagionale", en: "Seasonal pool pump", fr: "Pompe de piscine saisonnière", de: "Saisonale Poolpumpe" },
+  "recipe.pool_pump_season.when": { it: "Filtraggio dalle 8, con durata che cresce da 4 a 7 ore man mano che fa più caldo (24-34°C). Attiva solo da giugno a metà settembre.", en: "Filtering from 08:00, with runtime growing from 4 to 7 hours as it gets hotter (24-34°C). Active June to mid-September only.", fr: "Filtration dès 8h, durée de 4 à 7 heures selon la chaleur (24-34°C). Actif de juin à mi-septembre.", de: "Filterung ab 8 Uhr, Laufzeit wächst mit der Hitze von 4 auf 7 Stunden (24-34°C). Nur von Juni bis Mitte September aktiv." },
+  "recipe.pool_pump_season.howto": {
+    it: "Mostra scale_duration su una presa: la fascia ON si allunga in avanti dentro la fascia OFF successiva. I blocchi OFF espliciti garantiscono lo spegnimento a fine filtraggio.",
+    en: "Showcases scale_duration on a plug: the ON block grows forward into the following OFF block. The explicit OFF blocks guarantee the pump stops when filtering ends.",
+    fr: "Illustre scale_duration sur une prise : le créneau ON s'étend dans le créneau OFF suivant. Les blocs OFF explicites garantissent l'arrêt de la pompe en fin de filtration.",
+    de: "Zeigt scale_duration an einer Steckdose: Der ON-Block wächst vorwärts in den folgenden OFF-Block. Die expliziten OFF-Blöcke garantieren das Abschalten am Ende.",
+  },
+  "recipe.pool_pump_season.preset_name": { it: "Pompa piscina", en: "Pool pump", fr: "Pompe piscine", de: "Poolpumpe" },
+
   // Glossary
   "help.glossary.title": { it: "Glossario", en: "Glossary", fr: "Glossaire", de: "Glossar" },
   "help.glossary.block.title": { it: "Fascia oraria (block)", en: "Time block", fr: "Créneau horaire", de: "Zeitblock" },

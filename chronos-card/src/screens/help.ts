@@ -6,7 +6,7 @@ import { t } from "../i18n";
 import { actionColor } from "../actions";
 import { DAY_END_HOUR } from "../utils";
 import type { ChronosCard } from "../chronos-card";
-import type { Block, DeviceType, Schedule, WeatherRule } from "../types";
+import type { Block, DateRange, DeviceType, Schedule, WeatherRule } from "../types";
 
 interface Recipe {
   id: string;
@@ -15,6 +15,8 @@ interface Recipe {
   blocks: Block[];
   weather_rules: WeatherRule[];
   days: number[];
+  /** Optional recurring yearly window (e.g. seasonal recipes). */
+  date_range?: DateRange;
 }
 
 const RECIPES: Recipe[] = [
@@ -144,6 +146,114 @@ const RECIPES: Recipe[] = [
         action_id: "set_temperature",
         action_value: 60,
         fire_mode: "once_per_daytime",
+      },
+    ],
+  },
+  {
+    // scale_value showcase: hotter afternoon → faster fan, linearly.
+    id: "fan_heat_scale",
+    device_type: "fan",
+    default_name_key: "recipe.fan_heat_scale.preset_name",
+    days: [1, 1, 1, 1, 1, 1, 1],
+    blocks: [
+      { start: 12, end: 20, action: { id: "turn_on", value: 50 } },
+    ],
+    weather_rules: [
+      {
+        then: "Scale speed",
+        active: true,
+        effect: "scale_value",
+        block_index: 0,
+        scale_var: "temperature",
+        scale_var_min: 24,
+        scale_var_max: 34,
+        scale_out_min: 30,
+        scale_out_max: 100,
+      },
+    ],
+  },
+  {
+    // Multi-clause AND + force_action with value + seasonal date range:
+    // drop the blinds to 25% when the sun is high AND it's hot, summer only.
+    id: "blinds_summer_shade",
+    device_type: "blind",
+    default_name_key: "recipe.blinds_summer_shade.preset_name",
+    days: [1, 1, 1, 1, 1, 1, 1],
+    date_range: { start_month: 6, start_day: 1, end_month: 9, end_day: 15 },
+    blocks: [
+      {
+        start: 7, end: 19,
+        start_anchor: "sunrise", start_offset: 0,
+        end_anchor: "sunset", end_offset: 0,
+        action: { id: "set_position", value: 100 },
+      },
+    ],
+    weather_rules: [
+      {
+        if: "sun.elevation > 40 AND temperature > 28",
+        then: "Shade 25%",
+        active: true,
+        effect: "force_action",
+        block_index: 0,
+        action_id: "set_position",
+        action_value: 25,
+        fire_mode: "once_per_day",
+      },
+    ],
+  },
+  {
+    // Deferred load on solar surplus: the plug window only runs when there
+    // is real sun; the skip rule keeps it off on overcast days.
+    id: "pv_surplus_plug",
+    device_type: "plug",
+    default_name_key: "recipe.pv_surplus_plug.preset_name",
+    days: [1, 1, 1, 1, 1, 1, 1],
+    blocks: [
+      { start: 0, end: 11, action: { id: "turn_off" } },
+      { start: 11, end: 14, action: { id: "turn_on" } },
+      { start: 14, end: DAY_END_HOUR, action: { id: "turn_off" } },
+    ],
+    weather_rules: [
+      { if: "solar_radiation < 500", then: "Skip", active: true, effect: "skip", block_index: 1 },
+    ],
+  },
+  {
+    // Plain weekday automation, no weather: vacuum starts while the house
+    // is empty. Also the only recipe covering the vacuum device type.
+    id: "vacuum_weekday_morning",
+    device_type: "vacuum",
+    default_name_key: "recipe.vacuum_weekday_morning.preset_name",
+    days: [1, 1, 1, 1, 1, 0, 0],
+    blocks: [
+      { start: 10, end: 10.5, action: { id: "start" } },
+    ],
+    weather_rules: [],
+  },
+  {
+    // scale_duration + date_range showcase: pool pump filters longer on hot
+    // days (the on-block grows forward into the off-block), summer only.
+    id: "pool_pump_season",
+    device_type: "plug",
+    default_name_key: "recipe.pool_pump_season.preset_name",
+    days: [1, 1, 1, 1, 1, 1, 1],
+    date_range: { start_month: 6, start_day: 1, end_month: 9, end_day: 15 },
+    blocks: [
+      { start: 0, end: 8, action: { id: "turn_off" } },
+      { start: 8, end: 13, action: { id: "turn_on" } },
+      { start: 13, end: DAY_END_HOUR, action: { id: "turn_off" } },
+    ],
+    weather_rules: [
+      {
+        then: "Scale filtering time",
+        active: true,
+        effect: "scale_duration",
+        block_index: 1,
+        direction: "forward",
+        scale_var: "temperature",
+        scale_var_min: 24,
+        scale_var_max: 34,
+        scale_out_min: 240,
+        scale_out_max: 420,
       },
     ],
   },
@@ -325,6 +435,7 @@ export class ChronosHelpScreen extends LitElement {
       enabled: false, // start disabled until user picks devices
       blocks: r.blocks.map((b) => ({ ...b, action: { ...b.action } })),
       weather_rules: r.weather_rules.map((w) => ({ ...w })),
+      date_range: r.date_range ? { ...r.date_range } : null,
     };
     await this.card.doAddSchedule(schedule);
     // doAddSchedule navigates to editor automatically
