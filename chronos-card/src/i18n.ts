@@ -379,6 +379,10 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "device.no_device.hint": { it: "Importa prima un'entità HA.", en: "Import an HA entity first.", fr: "Importe d'abord une entité HA.", de: "Importiere zuerst eine HA-Entität." },
   "device.open_schedule": { it: "Apri", en: "Open", fr: "Ouvrir", de: "Öffnen" },
 
+  // Weather rules list (cross-schedule)
+  "wrl.filter.all": { it: "Tutte le schedulazioni", en: "All schedules", fr: "Toutes les planifications", de: "Alle Zeitpläne" },
+  "wrl.group.sub": { it: "{n} regole · {active} attive", en: "{n} rules · {active} active", fr: "{n} règles · {active} actives", de: "{n} Regeln · {active} aktiv" },
+
   // Weather rule builder
   "wr.heading": { it: "Regola meteo", en: "Weather rule", fr: "Règle météo", de: "Wetterregel" },
   "wr.heading.edit": { it: "Modifica regola meteo", en: "Edit weather rule", fr: "Modifier la règle météo", de: "Wetterregel bearbeiten" },

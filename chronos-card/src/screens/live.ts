@@ -9,6 +9,37 @@ import { t } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
 import "../timeline";
 
+/** Weather severity buckets for the forecast strip: 0 = fine (green),
+ * 1 = degraded (cloudy/fog/wind, yellow), 2 = bad (rain, orange),
+ * 3 = severe (storm/hail/snow, red). Unknown conditions land on 1. */
+const CONDITION_SEVERITY: Record<string, number> = {
+  sunny: 0, "clear-night": 0, partlycloudy: 0,
+  cloudy: 1, fog: 1, windy: 1, "windy-variant": 1,
+  rainy: 2, pouring: 2,
+  lightning: 3, "lightning-rainy": 3, hail: 3,
+  snowy: 3, "snowy-rainy": 3, exceptional: 3,
+};
+const SEVERITY_COLORS = ["var(--ok)", "var(--warn)", "#f97316", "var(--danger)"];
+
+function toKmh(v: number, unit: string): number {
+  if (unit === "m/s") return v * 3.6;
+  if (unit === "mph") return v * 1.609;
+  if (unit === "kn") return v * 1.852;
+  return v;
+}
+
+/** Wind can only escalate the condition's severity, never lower it.
+ * Thresholds in km/h: 30 (awnings/blinds caution), 50 (strong), 70 (gale). */
+function severityFor(cond: string, windKmh: number | null): number {
+  let sev = CONDITION_SEVERITY[cond] ?? 1;
+  if (windKmh !== null) {
+    if (windKmh >= 70) sev = Math.max(sev, 3);
+    else if (windKmh >= 50) sev = Math.max(sev, 2);
+    else if (windKmh >= 30) sev = Math.max(sev, 1);
+  }
+  return sev;
+}
+
 @customElement("chronos-live")
 export class ChronosLive extends LitElement {
   static styles = chronosStyles;
@@ -27,6 +58,10 @@ export class ChronosLive extends LitElement {
     const humidity = weatherState?.attributes?.humidity ?? "—";
     const windSpeed = weatherState?.attributes?.wind_speed ?? "—";
     const windUnit = weatherState?.attributes?.wind_speed_unit || "km/h";
+    const heroColor = SEVERITY_COLORS[severityFor(
+      condition,
+      typeof windSpeed === "number" ? toKmh(windSpeed, windUnit) : null,
+    )];
 
     // Backend convention: days[0] = Monday (Python weekday()). JS getDay()
     // is 0 = Sunday, hence the +6 rotation. A schedule that doesn't run
@@ -59,7 +94,7 @@ export class ChronosLive extends LitElement {
         <!-- Weather hero -->
         <div class="grid-2">
           <div class="weather-hero">
-            <div class="weather-hero__icon">${weatherIcon(condition, 32)}</div>
+            <div class="weather-hero__icon" style="color:${heroColor};background:color-mix(in srgb, ${heroColor} 16%, var(--surface))">${weatherIcon(condition, 32)}</div>
             <div>
               <div class="weather-hero__temp">${temp}<span style="font-size:16px;color:var(--text-muted)">${tempUnit}</span></div>
               <div class="weather-hero__cond">${this._conditionLabel(condition)}</div>
@@ -76,11 +111,17 @@ export class ChronosLive extends LitElement {
               ${forecast.filter((_, i) => i % 2 === 0).slice(0, 12).map((w) => {
                 const h = new Date(w.datetime || "").getHours?.() ?? 0;
                 const cond = w.condition || "cloud";
+                const wind = typeof w.wind_speed === "number" ? w.wind_speed : null;
+                const sev = severityFor(cond, wind !== null ? toKmh(wind, windUnit) : null);
+                const c = SEVERITY_COLORS[sev];
                 return html`
-                  <div class="forecast-cell">
+                  <div class="forecast-cell"
+                    style="background:color-mix(in srgb, ${c} 10%, var(--bg-sunken));border-color:color-mix(in srgb, ${c} 30%, transparent)"
+                    title="${this._conditionLabel(cond)}${wind !== null ? ` · ${Math.round(wind)} ${windUnit}` : ""}">
                     <div class="forecast-cell__hour">${String(h).padStart(2, "0")}</div>
-                    <div class="forecast-cell__icon">${weatherIcon(cond, 20)}</div>
+                    <div class="forecast-cell__icon" style="color:${c}">${weatherIcon(cond, 20)}</div>
                     <div class="forecast-cell__temp">${w.temperature ?? "—"}°</div>
+                    ${wind !== null ? html`<div class="forecast-cell__wind">${icon("wind", 9)} ${Math.round(wind)}</div>` : nothing}
                   </div>
                 `;
               })}

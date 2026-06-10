@@ -70,18 +70,34 @@ export class ChronosDeviceScreen extends LitElement {
                 <div style="font-size:12.5px;margin-top:4px">${t("device.no_schedules.hint")}</div>
               </div>`
             : html`<div class="col" style="gap:10px">
-                ${linkedSchedules.map((s) => html`
+                ${linkedSchedules.map((s) => {
+                  const activeRules = (s.weather_rules || []).filter((r) => r.active);
+                  return html`
                   <div class="card card--ghost" style="padding:14px">
                     <div class="sp-between" style="margin-bottom:8px">
                       <div>
                         <div class="fw-600">${s.name}</div>
                         <div class="text-xs text-mute mono">${computeRepeat(s.days)}</div>
                       </div>
-                      <button class="btn btn--sm" @click=${() => this.card.selectSchedule(s.id, "editor")}>${t("device.open_schedule")} ${icon("chevron-right", 12)}</button>
+                      <div class="row" style="gap:8px">
+                        ${activeRules.length ? html`<span class="chip chip--weather">${icon("cloud", 11)} ${t("overview.rules_count", { n: activeRules.length })}</span>` : nothing}
+                        <button class="btn btn--sm" @click=${() => this.card.selectSchedule(s.id, "editor")}>${t("device.open_schedule")} ${icon("chevron-right", 12)}</button>
+                      </div>
                     </div>
                     <chronos-timeline variant="linear" .deviceType=${s.device_type} .blocks=${s.blocks} .interactive=${false} height="compact" .showWeather=${false} .now=${s.enabled ? this.nowHour : null}></chronos-timeline>
+                    ${activeRules.length ? html`
+                      <div class="col" style="gap:6px;margin-top:10px;border-top:1px dashed var(--border-soft);padding-top:10px">
+                        ${activeRules.map((r) => html`
+                          <div class="row" style="gap:6px;flex-wrap:wrap">
+                            <span style="color:var(--text-muted);display:inline-flex">${icon("cloud", 11)}</span>
+                            ${r.if ? html`<span class="rule-token rule-token--weather">${r.if}</span>` : nothing}
+                            <span class="rule-token rule-token--accent">${r.then}</span>
+                          </div>
+                        `)}
+                      </div>
+                    ` : nothing}
                   </div>
-                `)}
+                `;})}
               </div>`}
         </div>
       </div>

@@ -12,7 +12,9 @@ A single Lovelace card provides:
 - Linear / radial / list timeline editor with drag-and-drop and 5/15/30/60-minute snap
 - IF/THEN weather rules (temperature, rain, wind, UV, sun position, …) to skip, shift, force, or change duration of the active block
 - 7-day week view with per-schedule filtering
-- Live status with weather and device readings
+- Live status with weather and device readings; the 24h forecast strip is color-coded by severity (green / yellow / orange / red, wind-aware) and shows per-hour wind speed
+- Weather rules list grouped by schedule, with a per-schedule filter
+- Device detail view shows the weather rules attached to each linked schedule
 - 6-step wizard for guided schedule creation
 - Scene schedules: a single schedule that fires one or more scenes per time block (multi-select picker)
 - Automation schedules: a single schedule that turns on/off or triggers one or more HA automations per time block

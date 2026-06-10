@@ -541,6 +541,10 @@ export const chronosStyles = css`
   .forecast-cell__icon { color: var(--weather-ink); margin: 6px 0 4px; }
   .forecast-cell__icon svg { width: 20px; height: 20px; }
   .forecast-cell__temp { font-size: 13px; font-weight: 600; font-family: var(--font-mono); }
+  .forecast-cell__wind {
+    font-size: 10px; color: var(--text-muted); font-family: var(--font-mono);
+    display: flex; align-items: center; justify-content: center; gap: 3px; margin-top: 3px;
+  }
 
   /* KPI */
   .kpi { padding: 16px; border-radius: var(--r-lg); background: var(--surface); border: 1px solid var(--border); }
