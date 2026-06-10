@@ -20,10 +20,7 @@ export class ChronosOverview extends LitElement {
     const { _schedules: schedules, _devices: devices } = this.card;
     const total = schedules.length;
     const active = schedules.filter((s) => s.enabled).length;
-    const weatherRules = schedules.reduce(
-      (n, s) => n + (s.weather_rules || []).filter((r) => r.active).length,
-      0
-    );
+    const weatherRules = this.card._rules.filter((r) => r.active).length;
 
     return html`
       <div class="col" style="gap:22px">
@@ -73,7 +70,7 @@ export class ChronosOverview extends LitElement {
         <div class="grid-auto">
           ${schedules.map((s) => {
             const devs = (s.device_ids || []).map((id) => devices.find((d) => d.id === id)).filter(Boolean);
-            const activeRules = (s.weather_rules || []).filter((r) => r.active).length;
+            const activeRules = this.card.rulesForSchedule(s.id).filter((r) => r.active).length;
             return html`
               <div class="sched-card" data-selected="${s.id === this.card._selectedId}"
                 @click=${() => this.card.selectSchedule(s.id, "editor")}>

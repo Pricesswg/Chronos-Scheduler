@@ -13,6 +13,7 @@ from .const import (
     HISTORY_MAX_ENTRIES,
     STORAGE_KEY_DEVICES,
     STORAGE_KEY_HISTORY,
+    STORAGE_KEY_RULES,
     STORAGE_KEY_SCHEDULES,
     STORAGE_KEY_SEQUENCES,
     STORAGE_KEY_SETTINGS,
@@ -58,8 +59,13 @@ class ChronosStore:
         self._store_settings = Store(hass, STORAGE_VERSION, STORAGE_KEY_SETTINGS)
         self._store_history = Store(hass, STORAGE_VERSION, STORAGE_KEY_HISTORY)
         self._store_sequences = Store(hass, STORAGE_VERSION, STORAGE_KEY_SEQUENCES)
+        self._store_rules = Store(hass, STORAGE_VERSION, STORAGE_KEY_RULES)
         self.devices: list[dict[str, Any]] = []
         self.schedules: list[dict[str, Any]] = []
+        # Weather rules v2: global list, each with a stable `id` and
+        # `targets: [{schedule_id, block_index}]`. Effect params stay at
+        # rule level; only the target block differs per schedule.
+        self.rules: list[dict[str, Any]] = []
         self.settings: dict[str, Any] = {}
         # Map of currently-running sequential irrigation programs, keyed by
         # f"{schedule_id}:{block_idx}". Each value: {schedule_id,
@@ -77,6 +83,7 @@ class ChronosStore:
     async def async_load(self) -> None:
         self.devices = (await self._store_devices.async_load()) or []
         self.schedules = (await self._store_schedules.async_load()) or []
+        self.rules = (await self._store_rules.async_load()) or []
         stored_settings = (await self._store_settings.async_load()) or {}
         self.settings = {**DEFAULT_SETTINGS, **stored_settings}
         self.history = (await self._store_history.async_load()) or []
@@ -99,6 +106,7 @@ class ChronosStore:
                 d["id"] = str(d.get("id", ""))
                 dirty_devices = True
         dirty_schedules = False
+        dirty_rules = False
         for s in self.schedules:
             if not isinstance(s.get("id"), str):
                 s["id"] = str(s.get("id", ""))
@@ -136,10 +144,26 @@ class ChronosStore:
                 if blk.get("start") in (24, 24.0):
                     blk["start"] = 23 + 59 / 60
                     dirty_schedules = True
-            # Migra le weather_rules al nuovo schema (v1.7+)
-            for rule in s.get("weather_rules") or []:
-                if _migrate_rule(rule):
-                    dirty_schedules = True
+            # v1.17 migration: weather rules move out of the schedule into
+            # the global rules store, each with a stable id and a single
+            # target pointing back at this schedule. The presence of the
+            # `weather_rules` key marks a pre-migration schedule, so this
+            # runs exactly once per schedule. The legacy pre-1.7 shim
+            # (_migrate_rule) still runs first so very old rules arrive in
+            # the v2 store already normalised.
+            if "weather_rules" in s:
+                for rule in s.get("weather_rules") or []:
+                    _migrate_rule(rule)
+                    block_index = rule.pop("block_index", None)
+                    rule["id"] = uuid.uuid4().hex[:8]
+                    rule["targets"] = [{
+                        "schedule_id": s["id"],
+                        "block_index": block_index if isinstance(block_index, int) else None,
+                    }]
+                    self.rules.append(rule)
+                    dirty_rules = True
+                del s["weather_rules"]
+                dirty_schedules = True
             # Issue #4 defensive cleanup: device-based schedules left empty
             # by previous unlinks (before v1.11.4) might still have
             # enabled=true. Disable them on first load so the UI matches
@@ -155,12 +179,17 @@ class ChronosStore:
             await self._save_devices()
         if dirty_schedules:
             await self._save_schedules()
+        if dirty_rules:
+            await self._save_rules()
 
     async def _save_devices(self) -> None:
         await self._store_devices.async_save(self.devices)
 
     async def _save_schedules(self) -> None:
         await self._store_schedules.async_save(self.schedules)
+
+    async def _save_rules(self) -> None:
+        await self._store_rules.async_save(self.rules)
 
     async def _save_settings(self) -> None:
         await self._store_settings.async_save(self.settings)
@@ -277,6 +306,10 @@ class ChronosStore:
         return next((s for s in self.schedules if s["id"] == schedule_id), None)
 
     async def async_save_schedule(self, schedule: dict[str, Any]) -> dict[str, Any]:
+        # v1.17+: rules live in the global store. A stale (cached) frontend
+        # may still send the legacy embedded list; drop it so it can't
+        # resurrect pre-migration data inside the schedule document.
+        schedule.pop("weather_rules", None)
         if not schedule.get("id"):
             schedule["id"] = uuid.uuid4().hex[:8]
 
@@ -293,6 +326,18 @@ class ChronosStore:
     async def async_remove_schedule(self, schedule_id: str) -> None:
         self.schedules = [s for s in self.schedules if s["id"] != schedule_id]
         await self._save_schedules()
+        # Unlink the deleted schedule from every rule. Rules left with no
+        # targets are kept (visible in the UI as unassigned) so a schedule
+        # delete never silently destroys a rule shared with others.
+        dirty = False
+        for rule in self.rules:
+            targets = rule.get("targets") or []
+            kept = [tg for tg in targets if str(tg.get("schedule_id")) != str(schedule_id)]
+            if len(kept) != len(targets):
+                rule["targets"] = kept
+                dirty = True
+        if dirty:
+            await self._save_rules()
 
     async def async_toggle_schedule(self, schedule_id: str, enabled: bool) -> None:
         sched = self.get_schedule(schedule_id)
@@ -300,6 +345,40 @@ class ChronosStore:
             raise ValueError(f"Schedule not found: {schedule_id}")
         sched["enabled"] = enabled
         await self._save_schedules()
+
+    # --- Weather rules (v2, global store) ---
+
+    def get_rule(self, rule_id: str) -> dict[str, Any] | None:
+        return next((r for r in self.rules if r.get("id") == rule_id), None)
+
+    async def async_save_rule(self, rule: dict[str, Any]) -> dict[str, Any]:
+        if not rule.get("id"):
+            rule["id"] = uuid.uuid4().hex[:8]
+        # Normalise targets: schedule_id as str, block_index int or None.
+        targets = []
+        for tgt in rule.get("targets") or []:
+            if not isinstance(tgt, dict):
+                continue
+            sid = tgt.get("schedule_id")
+            if not sid:
+                continue
+            bi = tgt.get("block_index")
+            targets.append({
+                "schedule_id": str(sid),
+                "block_index": bi if isinstance(bi, int) else None,
+            })
+        rule["targets"] = targets
+        existing = self.get_rule(rule["id"])
+        if existing:
+            self.rules[self.rules.index(existing)] = rule
+        else:
+            self.rules.append(rule)
+        await self._save_rules()
+        return rule
+
+    async def async_remove_rule(self, rule_id: str) -> None:
+        self.rules = [r for r in self.rules if r.get("id") != rule_id]
+        await self._save_rules()
 
     # --- Settings ---
 

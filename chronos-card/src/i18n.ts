@@ -381,7 +381,18 @@ const STRINGS: Record<string, Record<Lang, string>> = {
 
   // Weather rules list (cross-schedule)
   "wrl.filter.all": { it: "Tutte le schedulazioni", en: "All schedules", fr: "Toutes les planifications", de: "Alle Zeitpläne" },
-  "wrl.group.sub": { it: "{n} regole · {active} attive", en: "{n} rules · {active} active", fr: "{n} règles · {active} actives", de: "{n} Regeln · {active} aktiv" },
+  "wrl.unassigned": { it: "Nessuna schedulazione collegata", en: "No linked schedule", fr: "Aucune planification liée", de: "Kein verknüpfter Zeitplan" },
+  "wrl.delete.shared": { it: "Questa regola è collegata a {n} schedulazioni: verrà eliminata da tutte. Continuare?", en: "This rule is linked to {n} schedules: it will be deleted from all of them. Continue?", fr: "Cette règle est liée à {n} planifications : elle sera supprimée de toutes. Continuer ?", de: "Diese Regel ist mit {n} Zeitplänen verknüpft und wird aus allen gelöscht. Fortfahren?" },
+
+  // Rule targets (v1.17+ many-to-many)
+  "wr.targets.title": { it: "Schedulazioni collegate", en: "Linked schedules", fr: "Planifications liées", de: "Verknüpfte Zeitpläne" },
+  "wr.targets.subtitle": { it: "La regola si applica a ogni schedulazione elencata, sulla fascia indicata", en: "The rule applies to every listed schedule, on the indicated block", fr: "La règle s'applique à chaque planification listée, sur le créneau indiqué", de: "Die Regel gilt für jeden gelisteten Zeitplan, auf dem angegebenen Block" },
+  "wr.targets.add": { it: "Aggiungi schedulazione", en: "Add schedule", fr: "Ajouter une planification", de: "Zeitplan hinzufügen" },
+  "wr.targets.hint": { it: "Una sola regola può pilotare più schedulazioni: la condizione è condivisa, la fascia target è per schedulazione.", en: "A single rule can drive several schedules: the condition is shared, the target block is per schedule.", fr: "Une seule règle peut piloter plusieurs planifications : la condition est partagée, le créneau cible est par planification.", de: "Eine Regel kann mehrere Zeitpläne steuern: Die Bedingung ist geteilt, der Zielblock je Zeitplan." },
+  "wr.targets.incompatible": { it: "Tipo dispositivo diverso", en: "Different device type", fr: "Type d'appareil différent", de: "Anderer Gerätetyp" },
+  "wr.targets.incompatible.alert": { it: "Questo effetto usa azioni specifiche del tipo dispositivo: tutte le schedulazioni collegate devono avere lo stesso tipo della prima.", en: "This effect uses device-type-specific actions: every linked schedule must share the first target's device type.", fr: "Cet effet utilise des actions propres au type d'appareil : toutes les planifications liées doivent partager le type de la première.", de: "Dieser Effekt nutzt gerätetypspezifische Aktionen: Alle verknüpften Zeitpläne müssen den Typ des ersten Ziels teilen." },
+  "rule.shared.tooltip": { it: "Condivisa con: {list}", en: "Shared with: {list}", fr: "Partagée avec : {list}", de: "Geteilt mit: {list}" },
+  "rule.unlink.shared": { it: "Questa regola è collegata a {n} schedulazioni. Verrà solo scollegata da «{name}», le altre la mantengono. Continuare?", en: "This rule is linked to {n} schedules. It will only be detached from \"{name}\"; the others keep it. Continue?", fr: "Cette règle est liée à {n} planifications. Elle sera seulement détachée de «{name}», les autres la conservent. Continuer ?", de: "Diese Regel ist mit {n} Zeitplänen verknüpft. Sie wird nur von „{name}“ getrennt, die anderen behalten sie. Fortfahren?" },
 
   // Duplicate / export / import
   "dup.title": { it: "Duplica schedulazione", en: "Duplicate schedule", fr: "Dupliquer la planification", de: "Zeitplan duplizieren" },
@@ -432,10 +443,6 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "wr.action.duration": { it: "Cambia durata", en: "Change duration", fr: "Changer la durée", de: "Dauer ändern" },
   "wr.action.duration.desc": { it: "Estende o accorcia la fascia", en: "Extend or shorten the block", fr: "Allonge ou raccourcit le créneau", de: "Verlängert oder kürzt den Block" },
   // Rule builder v1.7
-  "wr.schedule_picker.label": { it: "Schedulazione", en: "Schedule", fr: "Planification", de: "Zeitplan" },
-  "wr.schedule_picker.hint": { it: "A quale schedulazione viene aggiunta la regola", en: "Which schedule the rule will be added to", fr: "À quelle planification la règle est ajoutée", de: "Zu welchem Zeitplan die Regel hinzugefügt wird" },
-  "wr.target.title": { it: "A quale fascia si applica", en: "Which block this rule targets", fr: "Quel créneau cette règle cible", de: "Auf welchen Block die Regel angewendet wird" },
-  "wr.target.subtitle": { it: "Limita l'effetto a una sola fascia o lascia globale", en: "Limit the effect to a single block or keep it global", fr: "Limite l'effet à un seul créneau ou laisse global", de: "Effekt auf einen einzelnen Block beschränken oder global lassen" },
   "wr.target.label": { it: "Fascia", en: "Block", fr: "Créneau", de: "Block" },
   "wr.target.all_blocks": { it: "Tutte le fasce", en: "All blocks", fr: "Tous les créneaux", de: "Alle Blöcke" },
   "wr.effect.title": { it: "Tipo di effetto", en: "Effect type", fr: "Type d'effet", de: "Effekttyp" },

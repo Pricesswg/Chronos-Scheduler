@@ -11,6 +11,7 @@ import type {
   Screen,
   ActionDef,
   WeatherAttribute,
+  WeatherRule,
 } from "./types";
 import { setActionsMap, setColorSettings } from "./actions";
 import { setLang, t } from "./i18n";
@@ -18,6 +19,7 @@ import { CARD_VERSION } from "./version";
 import {
   fetchDevices,
   fetchSchedules,
+  fetchRules,
   fetchSettings,
   fetchActions,
   fetchWeatherAttributes,
@@ -33,6 +35,8 @@ import {
   updateDevice as wsUpdateDevice,
   removeDevice as wsRemoveDevice,
   removeSchedule as wsRemoveSchedule,
+  saveRule as wsSaveRule,
+  removeRule as wsRemoveRule,
   updateSettings as wsUpdateSettings,
 } from "./ws";
 import { fmtHour, computeRepeat, setSnapMinutes, setHassRef } from "./utils";
@@ -79,6 +83,7 @@ export class ChronosCard extends LitElement {
   @state() _deviceDetailId = "";
   @state() _schedules: Schedule[] = [];
   @state() _savedSchedules: Schedule[] = [];
+  @state() _rules: WeatherRule[] = [];
   @state() _devices: ChronosDevice[] = [];
   @state() _settings: Settings | null = null;
   @state() _timelineVariant: "linear" | "radial" | "list" = "linear";
@@ -96,9 +101,9 @@ export class ChronosCard extends LitElement {
   @state() _mobile = false;
   @state() _drawerOpen = false;
   @state() _desktopCollapsed = false;
-  /** When set, the rule builder edits this rule of the selected schedule
-   * instead of creating a new one. Reset to -1 when leaving the builder. */
-  @state() _editingRuleIdx = -1;
+  /** When set, the rule builder edits this global rule instead of creating
+   * a new one. Reset to "" when leaving the builder. */
+  @state() _editingRuleId = "";
   /** Schedule id whose duplicate modal is open. "" = closed. */
   @state() _duplicateSourceId = "";
 
@@ -262,10 +267,11 @@ export class ChronosCard extends LitElement {
     };
 
     try {
-      const [devices, schedules, settings, actionsMap, weatherAttrs, forecast, available, weatherEnt, sensorEnt, sceneEnt, automationEnt] =
+      const [devices, schedules, rules, settings, actionsMap, weatherAttrs, forecast, available, weatherEnt, sensorEnt, sceneEnt, automationEnt] =
         await Promise.all([
           safe(() => fetchDevices(this.hass), [], "devices/list"),
           safe(() => fetchSchedules(this.hass), [], "schedules/list"),
+          safe(() => fetchRules(this.hass), [], "rules/list"),
           safe(() => fetchSettings(this.hass), null as any, "settings/get"),
           safe(() => fetchActions(this.hass), {}, "actions"),
           safe(() => fetchWeatherAttributes(this.hass), [], "weather/attributes"),
@@ -278,6 +284,7 @@ export class ChronosCard extends LitElement {
         ]);
       this._devices = devices;
       this._schedules = schedules;
+      this._rules = rules;
       this._savedSchedules = JSON.parse(JSON.stringify(schedules));
       this._settings = settings;
       this._actionsMap = actionsMap;
@@ -317,16 +324,72 @@ export class ChronosCard extends LitElement {
     }
     // Reset edit state when leaving the rule builder
     if (this._screen !== "weatherRule") {
-      this._editingRuleIdx = -1;
+      this._editingRuleId = "";
     }
     this._drawerOpen = false;
   }
 
-  /** Open the rule builder pre-filled with an existing rule for editing. */
-  editWeatherRule(scheduleId: string, ruleIdx: number) {
-    this.selectSchedule(scheduleId);
-    this._editingRuleIdx = ruleIdx;
+  /** Open the rule builder pre-filled with an existing global rule.
+   * scheduleId (optional) selects which schedule provides editing context
+   * (e.g. clicked from that schedule's editor). */
+  editWeatherRule(ruleId: string, scheduleId?: string) {
+    if (scheduleId) this._selectedId = scheduleId;
+    this._editingRuleId = ruleId;
     this._screen = "weatherRule";
+  }
+
+  // --- Weather rules (global store) ---
+
+  /** Global rules projected onto one schedule: one entry per (rule, target)
+   * pair with the target's block_index inlined, in the legacy shape the
+   * screens already understand. */
+  rulesForSchedule(scheduleId: string): WeatherRule[] {
+    const out: WeatherRule[] = [];
+    for (const r of this._rules) {
+      for (const tgt of r.targets || []) {
+        if (tgt.schedule_id === scheduleId) {
+          out.push({ ...r, block_index: tgt.block_index ?? null });
+        }
+      }
+    }
+    return out;
+  }
+
+  async doSaveRule(rule: WeatherRule): Promise<WeatherRule | null> {
+    try {
+      const saved = await wsSaveRule(this.hass, rule);
+      this._rules = await fetchRules(this.hass);
+      return saved;
+    } catch (e) {
+      console.error("Chronos: saveRule failed", e);
+      return null;
+    }
+  }
+
+  async doRemoveRule(ruleId: string) {
+    try {
+      await wsRemoveRule(this.hass, ruleId);
+    } catch (e) {
+      console.error("Chronos: removeRule failed", e);
+    }
+    this._rules = await fetchRules(this.hass);
+  }
+
+  /** Toggle a rule's active flag. Global: affects every target schedule. */
+  async toggleRuleActive(ruleId: string, active: boolean) {
+    const rule = this._rules.find((r) => r.id === ruleId);
+    if (!rule) return;
+    await this.doSaveRule({ ...rule, active });
+  }
+
+  /** Detach one schedule from a rule. Deletes the rule entirely when that
+   * schedule was its last target. */
+  async unlinkRuleFromSchedule(ruleId: string, scheduleId: string) {
+    const rule = this._rules.find((r) => r.id === ruleId);
+    if (!rule) return;
+    const targets = (rule.targets || []).filter((t) => t.schedule_id !== scheduleId);
+    if (!targets.length) await this.doRemoveRule(ruleId);
+    else await this.doSaveRule({ ...rule, targets });
   }
 
   /** Open the duplicate-schedule modal. Saves pending editor changes first
@@ -496,7 +559,6 @@ export class ChronosCard extends LitElement {
       days: [1, 1, 1, 1, 1, 1, 1],
       enabled: true,
       blocks: [{ start: 8, end: 9, action: { id: "activate" } }],
-      weather_rules: [],
     };
     await this.doAddSchedule(schedule);
   }
@@ -512,7 +574,6 @@ export class ChronosCard extends LitElement {
       days: [1, 1, 1, 1, 1, 1, 1],
       enabled: true,
       blocks: [{ start: 8, end: 9, action: { id: "turn_on" } }],
-      weather_rules: [],
     };
     await this.doAddSchedule(schedule);
   }
@@ -529,20 +590,24 @@ export class ChronosCard extends LitElement {
       days: [1, 1, 1, 1, 1, 1, 1],
       enabled: true,
       blocks: [{ start: 8, end: 9, action: { id: "call_service", value: "" } }],
-      weather_rules: [],
     };
     await this.doAddSchedule(schedule);
   }
 
-  async doAddSchedule(schedule: Schedule) {
+  /** Create a schedule and navigate to its editor. Returns the saved
+   * schedule (with its backend-assigned id) so callers can attach global
+   * rules to it, or null on failure. */
+  async doAddSchedule(schedule: Schedule): Promise<Schedule | null> {
     try {
       const saved = await wsSaveSchedule(this.hass, schedule);
       this._schedules = await fetchSchedules(this.hass);
       this._savedSchedules = JSON.parse(JSON.stringify(this._schedules));
       this._selectedId = saved.id;
       this._screen = "editor";
+      return saved;
     } catch (e) {
       console.error("Chronos: addSchedule failed", e);
+      return null;
     }
   }
 

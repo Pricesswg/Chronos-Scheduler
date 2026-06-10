@@ -334,6 +334,40 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
         except ValueError as err:
             connection.send_error(msg["id"], "not_found", str(err))
 
+    # --- Weather rules (v2, global store) ---
+
+    @websocket_api.websocket_command({vol.Required("type"): "chronos/rules/list"})
+    @websocket_api.async_response
+    async def ws_rules_list(
+        hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+    ) -> None:
+        store: ChronosStore = hass.data[DOMAIN]["store"]
+        connection.send_result(msg["id"], store.rules)
+
+    @websocket_api.websocket_command({
+        vol.Required("type"): "chronos/rules/save",
+        vol.Required("rule"): dict,
+    })
+    @websocket_api.async_response
+    async def ws_rules_save(
+        hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+    ) -> None:
+        store: ChronosStore = hass.data[DOMAIN]["store"]
+        rule = await store.async_save_rule(msg["rule"])
+        connection.send_result(msg["id"], rule)
+
+    @websocket_api.websocket_command({
+        vol.Required("type"): "chronos/rules/remove",
+        vol.Required("rule_id"): vol.Coerce(str),
+    })
+    @websocket_api.async_response
+    async def ws_rules_remove(
+        hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+    ) -> None:
+        store: ChronosStore = hass.data[DOMAIN]["store"]
+        await store.async_remove_rule(msg["rule_id"])
+        connection.send_result(msg["id"], {"success": True})
+
     # --- Settings ---
 
     @websocket_api.websocket_command({vol.Required("type"): "chronos/settings/get"})
@@ -535,6 +569,9 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_schedules_save)
     websocket_api.async_register_command(hass, ws_schedules_remove)
     websocket_api.async_register_command(hass, ws_schedules_toggle)
+    websocket_api.async_register_command(hass, ws_rules_list)
+    websocket_api.async_register_command(hass, ws_rules_save)
+    websocket_api.async_register_command(hass, ws_rules_remove)
     websocket_api.async_register_command(hass, ws_settings_get)
     websocket_api.async_register_command(hass, ws_settings_update)
     websocket_api.async_register_command(hass, ws_preview_forecast)

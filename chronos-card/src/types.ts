@@ -93,13 +93,26 @@ export type RuleEffect =
 
 export type DurationDirection = "forward" | "backward";
 
+export interface RuleTarget {
+  schedule_id: string;
+  /** Which block of that schedule the rule targets. null = all blocks. */
+  block_index?: number | null;
+}
+
 export interface WeatherRule {
+  /** Stable id assigned by the backend (v1.17+). Empty/undefined = new. */
+  id?: string;
   active: boolean;
   /** Display strings (kept for human readability, also used by old views). */
   if?: string;
   then: string;
 
-  /** Which block this rule targets. undefined / null = all blocks. */
+  /** Schedules this rule applies to (v1.17+ global rules store). */
+  targets?: RuleTarget[];
+
+  /** Legacy / flattened view: when a rule is projected onto one schedule
+   * (rulesForSchedule) the target's block_index is inlined here. Also used
+   * by recipes and pre-1.17 JSON exports. null = all blocks. */
   block_index?: number | null;
 
   /** What this rule does. */
@@ -140,7 +153,9 @@ export interface Schedule {
   days: number[];
   enabled: boolean;
   blocks: Block[];
-  weather_rules: WeatherRule[];
+  /** Legacy embedded rules (pre-1.17). Still present in old JSON exports;
+   * live schedules no longer carry it — rules live in the global store. */
+  weather_rules?: WeatherRule[];
   /** Optional recurring date range. When set, the schedule only fires on
    * dates inside the range, ignoring the year. Wraps across year-end if
    * end_month/day < start_month/day. */
@@ -256,6 +271,7 @@ export interface ChronosState {
   deviceDetailId: string;
   schedules: Schedule[];
   savedSchedules: Schedule[];
+  rules: WeatherRule[];
   devices: ChronosDevice[];
   settings: Settings;
   timelineVariant: "linear" | "radial" | "list";

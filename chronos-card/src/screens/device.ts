@@ -71,7 +71,7 @@ export class ChronosDeviceScreen extends LitElement {
               </div>`
             : html`<div class="col" style="gap:10px">
                 ${linkedSchedules.map((s) => {
-                  const activeRules = (s.weather_rules || []).filter((r) => r.active);
+                  const activeRules = this.card.rulesForSchedule(s.id).filter((r) => r.active);
                   return html`
                   <div class="card card--ghost" style="padding:14px">
                     <div class="sp-between" style="margin-bottom:8px">

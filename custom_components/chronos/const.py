@@ -1,5 +1,5 @@
 DOMAIN = "chronos"
-VERSION = "1.16.0"
+VERSION = "1.17.0"
 STORAGE_VERSION = 1
 STORAGE_KEY_DEVICES = f"{DOMAIN}.devices"
 STORAGE_KEY_SCHEDULES = f"{DOMAIN}.schedules"
@@ -9,6 +9,10 @@ STORAGE_KEY_HISTORY = f"{DOMAIN}.history"
 # integration restart mid-watering, Chronos can defensively close the
 # valves that were left open and record a restart-abort history event.
 STORAGE_KEY_SEQUENCES = f"{DOMAIN}.sequences"
+# Weather rules v2 (1.17+): rules live in their own store, decoupled from
+# schedules. Each rule has a stable id and a list of targets
+# ({schedule_id, block_index}), so one rule can drive several schedules.
+STORAGE_KEY_RULES = f"{DOMAIN}.rules"
 
 # Maximum number of history entries kept on disk. Older entries are dropped
 # in FIFO order when this limit is reached. 5000 entries is roughly several

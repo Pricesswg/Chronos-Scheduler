@@ -1,4 +1,4 @@
-import type { ChronosDevice, Schedule } from "./types";
+import type { ChronosDevice, Schedule, WeatherRule } from "./types";
 import { DEVICE_TYPES } from "./utils";
 
 /** Serialization helpers for moving schedules across Chronos instances
@@ -12,6 +12,10 @@ export const EXPORT_FORMAT = 1;
 
 export interface ImportResult {
   schedule: Schedule;
+  /** Rules to recreate for the imported schedule, in legacy shape (with
+   * block_index inline). The caller attaches them via the rules store
+   * after the schedule save returns its new id. */
+  rules: WeatherRule[];
   /** entity_ids referenced by the export but not imported on this instance. */
   missing: string[];
 }
@@ -20,6 +24,7 @@ export function exportSchedule(
   s: Schedule,
   devices: ChronosDevice[],
   cardVersion: string,
+  rules: WeatherRule[] = [],
 ): string {
   const byId = new Map(devices.map((d) => [d.id, d]));
   const refs = (s.device_ids || [])
@@ -29,6 +34,15 @@ export function exportSchedule(
   const schedule = JSON.parse(JSON.stringify(s)) as any;
   delete schedule.id;
   schedule.device_ids = [];
+  // Rules travel in the legacy embedded shape (block_index inline, no ids
+  // or targets): it is instance-independent and keeps 1.15/1.16 exports
+  // and 1.17+ exports mutually importable.
+  schedule.weather_rules = rules.map((r) => {
+    const copy: any = JSON.parse(JSON.stringify(r));
+    delete copy.id;
+    delete copy.targets;
+    return copy;
+  });
   // Block-level device subsets travel as entity_ids too.
   for (const b of schedule.blocks || []) {
     if (Array.isArray(b.device_ids) && b.device_ids.length) {
@@ -108,15 +122,28 @@ export function importSchedule(json: string, devices: ChronosDevice[]): ImportRe
       }
       return blk;
     }),
-    weather_rules: Array.isArray(raw.weather_rules) ? raw.weather_rules : [],
     date_range: raw.date_range ?? null,
   };
-  return { schedule, missing };
+  const rules: WeatherRule[] = Array.isArray(raw.weather_rules)
+    ? raw.weather_rules.filter((r: any) => r && typeof r === "object" && r.effect)
+    : [];
+  return { schedule, rules, missing };
+}
+
+/** Legacy-shaped rule (block_index inline) → fresh v2 rule targeting one
+ * schedule. Used after import/duplicate once the new schedule id exists. */
+export function ruleForSchedule(rule: WeatherRule, scheduleId: string): WeatherRule {
+  const copy: any = JSON.parse(JSON.stringify(rule));
+  const blockIndex = typeof copy.block_index === "number" ? copy.block_index : null;
+  delete copy.id;
+  delete copy.block_index;
+  copy.targets = [{ schedule_id: scheduleId, block_index: blockIndex }];
+  return copy;
 }
 
 export function duplicateSchedule(
   src: Schedule,
-  overrides: { name: string; device_ids: string[]; days: number[]; includeRules: boolean },
+  overrides: { name: string; device_ids: string[]; days: number[] },
 ): Schedule {
   const copy = JSON.parse(JSON.stringify(src)) as Schedule;
   copy.id = "";
@@ -125,7 +152,7 @@ export function duplicateSchedule(
   copy.days = [...overrides.days];
   // Created disabled so a half-configured copy can't fire mid-edit.
   copy.enabled = false;
-  if (!overrides.includeRules) copy.weather_rules = [];
+  delete (copy as any).weather_rules;
   // Block-level subsets referencing devices dropped by the override would
   // dispatch to nothing; intersect and fall back to "all" when emptied.
   const allowed = new Set(copy.device_ids);

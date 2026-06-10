@@ -6,7 +6,7 @@ import { getActionsForType } from "../actions";
 import { fmtHour, resolveBlockTime } from "../utils";
 import { t, attrLabel, actionDefLabel } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
-import type { Block, RuleEffect, WeatherRule } from "../types";
+import type { Block, RuleEffect, RuleTarget, WeatherRule } from "../types";
 import "../timeline";
 
 const EFFECTS: { key: RuleEffect; needsIf: boolean; needsBlock: boolean }[] = [
@@ -20,6 +20,10 @@ const EFFECTS: { key: RuleEffect; needsIf: boolean; needsBlock: boolean }[] = [
   { key: "scale_value", needsIf: false, needsBlock: true },
 ];
 
+/** Effects whose parameters depend on the device type (action ids, value
+ * specs). Multi-schedule targets must share the device type for these. */
+const VALUE_EFFECTS: RuleEffect[] = ["force_action", "replace_value", "scale_value"];
+
 @customElement("chronos-weather-rule")
 export class ChronosWeatherRule extends LitElement {
   static styles = chronosStyles;
@@ -27,13 +31,14 @@ export class ChronosWeatherRule extends LitElement {
   @property({ attribute: false, hasChanged: () => true }) card!: ChronosCard;
   @property({ type: Number }) nowHour = 0;
 
-  // Tracks which rule index the builder is currently mirroring, so we can
-  // detect when the user navigated in for editing a (possibly different) rule
-  // and refresh the form state.
+  // Tracks which rule the builder is currently mirroring, so we can detect
+  // when the user navigated in for editing a (possibly different) rule and
+  // refresh the form state.
   private _hydratedFor: string = "";
 
-  // Common
-  @state() private _blockIndex: number | null = null; // null = all blocks
+  // Common. Targets: which schedules (and which block of each) this rule
+  // applies to. At least one target at all times.
+  @state() private _targets: RuleTarget[] = [];
   @state() private _effect: RuleEffect = "skip";
 
   /** Free-text filter applied to the sensor dropdown(s). Shared across clauses
@@ -66,8 +71,8 @@ export class ChronosWeatherRule extends LitElement {
   @state() private _scaleOutMax = 120;
 
   render() {
-    const schedule = this.card._schedules.find((s) => s.id === this.card._selectedId) || this.card._schedules[0];
-    if (schedule) this._hydrateFromExisting(schedule);
+    this._hydrate();
+    const schedule = this._contextSchedule();
     if (!schedule) return html`
       <div class="card" style="text-align:center;padding:40px;color:var(--text-muted)">
         <div style="font-weight:600;color:var(--text);font-size:14px">${t("overview.no_schedules")}</div>
@@ -82,9 +87,6 @@ export class ChronosWeatherRule extends LitElement {
     const typeActions = getActionsForType(deviceType);
     const weatherAttrs = this.card._weatherAttributes;
     const effectMeta = EFFECTS.find((e) => e.key === this._effect)!;
-    const targetBlock = this._blockIndex !== null && this._blockIndex >= 0 && this._blockIndex < schedule.blocks.length
-      ? schedule.blocks[this._blockIndex]
-      : null;
     const conflicts = this._findConflicts(schedule);
 
     return html`
@@ -93,25 +95,11 @@ export class ChronosWeatherRule extends LitElement {
           <button class="btn btn--ghost btn--sm" @click=${() => this.card.navigate("weatherRulesList")}>
             ${icon("chevron-left", 14)} ${t("nav.weather_rules")}
           </button>
-          <h1 class="page-title" style="margin-top:6px">${this.card._editingRuleIdx >= 0 ? t("wr.heading.edit") : t("wr.heading")}</h1>
+          <h1 class="page-title" style="margin-top:6px">${this.card._editingRuleId ? t("wr.heading.edit") : t("wr.heading")}</h1>
           <p class="page-sub">${t("wr.subtitle")}</p>
         </div>
 
-        <div class="card">
-          <div class="field">
-            <label class="field__label">${t("wr.schedule_picker.label")}</label>
-            <select class="select mono" @change=${(e: Event) => {
-              const newId = (e.target as HTMLSelectElement).value;
-              this.card.selectSchedule(newId);
-              this._blockIndex = null;  // blocks differ per schedule
-            }}>
-              ${this.card._schedules.map((s) => html`
-                <option value="${s.id}" ?selected=${s.id === schedule.id}>${s.name}</option>
-              `)}
-            </select>
-            <span class="field__hint">${t("wr.schedule_picker.hint")}</span>
-          </div>
-        </div>
+        ${this._renderTargetsCard(schedule)}
 
         ${this._renderPreviewBanner(schedule)}
 
@@ -124,29 +112,6 @@ export class ChronosWeatherRule extends LitElement {
             </ul>
           </div>
         ` : nothing}
-
-        <div class="card">
-          <div class="card__header">
-            <div style="flex:1">
-              <h3 class="card__title">${t("wr.target.title")}</h3>
-              <p class="card__sub">${t("wr.target.subtitle")}</p>
-            </div>
-          </div>
-          <div class="field">
-            <label class="field__label">${t("wr.target.label")}</label>
-            <select class="select mono" @change=${(e: Event) => {
-              const v = (e.target as HTMLSelectElement).value;
-              this._blockIndex = v === "" ? null : parseInt(v, 10);
-            }}>
-              <option value="" ?selected=${this._blockIndex === null}>${t("wr.target.all_blocks")}</option>
-              ${schedule.blocks.map((b, i) => html`
-                <option value="${i}" ?selected=${this._blockIndex === i}>
-                  #${i + 1} · ${fmtHour(resolveBlockTime(b, "start"))} → ${fmtHour(resolveBlockTime(b, "end"))} · ${b.action?.id || "—"}
-                </option>
-              `)}
-            </select>
-          </div>
-        </div>
 
         <div class="card">
           <div class="card__header">
@@ -178,11 +143,107 @@ export class ChronosWeatherRule extends LitElement {
     `;
   }
 
+  private _scheduleFor(id: string) {
+    return this.card._schedules.find((s) => s.id === id);
+  }
+
+  /** The schedule providing editing context (actions, block lists for the
+   * params panel): the first target's schedule. */
+  private _contextSchedule() {
+    for (const tg of this._targets) {
+      const s = this._scheduleFor(tg.schedule_id);
+      if (s) return s;
+    }
+    return this.card._schedules.find((s) => s.id === this.card._selectedId) || this.card._schedules[0];
+  }
+
+  private _isValueEffect(): boolean {
+    return VALUE_EFFECTS.includes(this._effect);
+  }
+
+  /** Targets card: one row per (schedule, block) the rule applies to. For
+   * device-specific effects, additional schedules must share the first
+   * target's device type. */
+  private _renderTargetsCard(schedule: any) {
+    const valueEffect = this._isValueEffect();
+    const firstType = schedule.device_type;
+    return html`
+      <div class="card">
+        <div class="card__header">
+          <div style="flex:1">
+            <h3 class="card__title">${t("wr.targets.title")}</h3>
+            <p class="card__sub">${t("wr.targets.subtitle")}</p>
+          </div>
+        </div>
+        <div class="col" style="gap:8px">
+          ${this._targets.map((tg, idx) => {
+            const sched = this._scheduleFor(tg.schedule_id);
+            const incompatible = !!(valueEffect && sched && sched.device_type !== firstType);
+            return html`
+              <div class="row" style="gap:8px;flex-wrap:wrap;align-items:center;padding:10px 12px;background:var(--bg-sunken);border-radius:var(--r-md);${incompatible ? "outline:1px solid var(--danger)" : ""}">
+                <select class="select mono" style="flex:1;min-width:180px"
+                  @change=${(e: Event) => this._patchTarget(idx, { schedule_id: (e.target as HTMLSelectElement).value, block_index: null })}>
+                  ${this.card._schedules.map((s) => html`
+                    <option value="${s.id}" ?selected=${tg.schedule_id === s.id}
+                      ?disabled=${valueEffect && idx > 0 && s.device_type !== firstType}>
+                      ${s.name}
+                    </option>
+                  `)}
+                </select>
+                <select class="select mono" style="flex:1;min-width:170px"
+                  @change=${(e: Event) => {
+                    const v = (e.target as HTMLSelectElement).value;
+                    this._patchTarget(idx, { block_index: v === "" ? null : parseInt(v, 10) });
+                  }}>
+                  <option value="" ?selected=${tg.block_index === null || tg.block_index === undefined}>${t("wr.target.all_blocks")}</option>
+                  ${(sched?.blocks || []).map((b: Block, i: number) => html`
+                    <option value="${i}" ?selected=${tg.block_index === i}>
+                      #${i + 1} · ${fmtHour(resolveBlockTime(b, "start"))} → ${fmtHour(resolveBlockTime(b, "end"))} · ${b.action?.id || "—"}
+                    </option>
+                  `)}
+                </select>
+                ${incompatible ? html`<span class="text-xs" style="color:var(--danger)">${t("wr.targets.incompatible")}</span>` : nothing}
+                ${this._targets.length > 1 ? html`
+                  <button class="btn btn--icon btn--ghost btn--sm" title="${t("common.remove")}"
+                    @click=${() => { this._targets = this._targets.filter((_, i) => i !== idx); }}>
+                    ${icon("close", 12)}
+                  </button>
+                ` : nothing}
+              </div>
+            `;
+          })}
+          <button class="btn btn--sm" style="align-self:flex-start" @click=${() => this._addTarget(schedule)}>
+            ${icon("plus", 12)} ${t("wr.targets.add")}
+          </button>
+          <span class="field__hint">${t("wr.targets.hint")}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  private _patchTarget(idx: number, patch: Partial<{ schedule_id: string; block_index: number | null }>) {
+    this._targets = this._targets.map((tg, i) => (i === idx ? { ...tg, ...patch } : tg));
+  }
+
+  private _addTarget(contextSchedule: any) {
+    const valueEffect = this._isValueEffect();
+    const targeted = new Set(this._targets.map((tg) => tg.schedule_id));
+    const pool = this.card._schedules.filter(
+      (s) => !valueEffect || s.device_type === contextSchedule.device_type,
+    );
+    const next = pool.find((s) => !targeted.has(s.id)) || pool[0];
+    if (!next) return;
+    this._targets = [...this._targets, { schedule_id: next.id, block_index: null }];
+  }
+
   private _renderPreviewBanner(schedule: any) {
     const summary = this._buildThenText();
-    const tgt = this._blockIndex !== null
-      ? `${t("wr.target.label")} #${this._blockIndex + 1}`
-      : t("wr.target.all_blocks");
+    const first = this._targets[0];
+    const firstBlock = first && first.block_index !== null && first.block_index !== undefined
+      ? ` #${first.block_index + 1}`
+      : "";
+    const extra = this._targets.length > 1 ? ` +${this._targets.length - 1}` : "";
+    const tgt = `${schedule.name}${firstBlock}${extra}`;
     return html`
       <div class="card" style="padding:14px 18px;background:var(--bg-sunken)">
         <div class="rule-block" style="background:var(--surface);border:2px dashed var(--border);flex-wrap:wrap">
@@ -406,9 +467,20 @@ export class ChronosWeatherRule extends LitElement {
     return html`
       <div class="card">
         <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("wr.effect_params.title")}</h3><p class="card__sub">${t("wr.effect." + this._effect + ".desc")}</p></div></div>
-        ${this._renderEffectParams(getActionsForType(this.card._schedules.find((s) => s.id === this.card._selectedId)?.device_type || "thermostat"))}
+        ${this._renderEffectParams(getActionsForType(this._contextSchedule()?.device_type || "thermostat"))}
       </div>
     `;
+  }
+
+  /** First target's (schedule, block) pair, used by replace_value and
+   * scale_value to read the block's action definition. */
+  private _firstTargetBlock(): { sched: any; block: Block | null } {
+    const first = this._targets[0];
+    const sched = first ? this._scheduleFor(first.schedule_id) : undefined;
+    const block = sched && first && first.block_index !== null && first.block_index !== undefined
+      ? sched.blocks[first.block_index] || null
+      : null;
+    return { sched, block };
   }
 
   private _renderEffectParams(typeActions: any[]) {
@@ -451,7 +523,7 @@ export class ChronosWeatherRule extends LitElement {
             <select class="select" @change=${(e2: Event) => this._setForceAction((e2.target as HTMLSelectElement).value, typeActions)}>
               <option value="" ?selected=${!this._actionId}>—</option>
               ${typeActions.map((a) => {
-                const dt = this.card._schedules.find((s) => s.id === this.card._selectedId)?.device_type || "thermostat";
+                const dt = this._contextSchedule()?.device_type || "thermostat";
                 return html`<option value="${a.id}" ?selected=${this._actionId === a.id}>${actionDefLabel(dt, a.id, a.label)}</option>`;
               })}
             </select>
@@ -462,8 +534,7 @@ export class ChronosWeatherRule extends LitElement {
       `;
     }
     if (e === "replace_value") {
-      const sched = this.card._schedules.find((s) => s.id === this.card._selectedId);
-      const block = sched && this._blockIndex !== null ? sched.blocks[this._blockIndex] : null;
+      const { block } = this._firstTargetBlock();
       if (!block) return html`<p class="text-sm text-mute" style="margin:0">${t("wr.replace_value.pick_block")}</p>`;
       const def = typeActions.find((a) => a.id === block.action?.id);
       if (!def?.value) return html`<p class="text-sm text-mute" style="margin:0">${t("wr.replace_value.no_value")}</p>`;
@@ -494,8 +565,7 @@ export class ChronosWeatherRule extends LitElement {
       `;
     }
     if (e === "scale_value") {
-      const sched = this.card._schedules.find((s) => s.id === this.card._selectedId);
-      const block = sched && this._blockIndex !== null ? sched.blocks[this._blockIndex] : null;
+      const { block } = this._firstTargetBlock();
       const def = block ? typeActions.find((a) => a.id === block.action?.id) : null;
       const unit = def?.value?.unit || "";
       return html`
@@ -583,11 +653,13 @@ export class ChronosWeatherRule extends LitElement {
   }
 
   private _findConflicts(schedule: any): string[] {
-    if (this._blockIndex === null) return [];
-    const target = this._blockIndex;
+    const first = this._targets[0];
+    if (!first || first.block_index === null || first.block_index === undefined) return [];
+    const target = first.block_index;
     const result: string[] = [];
-    for (const r of (schedule.weather_rules || [])) {
+    for (const r of this.card.rulesForSchedule(schedule.id)) {
       if (!r.active) continue;
+      if (r.id && r.id === this.card._editingRuleId) continue;
       if (r.block_index === target || r.block_index === null || r.block_index === undefined) {
         const touchesDuration = (e: string) => e.startsWith("scale_") || e === "extend" || e === "shrink";
         if (r.effect === this._effect || (r.effect && touchesDuration(r.effect) && touchesDuration(this._effect))) {
@@ -612,17 +684,31 @@ export class ChronosWeatherRule extends LitElement {
   }
 
   private async _saveRule(schedule: any, typeActions: any[]) {
+    // Device-specific effects can't span device types: validate targets.
+    if (this._isValueEffect()) {
+      const firstType = schedule.device_type;
+      const bad = this._targets.some((tg) => this._scheduleFor(tg.schedule_id)?.device_type !== firstType);
+      if (bad) {
+        alert(t("wr.targets.incompatible.alert"));
+        return;
+      }
+    }
+    if (!this._targets.length) return;
     const ifText = this._buildIfText();
     const thenText = this._buildThenText();
-    const editingIdx = this.card._editingRuleIdx;
+    const editingId = this.card._editingRuleId;
+    const existing = editingId ? this.card._rules.find((r) => r.id === editingId) : undefined;
     // Preserve `active` flag when editing; default true on create.
-    const wasActive = editingIdx >= 0 ? schedule.weather_rules?.[editingIdx]?.active ?? true : true;
     const rule: WeatherRule = {
-      active: wasActive,
+      ...(editingId ? { id: editingId } : {}),
+      active: existing?.active ?? true,
       if: ifText,
       then: thenText,
       effect: this._effect,
-      block_index: this._blockIndex,
+      targets: this._targets.map((tg) => ({
+        schedule_id: tg.schedule_id,
+        block_index: tg.block_index ?? null,
+      })),
     };
     if (this._effect === "shift" || this._effect === "extend" || this._effect === "shrink") {
       rule.delta_minutes = Math.abs(this._deltaMin);
@@ -645,28 +731,27 @@ export class ChronosWeatherRule extends LitElement {
       rule.scale_out_max = this._scaleOutMax;
       if (this._effect === "scale_duration") rule.direction = this._direction;
     }
-    let newRules: WeatherRule[];
-    if (editingIdx >= 0) {
-      newRules = [...(schedule.weather_rules || [])];
-      newRules[editingIdx] = rule;
-    } else {
-      newRules = [...(schedule.weather_rules || []), rule];
+    const saved = await this.card.doSaveRule(rule);
+    if (saved) {
+      this.card.selectSchedule(this._targets[0].schedule_id);
     }
-    this.card.updateScheduleLocal(schedule.id, { weather_rules: newRules });
     this.card.navigate("editor");
   }
 
-  /** Pre-fill the form fields from an existing rule when entering in edit mode. */
-  private _hydrateFromExisting(schedule: any) {
-    const editingIdx = this.card._editingRuleIdx;
-    const stamp = `${schedule.id}::${editingIdx}`;
+  /** Pre-fill the form fields. Edit mode mirrors the global rule pointed at
+   * by card._editingRuleId; create mode resets to defaults with the
+   * selected schedule as the initial target. */
+  private _hydrate() {
+    const ruleId = this.card._editingRuleId;
+    const stamp = ruleId || `new:${this.card._selectedId}`;
     if (this._hydratedFor === stamp) return;
     this._hydratedFor = stamp;
 
-    if (editingIdx < 0) {
+    if (!ruleId) {
       // create mode — reset to defaults so re-entering from a list with a
       // different schedule doesn't carry stale state from a prior edit.
-      this._blockIndex = null;
+      const sid = this.card._selectedId || this.card._schedules[0]?.id || "";
+      this._targets = sid ? [{ schedule_id: sid, block_index: null }] : [];
       this._effect = "skip";
       this._clauses = [{ variable: "temperature", op: ">", value: "22" }];
       this._deltaMin = 30;
@@ -682,10 +767,17 @@ export class ChronosWeatherRule extends LitElement {
       return;
     }
 
-    const r = schedule.weather_rules?.[editingIdx];
+    const r = this.card._rules.find((x) => x.id === ruleId);
     if (!r) return;
     this._effect = r.effect || "skip";
-    this._blockIndex = (r.block_index === undefined ? null : r.block_index);
+    this._targets = (r.targets || []).map((tg) => ({
+      schedule_id: tg.schedule_id,
+      block_index: tg.block_index ?? null,
+    }));
+    if (!this._targets.length) {
+      const sid = this.card._selectedId || this.card._schedules[0]?.id || "";
+      this._targets = sid ? [{ schedule_id: sid, block_index: null }] : [];
+    }
     if (r.if) {
       const parsed = this._parseIfExpression(String(r.if));
       if (parsed.length) this._clauses = parsed;

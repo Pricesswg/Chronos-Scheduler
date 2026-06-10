@@ -5,6 +5,7 @@ import { icon, deviceIcon } from "../icons";
 import { t } from "../i18n";
 import { actionColor } from "../actions";
 import { DAY_END_HOUR } from "../utils";
+import { ruleForSchedule } from "../transfer";
 import type { ChronosCard } from "../chronos-card";
 import type { Block, DateRange, DeviceType, Schedule, WeatherRule } from "../types";
 
@@ -434,10 +435,15 @@ export class ChronosHelpScreen extends LitElement {
       days: r.days,
       enabled: false, // start disabled until user picks devices
       blocks: r.blocks.map((b) => ({ ...b, action: { ...b.action } })),
-      weather_rules: r.weather_rules.map((w) => ({ ...w })),
       date_range: r.date_range ? { ...r.date_range } : null,
     };
-    await this.card.doAddSchedule(schedule);
-    // doAddSchedule navigates to editor automatically
+    const saved = await this.card.doAddSchedule(schedule);
+    // Rules live in the global store (v1.17+): attach them to the freshly
+    // assigned schedule id. doAddSchedule already navigated to the editor.
+    if (saved) {
+      for (const w of r.weather_rules) {
+        await this.card.doSaveRule(ruleForSchedule(w, saved.id));
+      }
+    }
   }
 }

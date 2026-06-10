@@ -11,9 +11,10 @@ A single Lovelace card provides:
 - Schedule overview with live KPIs
 - Linear / radial / list timeline editor with drag-and-drop and 5/15/30/60-minute snap
 - IF/THEN weather rules (temperature, rain, wind, UV, sun position, …) to skip, shift, force, or change duration of the active block
+- Rules are independent objects (v1.17+): one rule can drive several schedules at once, and each schedule can combine several rules
 - 7-day week view with per-schedule filtering
 - Live status with weather and device readings; the 24h forecast strip is color-coded by severity (green / yellow / orange / red, wind-aware) and shows per-hour wind speed
-- Weather rules list grouped by schedule, with a per-schedule filter
+- Weather rules manager with target chips and a per-schedule filter
 - Device detail view shows the weather rules attached to each linked schedule
 - 6-step wizard for guided schedule creation
 - Schedule duplication with editable name, devices and days before the copy is created
@@ -148,7 +149,9 @@ All schedule, device and weather-rule data is persisted by the integration via W
 
 ## Weather rules
 
-A schedule can have any number of weather rules. Each rule has:
+Since v1.17 rules live in their own store, decoupled from schedules: a rule has a stable id and a list of targets (`schedule + block`), so a single "wind > 30" rule can close the blinds AND skip the irrigation, and one schedule can combine any number of rules. Existing per-schedule rules are migrated automatically on first start. Effects that use device-specific actions (force action, replace value, scale value) require all linked schedules to share the same device type.
+
+Each rule has:
 
 - **IF** condition: one or more comparisons combined with **AND**. Each comparison is `<key> <op> <threshold>`, where the key can be:
     - a weather attribute (`temperature`, `feels_like`, `humidity`, `dew_point`, `wind_speed`, `wind_gust`, `wind_bearing`, `pressure`, `uv_index`, `solar_radiation`, `rain_rate`, `rain_state`, `condition`)

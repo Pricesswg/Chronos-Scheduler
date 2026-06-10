@@ -4,7 +4,7 @@ import { chronosStyles } from "../styles";
 import { icon, deviceIcon } from "../icons";
 import { defaultAction, getActionsForType, getActionDef, actionColor } from "../actions";
 import { getDays, DEVICE_TYPES, computeRepeat, DAY_END_HOUR } from "../utils";
-import { importSchedule } from "../transfer";
+import { importSchedule, ruleForSchedule } from "../transfer";
 import { t, actionDefLabel, actionValueLabel } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
 import type { Block, DeviceType, Schedule } from "../types";
@@ -369,8 +369,13 @@ export class ChronosWizard extends LitElement {
   private async _doImport() {
     this._importError = "";
     try {
-      const { schedule, missing } = importSchedule(this._importText, this.card._devices);
-      await this.card.doAddSchedule(schedule);
+      const { schedule, rules, missing } = importSchedule(this._importText, this.card._devices);
+      const saved = await this.card.doAddSchedule(schedule);
+      if (saved) {
+        for (const r of rules) {
+          await this.card.doSaveRule(ruleForSchedule(r, saved.id));
+        }
+      }
       if (missing.length) {
         alert(t("wizard.import.missing", { list: missing.join(", ") }));
       }
@@ -550,7 +555,6 @@ export class ChronosWizard extends LitElement {
       days: this._days,
       enabled: true,
       blocks: [...this._blocks].sort((a, b) => a.start - b.start),
-      weather_rules: [],
     };
     await this.card.doAddSchedule(schedule);
     // If user opted in for weather logic, jump straight to the rule builder.

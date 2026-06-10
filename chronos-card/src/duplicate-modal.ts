@@ -3,7 +3,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { chronosStyles } from "./styles";
 import { icon, deviceIcon } from "./icons";
 import { getDays } from "./utils";
-import { duplicateSchedule } from "./transfer";
+import { duplicateSchedule, ruleForSchedule } from "./transfer";
 import { t } from "./i18n";
 import type { ChronosCard } from "./chronos-card";
 
@@ -29,7 +29,7 @@ export class ChronosDuplicateModal extends LitElement {
     this._hydrate(src);
     const deviceless = ["scene", "automation", "service"].includes(src.device_type);
     const candidates = this.card._devices.filter((d) => d.type === src.device_type);
-    const ruleCount = (src.weather_rules || []).length;
+    const ruleCount = this.card.rulesForSchedule(src.id).length;
 
     return html`
       <div class="modal-overlay" @click=${() => this.card.closeDuplicateModal()}>
@@ -118,9 +118,16 @@ export class ChronosDuplicateModal extends LitElement {
       name: this._name.trim(),
       device_ids: this._deviceIds,
       days: this._days,
-      includeRules: this._includeRules,
     });
     this.card.closeDuplicateModal();
-    await this.card.doAddSchedule(copy);
+    const saved = await this.card.doAddSchedule(copy);
+    // Rules are independent copies (not shared targets): duplicating a
+    // schedule should yield something the user can edit without touching
+    // the original. Sharing stays an explicit act in the rule builder.
+    if (saved && this._includeRules) {
+      for (const r of this.card.rulesForSchedule(src.id)) {
+        await this.card.doSaveRule(ruleForSchedule(r, saved.id));
+      }
+    }
   }
 }

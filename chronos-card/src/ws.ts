@@ -5,6 +5,7 @@ import type {
   Settings,
   ActionDef,
   WeatherAttribute,
+  WeatherRule,
 } from "./types";
 
 export async function fetchDevices(hass: HomeAssistant): Promise<ChronosDevice[]> {
@@ -53,6 +54,18 @@ export async function toggleSchedule(
   enabled: boolean
 ): Promise<void> {
   await hass.callWS({ type: "chronos/schedules/toggle", schedule_id: String(id), enabled });
+}
+
+export async function fetchRules(hass: HomeAssistant): Promise<WeatherRule[]> {
+  return hass.callWS({ type: "chronos/rules/list" });
+}
+
+export async function saveRule(hass: HomeAssistant, rule: WeatherRule): Promise<WeatherRule> {
+  return hass.callWS({ type: "chronos/rules/save", rule });
+}
+
+export async function removeRule(hass: HomeAssistant, ruleId: string): Promise<void> {
+  await hass.callWS({ type: "chronos/rules/remove", rule_id: String(ruleId) });
 }
 
 export async function fetchSettings(hass: HomeAssistant): Promise<Settings> {

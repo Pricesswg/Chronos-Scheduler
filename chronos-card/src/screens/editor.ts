@@ -36,6 +36,8 @@ export class ChronosEditor extends LitElement {
     const availableActions = getActionsForType(deviceType);
     const currentActionDef = block?.action ? getActionDef(deviceType, block.action.id) : null;
     const isDirty = this.card.isDirty;
+    // Global rules projected onto this schedule (target block_index inlined).
+    const schedRules = this.card.rulesForSchedule(schedule.id);
 
     return html`
       <div class="col" style="gap:18px">
@@ -58,8 +60,8 @@ export class ChronosEditor extends LitElement {
                       </span>`
                     : html`<span class="chip">${icon("device", 11)} ${devices.length}</span>`)
                 : nothing}
-              ${(schedule.weather_rules || []).filter((r) => r.active).length > 0
-                ? html`<span class="chip chip--weather">${icon("cloud", 11)} ${t("overview.rules_count", { n: (schedule.weather_rules || []).filter((r) => r.active).length })}</span>`
+              ${schedRules.filter((r) => r.active).length > 0
+                ? html`<span class="chip chip--weather">${icon("cloud", 11)} ${t("overview.rules_count", { n: schedRules.filter((r) => r.active).length })}</span>`
                 : nothing}
             </div>
           </div>
@@ -105,7 +107,7 @@ export class ChronosEditor extends LitElement {
                 .now=${schedule.enabled ? this.nowHour : null}
                 .interactive=${true}
                 .forecast=${this.card._forecast}
-                .previewRule=${this._selectedRuleIdx >= 0 ? schedule.weather_rules?.[this._selectedRuleIdx] : null}
+                .previewRule=${this._selectedRuleIdx >= 0 ? schedRules[this._selectedRuleIdx] || null : null}
                 @block-select=${(e: CustomEvent) => { this._selectedBlockIdx = e.detail.index; }}
                 @blocks-changed=${(e: CustomEvent) => { this.card.updateBlocksLocal(schedule.id, e.detail.blocks); }}
               ></chronos-timeline>
@@ -162,13 +164,13 @@ export class ChronosEditor extends LitElement {
                 <div style="flex:1"><h3 class="card__title">${t("editor.weather_rules.title")}</h3><p class="card__sub">${t("nav.weather_rules")}</p></div>
                 <button class="btn btn--sm" @click=${() => this.card.navigate("weatherRule")}>${icon("plus", 12)} ${t("editor.weather_rules.add")}</button>
               </div>
-              ${!(schedule.weather_rules || []).length
+              ${!schedRules.length
                 ? html`<div style="text-align:center;padding:40px 20px;color:var(--text-muted)">
                     <div style="width:52px;height:52px;margin:0 auto 12px;border-radius:14px;background:var(--bg-sunken);display:grid;place-items:center;color:var(--text-soft)">${icon("cloud", 22)}</div>
                     <div style="font-weight:600;color:var(--text);font-size:14px">${t("editor.weather_rules.empty")}</div>
                   </div>`
                 : html`<div class="col" style="gap:8px">
-                    ${(schedule.weather_rules || []).map((r, i) => {
+                    ${schedRules.map((r, i) => {
                       const targetLabel = (r.block_index === null || r.block_index === undefined)
                         ? t("wr.target.all_blocks")
                         : (() => {
@@ -177,6 +179,10 @@ export class ChronosEditor extends LitElement {
                             return `#${r.block_index! + 1} ${fmtHour(resolveBlockTime(b, "start"))}-${fmtHour(resolveBlockTime(b, "end"))}`;
                           })();
                       const isSelected = this._selectedRuleIdx === i;
+                      const targetCount = r.targets?.length || 1;
+                      const otherNames = (r.targets || [])
+                        .filter((tg) => tg.schedule_id !== schedule.id)
+                        .map((tg) => this.card._schedules.find((s) => s.id === tg.schedule_id)?.name || tg.schedule_id);
                       return html`
                       <div class="rule-block" data-selected="${isSelected}"
                         style="cursor:pointer;${isSelected ? "border:2px solid var(--accent);background:var(--accent-soft)" : ""}"
@@ -184,6 +190,11 @@ export class ChronosEditor extends LitElement {
                         <span class="chip chip--accent" style="flex:0 0 auto" title="${t("wr.target.label")}">
                           ${icon("clock", 11)} ${targetLabel}
                         </span>
+                        ${targetCount > 1 ? html`
+                          <span class="chip" style="flex:0 0 auto" title="${t("rule.shared.tooltip", { list: otherNames.join(", ") })}">
+                            ${icon("repeat", 10)} ${targetCount}
+                          </span>
+                        ` : nothing}
                         ${r.if ? html`
                           <span class="rule-block__label rule-block__label--if">IF</span>
                           <span class="rule-token rule-token--weather">${r.if}</span>
@@ -193,24 +204,24 @@ export class ChronosEditor extends LitElement {
                         <div style="flex:1"></div>
                         <label class="switch" @click=${(e: Event) => e.stopPropagation()}>
                           <input type="checkbox" .checked=${r.active} @change=${(e: Event) => {
-                            const newRules = [...(schedule.weather_rules || [])];
-                            newRules[i] = { ...newRules[i], active: (e.target as HTMLInputElement).checked };
-                            this.card.updateScheduleLocal(schedule.id, { weather_rules: newRules });
+                            this.card.toggleRuleActive(r.id!, (e.target as HTMLInputElement).checked);
                           }}/>
                           <span class="switch__track"></span>
                           <span class="switch__thumb"></span>
                         </label>
                         <button class="btn btn--icon btn--ghost btn--sm"
-                          @click=${(e: Event) => { e.stopPropagation(); this.card.editWeatherRule(schedule.id, i); }}
-                          title="${t("common.edit") !== "common.edit" ? t("common.edit") : "Modifica"}">
+                          @click=${(e: Event) => { e.stopPropagation(); this.card.editWeatherRule(r.id!, schedule.id); }}
+                          title="${t("common.edit")}">
                           ${icon("edit", 12)}
                         </button>
                         <button class="btn btn--icon btn--ghost btn--sm" style="color:var(--danger)"
                           @click=${(e: Event) => {
                             e.stopPropagation();
-                            if (!confirm(`${t("common.remove")}: ${r.if || ""} → ${r.then}?`)) return;
-                            const newRules = (schedule.weather_rules || []).filter((_, j) => j !== i);
-                            this.card.updateScheduleLocal(schedule.id, { weather_rules: newRules });
+                            const msg = targetCount > 1
+                              ? t("rule.unlink.shared", { n: targetCount, name: schedule.name })
+                              : `${t("common.remove")}: ${r.if || ""} → ${r.then}?`;
+                            if (!confirm(msg)) return;
+                            this.card.unlinkRuleFromSchedule(r.id!, schedule.id);
                             if (this._selectedRuleIdx === i) this._selectedRuleIdx = -1;
                           }}
                           title="${t("common.remove")}">
@@ -960,7 +971,7 @@ export class ChronosEditor extends LitElement {
               ${t("editor.delete.summary", {
                 blocks: schedule.blocks.length,
                 devices: (schedule.device_ids || []).length,
-                rules: (schedule.weather_rules || []).length,
+                rules: this.card.rulesForSchedule(schedule.id).length,
               })}
             </span>
           </p>
@@ -991,9 +1002,13 @@ export class ChronosEditor extends LitElement {
   }
 
   /** Download the schedule as a portable JSON file (device references are
-   * exported as entity_ids so another instance can re-link them). */
+   * exported as entity_ids so another instance can re-link them; global
+   * rules targeting this schedule are embedded in legacy shape). */
   private _exportSchedule(schedule: Schedule) {
-    const json = exportSchedule(schedule, this.card._devices, CARD_VERSION);
+    const json = exportSchedule(
+      schedule, this.card._devices, CARD_VERSION,
+      this.card.rulesForSchedule(schedule.id),
+    );
     const slug = (schedule.name || "schedule")
       .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "schedule";
     const blob = new Blob([json], { type: "application/json" });

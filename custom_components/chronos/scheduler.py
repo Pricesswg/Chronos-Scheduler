@@ -78,9 +78,11 @@ def _make_history_entry(
     outcome: str = "ok",
     error: str | None = None,
     rule_idx: int | None = None,
+    rule_id: str | None = None,
 ) -> dict[str, Any]:
     """Build a history entry. Schedule name is snapshotted so deletions
-    don't lose context for past entries."""
+    don't lose context for past entries. rule_idx is the legacy positional
+    reference (pre-1.17 entries); new rule firings carry rule_id."""
     return {
         "ts": dt_util.utcnow().isoformat(),
         "schedule_id": str(sched.get("id", "")),
@@ -93,6 +95,7 @@ def _make_history_entry(
         "outcome": outcome,
         "error": error,
         "rule_idx": rule_idx,
+        "rule_id": rule_id,
     }
 
 
@@ -434,6 +437,21 @@ class ChronosScheduler:
                 return block, i
         return None, -1
 
+    def _rules_for(self, schedule_id: str) -> list[dict]:
+        """Per-schedule view of the global rules store (v1.17+).
+
+        One legacy-shaped dict per (rule, target) pair, with the target's
+        block_index inlined, so the effect/trigger machinery below keeps
+        consuming the same shape it did when rules lived inside schedules.
+        """
+        sid = str(schedule_id)
+        out: list[dict] = []
+        for rule in self._store.rules:
+            for tgt in rule.get("targets") or []:
+                if str(tgt.get("schedule_id")) == sid:
+                    out.append({**rule, "block_index": tgt.get("block_index")})
+        return out
+
     def _effective_blocks(self, sched: dict) -> list[dict]:
         """Return blocks with continuous rule effects applied.
 
@@ -445,7 +463,7 @@ class ChronosScheduler:
         as side effects in _evaluate_triggers.
         """
         blocks = [dict(b) for b in sched.get("blocks", []) or []]
-        rules = sched.get("weather_rules", []) or []
+        rules = self._rules_for(sched.get("id", ""))
         for rule in rules:
             if not rule.get("active"):
                 continue
@@ -638,7 +656,7 @@ class ChronosScheduler:
         """
         sched_id = str(sched.get("id", ""))
         sched_name = sched.get("name", "")
-        rules = sched.get("weather_rules", []) or []
+        rules = self._rules_for(sched_id)
         for idx, rule in enumerate(rules):
             if not rule.get("active"):
                 continue
@@ -648,7 +666,10 @@ class ChronosScheduler:
             target_idx = rule.get("block_index")
             if isinstance(target_idx, int) and target_idx != current_idx:
                 continue
-            key = f"{sched_id}:{idx}"
+            # Keyed by rule id (stable across reorders/deletions), per
+            # schedule: a rule shared by two schedules keeps independent
+            # edge state on each.
+            key = f"{sched_id}:{rule.get('id', idx)}"
             state = self._rule_state.setdefault(key, {"last_eval": False, "last_fire": None})
             try:
                 current = await self._evaluate_rule(rule)
@@ -682,7 +703,7 @@ class ChronosScheduler:
             self._store.append_history(_make_history_entry(
                 sched, kind="rule", action_id=rule.get("action_id", ""),
                 entity_id=None, value=rule.get("action_value"),
-                rule_idx=idx,
+                rule_id=rule.get("id"),
             ))
 
     def _is_armed(self, fire_mode: str, last_fire, local_now) -> bool:
@@ -1277,7 +1298,7 @@ class ChronosScheduler:
         """Apply a block transition. Evaluates 'skip' rules targeting this
         block before dispatching the action."""
         sched_name = sched.get("name", "")
-        weather_rules = sched.get("weather_rules", []) or []
+        weather_rules = self._rules_for(sched.get("id", ""))
 
         for rule in weather_rules:
             if not rule.get("active"):
