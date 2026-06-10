@@ -226,7 +226,7 @@ Useful for debugging "why didn't my schedule fire" or "did the SOC rule trigger 
 
 Irrigation schedules support two duration modes per time block:
 
-- **Global duration** (default): every valve in the block opens in parallel for the same single duration. This is the original behaviour and is unchanged.
+- **Global duration** (default): every valve in the block opens in parallel and closes automatically after the configured minutes (v1.17.1+; previously the duration was informational and the valves stayed open). The running program is restart-safe: if Home Assistant restarts mid-watering, the valves are closed defensively on the next start.
 - **Per-valve sequence**: Chronos opens the valves one at a time, each for its own number of minutes, then moves to the next. Total program length is the sum of the individual times. Useful for multi-station controllers where stations must run in sequence (water-pressure constraints).
 
 The mode is chosen in the block editor when the schedule type is irrigation. In sequential mode a row is shown per valve with its own minutes field and a running total.

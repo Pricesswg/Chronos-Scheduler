@@ -325,11 +325,11 @@ class ChronosScheduler:
                 "entity_id": ", ".join(info.get("entity_ids", []) or []) or None,
                 "value": None,
                 "outcome": "error",
-                "error": "Sequential irrigation interrupted by restart; valves closed defensively",
+                "error": "Irrigation program interrupted by restart; valves closed defensively",
                 "rule_idx": None,
             })
         _LOGGER.warning(
-            "Chronos: restart interrupted %d sequential irrigation program(s); "
+            "Chronos: restart interrupted %d irrigation program(s); "
             "defensively closed valves: %s",
             len(active), closed,
         )
@@ -893,6 +893,92 @@ class ChronosScheduler:
             except Exception:
                 _LOGGER.exception("Chronos: history flush failed after sequence")
 
+    async def _run_irrigation_timed(
+        self,
+        sched: dict,
+        seq_key: str,
+        entity_ids: list[str],
+        minutes: float,
+        action_label: str,
+    ) -> None:
+        """Global irrigation with a duration: open every valve in parallel,
+        wait `minutes`, close them all. The in-flight set persists to the
+        sequences store so a restart mid-watering closes the valves
+        defensively (same recovery path as sequential programs). On
+        cancellation (HA shutdown) everything opened is closed before
+        exiting."""
+        sched_name = sched.get("name", "?")
+        sched_id = str(sched.get("id", ""))
+        await self._store.set_active_sequence(seq_key, {
+            "schedule_id": sched_id,
+            "schedule_name": sched_name,
+            "entity_ids": list(entity_ids),
+            "started_at": dt_util.utcnow().isoformat(),
+        })
+        _LOGGER.info(
+            "Chronos: START timed irrigation schedule=%s valves=%s duration=%.0fmin",
+            sched_name, entity_ids, minutes,
+        )
+        opened: list[str] = []
+        try:
+            for ent in entity_ids:
+                try:
+                    await self._hass.services.async_call(
+                        "valve", "open_valve", {"entity_id": ent}, blocking=False
+                    )
+                    opened.append(ent)
+                    self._store.append_history(_make_history_entry(
+                        sched, kind="block", action_id="open_valve",
+                        entity_id=ent, value=f"{minutes:g}min",
+                    ))
+                    await _log_to_logbook(
+                        self._hass, sched, action_id="open_valve",
+                        entity_id=ent, extra=f"{minutes:g}min",
+                    )
+                except Exception:
+                    _LOGGER.exception("Chronos: open_valve failed for %s in timed run", ent)
+                    self._store.append_history(_make_history_entry(
+                        sched, kind="block", action_id="open_valve",
+                        entity_id=ent, outcome="error",
+                        error="open_valve failed",
+                    ))
+            if not opened:
+                return
+            if self._store.settings.get("notify_block_executed", True):
+                await self._notify(
+                    f"{action_label} = {minutes:g}min · {', '.join(opened)}",
+                    title=f"Chronos · {sched_name}",
+                )
+            # Cancellation (HA stopping) propagates out of the sleep into
+            # the except/finally below.
+            await asyncio.sleep(minutes * 60)
+            for ent in opened:
+                try:
+                    await self._hass.services.async_call(
+                        "valve", "close_valve", {"entity_id": ent}, blocking=False
+                    )
+                except Exception:
+                    _LOGGER.exception("Chronos: close_valve failed for %s in timed run", ent)
+            _LOGGER.info("Chronos: DONE timed irrigation schedule=%s", sched_name)
+        except asyncio.CancelledError:
+            # HA is stopping mid-watering: close whatever we opened. The
+            # next start() sweeps again defensively via the sequences store.
+            for ent in opened:
+                try:
+                    await self._hass.services.async_call(
+                        "valve", "close_valve", {"entity_id": ent}, blocking=False
+                    )
+                except Exception:
+                    _LOGGER.exception("Chronos: close_valve on cancel failed for %s", ent)
+            raise
+        finally:
+            await self._store.clear_active_sequence(seq_key)
+            self._sequence_tasks.pop(seq_key, None)
+            try:
+                await self._store.flush_history()
+            except Exception:
+                _LOGGER.exception("Chronos: history flush failed after timed irrigation")
+
     async def _dispatch_action(self, sched: dict, block: dict) -> None:
         """Internal: execute the block's action on all schedule devices.
 
@@ -1188,6 +1274,57 @@ class ChronosScheduler:
                 sched_name,
             )
             return
+
+        # Irrigation global mode with a duration: open every valve in
+        # parallel, then close them after `value` minutes. Before 1.17.1
+        # the duration was decorative — valve.open_valve takes no duration
+        # param and nothing ever closed the valves (only sequential mode
+        # had a timer). Runs as a tracked background task persisted to the
+        # sequences store, so an HA restart mid-watering closes leftover
+        # valves via the same recovery path as sequential programs. With
+        # no valid duration the legacy behaviour (open and leave open) is
+        # kept as an explicit escape hatch.
+        if device_type == "irrigation" and action_id == "turn_on":
+            minutes: float | None = None
+            try:
+                v = float(action.get("value"))
+                if v > 0:
+                    # Defensive cap: a corrupt value must not hold a valve
+                    # open for weeks.
+                    minutes = min(v, 24 * 60)
+            except (TypeError, ValueError):
+                minutes = None
+            if minutes:
+                entity_ids = []
+                for device_id in device_ids:
+                    device = self._store.get_device(device_id)
+                    if device is not None:
+                        entity_ids.append(device["entity_id"])
+                if not entity_ids:
+                    _LOGGER.warning(
+                        "Chronos: schedule=%s timed irrigation has no resolvable valves",
+                        sched_name,
+                    )
+                    return
+                # One timed program per schedule at a time: a re-trigger
+                # while running (fire_now, effective-block recompute) must
+                # not start a second timer racing open/close on the same
+                # valves.
+                seq_key = f"{sched.get('id', '')}:global"
+                existing = self._sequence_tasks.get(seq_key)
+                if existing is not None and not existing.done():
+                    _LOGGER.info(
+                        "Chronos: timed irrigation already running for %s; ignoring re-trigger",
+                        seq_key,
+                    )
+                    return
+                task = self._hass.async_create_task(
+                    self._run_irrigation_timed(
+                        sched, seq_key, entity_ids, minutes, action_def.get("label", "open_valve"),
+                    )
+                )
+                self._sequence_tasks[seq_key] = task
+                return
 
         executed_count = 0
         executed_entities: list[str] = []
