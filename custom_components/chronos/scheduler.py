@@ -172,6 +172,12 @@ class ChronosScheduler:
         # Tracked so stop() can cancel them and a re-trigger doesn't start
         # a second concurrent run of the same block.
         self._sequence_tasks: dict[str, "asyncio.Task"] = {}
+        # Hourly forecast cache, refreshed by _weather_poll every
+        # polling_minutes. Lets forecast.* clauses be evaluated synchronously
+        # (continuous effects) and avoids a blocking weather.get_forecasts
+        # service call per rule per tick.
+        self._forecast_cache: list[dict] = []
+        self._forecast_cache_at = None
 
     async def start(self) -> None:
         # Restart safety: if a sequential irrigation program was running when
@@ -215,6 +221,9 @@ class ChronosScheduler:
     async def _async_first_tick(self, _hass: HomeAssistant) -> None:
         # Invocato da async_at_started: a questo punto HA è in stato running.
         self._unsub_started = None
+        # Prima il forecast, così il catch-up valuta le regole forecast.*
+        # con dati reali invece che a cache vuota.
+        await self._refresh_forecast_cache()
         try:
             await self._tick(dt_util.utcnow())
         except Exception:
@@ -223,18 +232,21 @@ class ChronosScheduler:
     async def fire_now(self, schedule_id: str) -> dict:
         """Esegue immediatamente la fascia correntemente attiva di una schedule.
 
-        Usato dal servizio chronos.fire_block per test manuali.
+        Usato dal servizio chronos.fire_block per test manuali. Risolve la
+        fascia sui blocchi EFFETTIVI (con gli effetti continui delle regole
+        applicati, come fa il tick) ma poi dispatcha direttamente, saltando
+        le regole skip: il servizio è documentato come bypass del meteo.
         """
         sched = self._store.get_schedule(schedule_id)
         if sched is None:
             return {"ok": False, "error": f"schedule {schedule_id} non trovata"}
         local_now = dt_util.now()
         current_hour = local_now.hour + local_now.minute / 60
-        block = self._block_at(sched, current_hour)
+        block, _idx = self._block_at(self._effective_blocks(sched), current_hour)
         if block is None:
             return {"ok": False, "error": f"nessuna fascia attiva alle {current_hour:.2f}"}
         _LOGGER.info("Chronos: fire_now manuale schedule=%s block=%s", sched.get("name"), block)
-        await self._apply_block(sched, block)
+        await self._dispatch_action(sched, block)
         return {"ok": True, "block": block}
 
     async def stop(self) -> None:
@@ -460,9 +472,9 @@ class ChronosScheduler:
 
         Supports a flat AND-conjunction of single comparisons, separated by
         ' AND ' (case-insensitive). Every clause must be true for the rule
-        to fire. forecast.* clauses are not evaluated synchronously — when
-        present they make the whole expression false here; the async path
-        in _evaluate_rule handles them properly.
+        to fire. forecast.* clauses read from the in-memory forecast cache
+        (refreshed by the polling timer); with an empty cache they evaluate
+        to False.
         """
         clauses = _split_and(expr)
         if not clauses:
@@ -481,8 +493,9 @@ class ChronosScheduler:
         if op_fn is None:
             return False
         if key.startswith("forecast."):
-            return False  # forecast needs async
-        actual = self._read_attribute(key)
+            actual = self._forecast_value_from_cache(key)
+        else:
+            actual = self._read_attribute(key)
         if actual is None:
             return False
         try:
@@ -754,13 +767,11 @@ class ChronosScheduler:
                 device_type, action_id,
             )
             return
-        # Reuse _apply_block by synthesising a fake block. Simpler than
-        # duplicating the service-call dispatcher.
+        # Reuse the dispatcher by synthesising a fake block. Going straight
+        # to _dispatch_action (instead of _apply_block) intentionally skips
+        # the skip-rule re-evaluation: the trigger's own IF already gated it.
         synthetic_block = {"start": 0, "end": 0, "action": {"id": action_id, "value": value}}
-        # _apply_block re-evaluates weather rules including 'salta' override.
-        # For trigger actions we want to skip that re-evaluation, so we go
-        # straight to the device dispatch path:
-        await self._dispatch_action(sched, synthetic_block, suppress_block_rules=True)
+        await self._dispatch_action(sched, synthetic_block)
 
     async def _run_irrigation_sequence(
         self, sched: dict, seq_key: str, sequence: list[dict],
@@ -861,11 +872,11 @@ class ChronosScheduler:
             except Exception:
                 _LOGGER.exception("Chronos: history flush failed after sequence")
 
-    async def _dispatch_action(self, sched: dict, block: dict, suppress_block_rules: bool = False) -> None:
+    async def _dispatch_action(self, sched: dict, block: dict) -> None:
         """Internal: execute the block's action on all schedule devices.
 
-        Refactored out of _apply_block so that triggers can reuse it without
-        re-running the block's own weather rules.
+        Refactored out of _apply_block so that triggers and fire_now can
+        reuse it without re-running the block's own weather rules.
         """
         sched_name = sched.get("name", "")
         device_type = sched.get("device_type", "")
@@ -1330,10 +1341,7 @@ class ChronosScheduler:
         if op_fn is None:
             return False
         if key.startswith("forecast."):
-            weather_entity = self._store.settings.get("weather_entity", "")
-            if not weather_entity:
-                return False
-            actual = await self._get_forecast_value(weather_entity, key)
+            actual = await self._get_forecast_value(key)
         else:
             actual = self._read_attribute(key)
         if actual is None:
@@ -1427,7 +1435,16 @@ class ChronosScheduler:
 
         return None
 
-    async def _get_forecast_value(self, weather_entity: str, key: str) -> float | str | None:
+    async def _refresh_forecast_cache(self) -> None:
+        """Fetch the hourly forecast from the configured weather entity and
+        store it in memory. Called by the polling timer and lazily when the
+        cache is stale. A failed fetch keeps the previous cache: stale data
+        beats no data for rule evaluation."""
+        weather_entity = self._store.settings.get("weather_entity", "")
+        if not weather_entity:
+            self._forecast_cache = []
+            self._forecast_cache_at = None
+            return
         try:
             result = await self._hass.services.async_call(
                 "weather",
@@ -1438,7 +1455,7 @@ class ChronosScheduler:
             )
         except Exception:
             _LOGGER.debug("Failed to get forecast for %s", weather_entity)
-            return None
+            return
 
         forecasts = []
         if isinstance(result, dict):
@@ -1446,12 +1463,28 @@ class ChronosScheduler:
                 if isinstance(entity_data, dict):
                     forecasts = entity_data.get("forecast", [])
                     break
+        if forecasts:
+            self._forecast_cache = forecasts
+            self._forecast_cache_at = dt_util.utcnow()
 
+    def _forecast_stale(self) -> bool:
+        if self._forecast_cache_at is None:
+            return True
+        polling = self._store.settings.get("polling_minutes", 15) or 15
+        # Twice the polling interval: tolerates one missed/failed poll
+        # before forcing an inline refresh on the async rule path.
+        return dt_util.utcnow() - self._forecast_cache_at > timedelta(
+            minutes=max(5, polling) * 2
+        )
+
+    def _forecast_value_from_cache(self, key: str) -> float | str | None:
+        """Derive a forecast.* attribute from the cached hourly forecast.
+        Synchronous, so continuous effects (shift/extend/scale_*) can use
+        forecast clauses too."""
+        forecasts = self._forecast_cache
         if not forecasts:
             return None
-
         sub_key = key.split(".", 1)[1]
-
         if sub_key == "temp_max_today":
             return max((f.get("temperature", 0) for f in forecasts[:24]), default=None)
         if sub_key == "temp_min_today":
@@ -1459,13 +1492,16 @@ class ChronosScheduler:
         if sub_key == "rain_6h":
             return sum(f.get("precipitation", 0) or 0 for f in forecasts[:6])
         if sub_key == "condition_6h":
-            cond = forecasts[5].get("condition") if len(forecasts) > 5 else None
-            return cond
-
+            return forecasts[5].get("condition") if len(forecasts) > 5 else None
         return None
 
+    async def _get_forecast_value(self, key: str) -> float | str | None:
+        if self._forecast_stale():
+            await self._refresh_forecast_cache()
+        return self._forecast_value_from_cache(key)
+
     async def _weather_poll(self, _now) -> None:
-        pass
+        await self._refresh_forecast_cache()
 
     async def _notify(self, message: str, title: str = "Chronos") -> None:
         try:

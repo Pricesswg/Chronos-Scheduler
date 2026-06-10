@@ -282,8 +282,8 @@ export class ChronosWeatherRule extends LitElement {
               <select class="select mono" @change=${(e: Event) => this._patchClause(idx, { op: (e.target as HTMLSelectElement).value })}>
                 ${varDef?.type === "enum"
                   ? html`
-                      <option value="==" ?selected=${c.op === "=="}>uguale a (==)</option>
-                      <option value="!=" ?selected=${c.op === "!="}>diverso da (!=)</option>`
+                      <option value="==" ?selected=${c.op === "=="}>${t("wr.op.eq")} (==)</option>
+                      <option value="!=" ?selected=${c.op === "!="}>${t("wr.op.neq")} (!=)</option>`
                   : html`
                       <option value=">" ?selected=${c.op === ">"}>&gt;</option>
                       <option value=">=" ?selected=${c.op === ">="}>&ge;</option>
@@ -589,7 +589,8 @@ export class ChronosWeatherRule extends LitElement {
     for (const r of (schedule.weather_rules || [])) {
       if (!r.active) continue;
       if (r.block_index === target || r.block_index === null || r.block_index === undefined) {
-        if (r.effect === this._effect || (r.effect && (r.effect.startsWith("scale_") || r.effect.startsWith("duration") || ["extend","shrink"].includes(r.effect)) && (this._effect.startsWith("scale_") || ["extend","shrink"].includes(this._effect)))) {
+        const touchesDuration = (e: string) => e.startsWith("scale_") || e === "extend" || e === "shrink";
+        if (r.effect === this._effect || (r.effect && touchesDuration(r.effect) && touchesDuration(this._effect))) {
           result.push(`${r.if || "(no condition)"} → ${t("wr.effect." + (r.effect || "skip"))}`);
         }
       }

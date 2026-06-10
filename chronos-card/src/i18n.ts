@@ -355,6 +355,7 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "live.condition.snowy": { it: "Neve", en: "Snowy", fr: "Neige", de: "Schnee" },
   "live.condition.fog": { it: "Nebbia", en: "Fog", fr: "Brouillard", de: "Nebel" },
   "live.condition.windy": { it: "Ventoso", en: "Windy", fr: "Venteux", de: "Windig" },
+  "live.not_today": { it: "Non in programma oggi", en: "Not scheduled today", fr: "Pas prévu aujourd'hui", de: "Heute nicht geplant" },
 
   // Week
   "week.subtitle": { it: "Vista a 7 giorni · {n} schedulazioni attive", en: "7-day view · {n} active schedules", fr: "Vue 7 jours · {n} planifications actives", de: "7-Tage-Ansicht · {n} aktive Zeitpläne" },
@@ -395,6 +396,8 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "wr.if.sensor.no_match": { it: "Nessun sensore corrisponde", en: "No matching sensor", fr: "Aucun capteur correspondant", de: "Kein passender Sensor" },
   "wr.var": { it: "Variabile meteo", en: "Weather variable", fr: "Variable météo", de: "Wettervariable" },
   "wr.op": { it: "Operatore", en: "Operator", fr: "Opérateur", de: "Operator" },
+  "wr.op.eq": { it: "uguale a", en: "equal to", fr: "égal à", de: "gleich" },
+  "wr.op.neq": { it: "diverso da", en: "different from", fr: "différent de", de: "ungleich" },
   "wr.threshold": { it: "Soglia", en: "Threshold", fr: "Seuil", de: "Schwelle" },
   "wr.then.title": { it: "Azione · cosa fare", en: "Action · what to do", fr: "Action · que faire", de: "Aktion · was tun" },
   "wr.then.subtitle": { it: "L'effetto sulla fascia oraria attiva", en: "Effect on the active time block", fr: "Effet sur le créneau horaire actif", de: "Auswirkung auf den aktiven Zeitblock" },

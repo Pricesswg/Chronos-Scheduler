@@ -4,7 +4,7 @@ import { chronosStyles } from "../styles";
 import { icon, deviceIcon, weatherIcon } from "../icons";
 import { getDeviceColor } from "../device-colors";
 import { actionLabel } from "../actions";
-import { fmtHour } from "../utils";
+import { fmtHour, resolveBlockTime } from "../utils";
 import { t } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
 import "../timeline";
@@ -22,13 +22,26 @@ export class ChronosLive extends LitElement {
     const weatherState = weatherEntity ? this.card.hass?.states?.[weatherEntity] : null;
 
     const temp = weatherState?.attributes?.temperature ?? "—";
+    const tempUnit = weatherState?.attributes?.temperature_unit || "°C";
     const condition = weatherState?.state || "cloud";
     const humidity = weatherState?.attributes?.humidity ?? "—";
     const windSpeed = weatherState?.attributes?.wind_speed ?? "—";
+    const windUnit = weatherState?.attributes?.wind_speed_unit || "km/h";
 
+    // Backend convention: days[0] = Monday (Python weekday()). JS getDay()
+    // is 0 = Sunday, hence the +6 rotation. A schedule that doesn't run
+    // today (day mask or date_range) must not show an "active" block.
+    const weekday = (new Date().getDay() + 6) % 7;
     const liveSchedules = schedules.filter((s) => s.enabled).map((s) => {
-      const active = s.blocks.find((b) => this.nowHour >= b.start && this.nowHour < b.end);
-      return { schedule: s, active };
+      const today = !!(s.days?.[weekday] ?? 1) && this._inDateRange(s);
+      const active = today
+        ? s.blocks.find((b) => {
+            const st = resolveBlockTime(b, "start");
+            const en = resolveBlockTime(b, "end");
+            return this.nowHour >= st && this.nowHour < en;
+          })
+        : undefined;
+      return { schedule: s, active, today };
     });
 
     return html`
@@ -48,12 +61,12 @@ export class ChronosLive extends LitElement {
           <div class="weather-hero">
             <div class="weather-hero__icon">${weatherIcon(condition, 32)}</div>
             <div>
-              <div class="weather-hero__temp">${temp}°<span style="font-size:16px;color:var(--text-muted)">C</span></div>
+              <div class="weather-hero__temp">${temp}<span style="font-size:16px;color:var(--text-muted)">${tempUnit}</span></div>
               <div class="weather-hero__cond">${this._conditionLabel(condition)}</div>
             </div>
             <div class="col" style="gap:4px;align-items:flex-end">
               <span class="chip">${icon("droplet", 11)} ${humidity}%</span>
-              <span class="chip">${icon("wind", 11)} ${windSpeed} km/h</span>
+              <span class="chip">${icon("wind", 11)} ${windSpeed} ${windUnit}</span>
             </div>
           </div>
 
@@ -79,21 +92,21 @@ export class ChronosLive extends LitElement {
         <div class="card">
           <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("live.schedules.title")}</h3><p class="card__sub">${liveSchedules.filter((l) => l.active).length}</p></div></div>
           <div class="col" style="gap:12px">
-            ${liveSchedules.map(({ schedule, active }) => html`
-              <div class="card card--ghost" style="padding:14px">
+            ${liveSchedules.map(({ schedule, active, today }) => html`
+              <div class="card card--ghost" style="padding:14px;opacity:${today ? 1 : 0.65}">
                 <div class="sp-between" style="margin-bottom:10px">
                   <div class="row" style="gap:10px">
                     <span style="width:8px;height:8px;border-radius:50%;background:${active ? "var(--ok)" : "var(--text-muted)"};box-shadow:${active ? "0 0 0 4px color-mix(in srgb, var(--ok) 25%, transparent)" : "none"}"></span>
                     <strong>${schedule.name}</strong>
                     ${active
                       ? html`<span class="chip chip--accent">${actionLabel(schedule.device_type, active.action)}</span>`
-                      : html`<span class="chip">${t("schedule.next_block")}</span>`}
+                      : html`<span class="chip">${today ? t("schedule.next_block") : t("live.not_today")}</span>`}
                   </div>
                   <button class="btn btn--sm btn--ghost" @click=${() => this.card.selectSchedule(schedule.id, "editor")}>
                     ${t("device.open_schedule")} ${icon("chevron-right", 12)}
                   </button>
                 </div>
-                <chronos-timeline variant="linear" .deviceType=${schedule.device_type} .blocks=${schedule.blocks} .interactive=${false} height="compact" .showWeather=${false} .now=${this.nowHour}></chronos-timeline>
+                <chronos-timeline variant="linear" .deviceType=${schedule.device_type} .blocks=${schedule.blocks} .interactive=${false} height="compact" .showWeather=${false} .now=${today ? this.nowHour : null}></chronos-timeline>
               </div>
             `)}
           </div>
@@ -124,6 +137,21 @@ export class ChronosLive extends LitElement {
         </div>
       </div>
     `;
+  }
+
+  /** Mirror of the backend's _is_in_date_range: year-agnostic month/day
+   * range, wrapping across year-end when start > end. */
+  private _inDateRange(s: any): boolean {
+    const dr = s.date_range;
+    if (!dr) return true;
+    const sm = dr.start_month, sd = dr.start_day, em = dr.end_month, ed = dr.end_day;
+    if (!(sm && sd && em && ed)) return true;
+    const now = new Date();
+    const cur = (now.getMonth() + 1) * 100 + now.getDate();
+    const start = sm * 100 + sd;
+    const end = em * 100 + ed;
+    if (start <= end) return start <= cur && cur <= end;
+    return cur >= start || cur <= end;
   }
 
   private _computeBarPercent(d: any, state: any): number {

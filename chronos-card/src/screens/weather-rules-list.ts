@@ -98,8 +98,7 @@ export class ChronosWeatherRulesList extends LitElement {
     const rules = [...(sched.weather_rules || [])];
     rules[idx] = { ...rules[idx], active };
     this.card.updateScheduleLocal(schedId, { weather_rules: rules });
-    this.card._selectedId = schedId;
-    await this.card.saveCurrentSchedule();
+    await this.card.saveScheduleById(schedId);
   }
 
   private async _deleteRule(schedId: string, idx: number) {
@@ -110,7 +109,6 @@ export class ChronosWeatherRulesList extends LitElement {
     if (!confirm(`${t("common.remove")}: ${r.if} → ${r.then}?`)) return;
     const rules = (sched.weather_rules || []).filter((_, i) => i !== idx);
     this.card.updateScheduleLocal(schedId, { weather_rules: rules });
-    this.card._selectedId = schedId;
-    await this.card.saveCurrentSchedule();
+    await this.card.saveScheduleById(schedId);
   }
 }

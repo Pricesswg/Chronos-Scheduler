@@ -22,48 +22,24 @@ export class ChronosDevicesScreen extends LitElement {
   @state() private _bulkSelected = "";
   @state() private _busy = false;
   @state() private _lastError = "";
-  @state() private _debugLog: string[] = [];
-
-  private _log(msg: string) {
-    const line = `${new Date().toLocaleTimeString()} · ${msg}`;
-    console.log("[Chronos]", line);
-    this._debugLog = [...this._debugLog.slice(-9), line];
-  }
 
   private _askRemove(id: string) {
-    this._log(`click TRASH id="${id}" (type=${typeof id})`);
     this._confirmRemoveId = id;
   }
 
   private async _doRemove(id: string) {
-    this._log(`click CONFIRM id="${id}" busy=${this._busy}`);
-    if (this._busy) {
-      this._log("ABORT: busy=true");
-      return;
-    }
+    if (this._busy) return;
     this._busy = true;
     this._lastError = "";
-    const beforeCount = this.card._devices.length;
-    this._log(`devices BEFORE remove: ${beforeCount}`);
-
     try {
-      this._log(`calling doRemoveDevice("${id}")…`);
       await this.card.doRemoveDevice(id);
-      const afterCount = this.card._devices.length;
-      this._log(`OK · devices AFTER: ${afterCount} (delta=${afterCount - beforeCount})`);
-      if (afterCount === beforeCount) {
-        this._log("WARN: device count NON cambiato → backend non ha rimosso");
-      }
     } catch (e: any) {
-      const msg = e?.message || String(e);
-      this._lastError = msg;
-      this._log(`ERROR: ${msg}`);
+      this._lastError = e?.message || String(e);
     } finally {
       this._busy = false;
       this._confirmRemoveId = "";
       this._bulkOpen = false;
       this._bulkSelected = "";
-      this.requestUpdate();
     }
   }
 
@@ -80,12 +56,10 @@ export class ChronosDevicesScreen extends LitElement {
           <div class="row" style="gap:8px">
             <button class="btn" title="${t("devices.refresh.title")}"
               @click=${async () => {
-                this._log("force REFRESH dal backend…");
                 try {
-                  await this.card._reloadAllDebug();
-                  this._log(`refresh OK · devices=${this.card._devices.length}`);
+                  await this.card.reloadAll();
                 } catch (e: any) {
-                  this._log(`refresh ERROR: ${e?.message || e}`);
+                  this._lastError = e?.message || String(e);
                 }
               }}>
               ${icon("repeat", 14)}
@@ -127,7 +101,6 @@ export class ChronosDevicesScreen extends LitElement {
                     <div class="device-row__meta" style="margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
                       <span style="color:var(--text-muted)">${d.entity_id}</span>
                       ${d.area ? html` · ${d.area}` : nothing}
-                      <span style="color:var(--text-muted);opacity:0.6"> · id:${d.id}(${typeof d.id})</span>
                     </div>
                   </div>
                   <span class="chip chip--accent" style="flex:0 0 auto">${deviceTypeLabel(d.type, def.label)}</span>
@@ -152,16 +125,6 @@ export class ChronosDevicesScreen extends LitElement {
         </div>
 
         <p class="text-xs text-mute" style="margin:0">${t("devices.types_hint")}</p>
-
-        ${this._debugLog.length ? html`
-          <details style="font-size:11px;font-family:ui-monospace,monospace;background:var(--bg-sunken);border-radius:8px;padding:8px 12px;color:var(--text-soft)">
-            <summary style="cursor:pointer;font-weight:600">Debug log (${this._debugLog.length})</summary>
-            <div style="margin-top:8px;display:flex;flex-direction:column;gap:2px">
-              ${this._debugLog.map((l) => html`<div>${l}</div>`)}
-            </div>
-            <button class="btn btn--sm" style="margin-top:8px" @click=${() => { this._debugLog = []; }}>Clear log</button>
-          </details>
-        ` : nothing}
 
         ${this._pickerOpen ? this._renderPicker(available) : nothing}
         ${this._confirmRemoveId ? this._renderConfirm() : nothing}

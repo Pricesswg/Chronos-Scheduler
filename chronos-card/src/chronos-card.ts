@@ -340,7 +340,14 @@ export class ChronosCard extends LitElement {
   }
 
   async saveCurrentSchedule() {
-    const sched = this._schedules.find((s) => s.id === this._selectedId);
+    await this.saveScheduleById(this._selectedId);
+  }
+
+  /** Persist one schedule by id without touching the global selection.
+   * Used by screens that edit schedules other than the selected one
+   * (e.g. the cross-schedule weather rules list). */
+  async saveScheduleById(id: string) {
+    const sched = this._schedules.find((s) => s.id === id);
     if (!sched) return;
     // Sequential-irrigation valve-conflict guard. Warn always; hard-block
     // the save only when the user opted in (Settings → Irrigation).
@@ -536,7 +543,9 @@ export class ChronosCard extends LitElement {
     if (this._settings?.snap_minutes) setSnapMinutes(this._settings.snap_minutes);
   }
 
-  async _reloadAllDebug() {
+  /** Force a full re-fetch of every backend resource. Exposed for the
+   * manual refresh button on the devices screen. */
+  async reloadAll() {
     await this._loadAll();
   }
 
