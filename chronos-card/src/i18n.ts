@@ -383,6 +383,24 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "wrl.filter.all": { it: "Tutte le schedulazioni", en: "All schedules", fr: "Toutes les planifications", de: "Alle Zeitpläne" },
   "wrl.group.sub": { it: "{n} regole · {active} attive", en: "{n} rules · {active} active", fr: "{n} règles · {active} actives", de: "{n} Regeln · {active} aktiv" },
 
+  // Duplicate / export / import
+  "dup.title": { it: "Duplica schedulazione", en: "Duplicate schedule", fr: "Dupliquer la planification", de: "Zeitplan duplizieren" },
+  "dup.subtitle": { it: "Copia di «{name}»: modifica i campi prima di creare.", en: "Copy of \"{name}\": adjust the fields before creating.", fr: "Copie de «{name}» : modifie les champs avant de créer.", de: "Kopie von „{name}“: Felder vor dem Erstellen anpassen." },
+  "dup.copy_of": { it: "{name} (copia)", en: "{name} (copy)", fr: "{name} (copie)", de: "{name} (Kopie)" },
+  "dup.include_rules": { it: "Copia anche le {n} regole meteo", en: "Also copy the {n} weather rules", fr: "Copier aussi les {n} règles météo", de: "Auch die {n} Wetterregeln kopieren" },
+  "dup.disabled_note": { it: "La copia viene creata disattivata: controllala e attivala quando è pronta.", en: "The copy is created disabled: review it and enable it when ready.", fr: "La copie est créée désactivée : vérifie-la puis active-la.", de: "Die Kopie wird deaktiviert erstellt: prüfen und dann aktivieren." },
+  "dup.create": { it: "Crea copia", en: "Create copy", fr: "Créer la copie", de: "Kopie erstellen" },
+  "dup.button": { it: "Duplica…", en: "Duplicate…", fr: "Dupliquer…", de: "Duplizieren…" },
+  "editor.export": { it: "Esporta JSON", en: "Export JSON", fr: "Exporter JSON", de: "JSON exportieren" },
+  "wizard.alt.heading": { it: "Oppure parti da una schedulazione esistente", en: "Or start from an existing schedule", fr: "Ou pars d'une planification existante", de: "Oder von einem bestehenden Zeitplan ausgehen" },
+  "wizard.import.heading": { it: "Importa da JSON (esportato da un'altra istanza Chronos)", en: "Import from JSON (exported from another Chronos instance)", fr: "Importer depuis JSON (exporté d'une autre instance Chronos)", de: "Aus JSON importieren (von einer anderen Chronos-Instanz exportiert)" },
+  "wizard.import.file": { it: "Da file…", en: "From file…", fr: "Depuis un fichier…", de: "Aus Datei…" },
+  "wizard.import.button": { it: "Importa", en: "Import", fr: "Importer", de: "Importieren" },
+  "wizard.import.missing": { it: "Dispositivi non trovati su questa istanza: {list}. Importali in Gestione dispositivi e ricollegali alla schedulazione.", en: "Devices not found on this instance: {list}. Import them under Manage devices and re-link them to the schedule.", fr: "Appareils introuvables sur cette instance : {list}. Importe-les dans Gestion des appareils puis relie-les à la planification.", de: "Geräte auf dieser Instanz nicht gefunden: {list}. Unter Geräteverwaltung importieren und neu verknüpfen." },
+  "transfer.err.invalid_json": { it: "JSON non valido", en: "Invalid JSON", fr: "JSON invalide", de: "Ungültiges JSON" },
+  "transfer.err.invalid_schedule": { it: "Il JSON non contiene una schedulazione valida", en: "The JSON does not contain a valid schedule", fr: "Le JSON ne contient pas de planification valide", de: "Das JSON enthält keinen gültigen Zeitplan" },
+  "transfer.err.invalid_device_type": { it: "Tipo dispositivo sconosciuto", en: "Unknown device type", fr: "Type d'appareil inconnu", de: "Unbekannter Gerätetyp" },
+
   // Weather rule builder
   "wr.heading": { it: "Regola meteo", en: "Weather rule", fr: "Règle météo", de: "Wetterregel" },
   "wr.heading.edit": { it: "Modifica regola meteo", en: "Edit weather rule", fr: "Modifier la règle météo", de: "Wetterregel bearbeiten" },

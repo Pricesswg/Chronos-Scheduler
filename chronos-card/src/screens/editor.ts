@@ -4,6 +4,8 @@ import { chronosStyles } from "../styles";
 import { icon, deviceIcon } from "../icons";
 import { getActionsForType, getActionDef, actionLabel, actionColor, KIND_COLORS, defaultAction } from "../actions";
 import { fmtHour, getDays, DEVICE_TYPES, computeRepeat, resolveBlockTime } from "../utils";
+import { exportSchedule } from "../transfer";
+import { CARD_VERSION } from "../version";
 import { t, actionDefLabel, actionValueLabel, actionExtraLabel } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
 import type { Block, Schedule } from "../types";
@@ -67,6 +69,8 @@ export class ChronosEditor extends LitElement {
               <span class="switch__track"></span>
               <span class="switch__thumb"></span>
             </label>
+            <button class="btn" @click=${() => this.card.openDuplicateModal(schedule.id)} title="${t("dup.title")}">${icon("copy", 14)}</button>
+            <button class="btn" @click=${() => this._exportSchedule(schedule)} title="${t("editor.export")}">${icon("download", 14)}</button>
             <button class="btn" style="color:var(--danger)" @click=${() => { this._confirmDelete = true; }} title="${t("common.delete")}">${icon("trash", 14)}</button>
             <button class="btn"
               style="background:${isDirty ? "var(--warn)" : "var(--ok)"};color:white;border-color:transparent;cursor:${isDirty ? "pointer" : "default"};font-weight:600;white-space:nowrap"
@@ -984,5 +988,20 @@ export class ChronosEditor extends LitElement {
     const newBlocks = schedule.blocks.filter((_, i) => i !== this._selectedBlockIdx);
     this._selectedBlockIdx = Math.max(0, this._selectedBlockIdx - 1);
     this.card.updateBlocksLocal(schedId, newBlocks);
+  }
+
+  /** Download the schedule as a portable JSON file (device references are
+   * exported as entity_ids so another instance can re-link them). */
+  private _exportSchedule(schedule: Schedule) {
+    const json = exportSchedule(schedule, this.card._devices, CARD_VERSION);
+    const slug = (schedule.name || "schedule")
+      .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "schedule";
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `chronos-${slug}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 }

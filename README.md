@@ -16,6 +16,8 @@ A single Lovelace card provides:
 - Weather rules list grouped by schedule, with a per-schedule filter
 - Device detail view shows the weather rules attached to each linked schedule
 - 6-step wizard for guided schedule creation
+- Schedule duplication with editable name, devices and days before the copy is created
+- JSON export/import to move schedules between Chronos instances (device links travel as entity ids and are re-matched on import)
 - Scene schedules: a single schedule that fires one or more scenes per time block (multi-select picker)
 - Automation schedules: a single schedule that turns on/off or triggers one or more HA automations per time block
 - Service-call schedules: each block invokes any HA service (mqtt.publish, backup.create, script.run, …) with an optional JSON service_data payload

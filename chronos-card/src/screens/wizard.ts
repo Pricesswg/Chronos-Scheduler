@@ -4,6 +4,7 @@ import { chronosStyles } from "../styles";
 import { icon, deviceIcon } from "../icons";
 import { defaultAction, getActionsForType, getActionDef, actionColor } from "../actions";
 import { getDays, DEVICE_TYPES, computeRepeat, DAY_END_HOUR } from "../utils";
+import { importSchedule } from "../transfer";
 import { t, actionDefLabel, actionValueLabel } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
 import type { Block, DeviceType, Schedule } from "../types";
@@ -31,6 +32,11 @@ export class ChronosWizard extends LitElement {
   @state() private _blocksDeviceType: DeviceType | "" = "";
   @state() private _selectedBlockIdx = -1;
   @state() private _variant: Variant = "linear";
+  // Alternative entry points on step 0: duplicate an existing schedule or
+  // import a JSON export from another Chronos instance.
+  @state() private _dupPick = "";
+  @state() private _importText = "";
+  @state() private _importError = "";
 
   private get _steps() {
     return [
@@ -94,6 +100,43 @@ export class ChronosWizard extends LitElement {
             <input class="input" .value=${this._name} @input=${(e: InputEvent) => { this._name = (e.target as HTMLInputElement).value; }}
               placeholder="${t("nav.new_schedule")}"
               style="font-size:18px;padding:12px 14px"/>
+
+            ${this.card._schedules.length ? html`
+              <div style="border-top:1px dashed var(--border-soft);padding-top:14px">
+                <div class="text-xs text-mute" style="margin-bottom:8px">${t("wizard.alt.heading")}</div>
+                <div class="row" style="gap:8px;flex-wrap:wrap">
+                  <select class="select" style="flex:1;min-width:200px"
+                    @change=${(e: Event) => { this._dupPick = (e.target as HTMLSelectElement).value; }}>
+                    ${this.card._schedules.map((s) => html`
+                      <option value="${s.id}" ?selected=${this._dupPick === s.id}>${s.name}</option>
+                    `)}
+                  </select>
+                  <button class="btn" @click=${() => this.card.openDuplicateModal(this._dupPick || this.card._schedules[0].id)}>
+                    ${icon("copy", 13)} ${t("dup.button")}
+                  </button>
+                </div>
+              </div>
+            ` : nothing}
+
+            <div style="border-top:1px dashed var(--border-soft);padding-top:14px">
+              <div class="text-xs text-mute" style="margin-bottom:8px">${t("wizard.import.heading")}</div>
+              <textarea class="input mono" .value=${this._importText}
+                placeholder='{"chronos_export": 1, …}'
+                @input=${(e: InputEvent) => { this._importText = (e.target as HTMLTextAreaElement).value; this._importError = ""; }}
+                style="width:100%;min-height:72px;font-size:11.5px;font-family:var(--font-mono);resize:vertical"></textarea>
+              <div class="row" style="gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap">
+                <label class="btn btn--sm" style="cursor:pointer">
+                  ${icon("upload", 12)} ${t("wizard.import.file")}
+                  <input type="file" accept=".json,application/json" style="display:none"
+                    @change=${(e: Event) => this._onImportFile(e)}/>
+                </label>
+                <button class="btn btn--sm btn--primary" ?disabled=${!this._importText.trim()}
+                  @click=${() => this._doImport()}>
+                  ${icon("check", 12)} ${t("wizard.import.button")}
+                </button>
+                ${this._importError ? html`<span class="text-xs" style="color:var(--danger)">${this._importError}</span>` : nothing}
+              </div>
+            </div>
           </div>
         `;
       case 1: {
@@ -307,6 +350,34 @@ export class ChronosWizard extends LitElement {
         `;
       default:
         return nothing;
+    }
+  }
+
+  private _onImportFile(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const f = input.files?.[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      this._importText = String(reader.result || "");
+      this._importError = "";
+    };
+    reader.readAsText(f);
+    input.value = "";
+  }
+
+  private async _doImport() {
+    this._importError = "";
+    try {
+      const { schedule, missing } = importSchedule(this._importText, this.card._devices);
+      await this.card.doAddSchedule(schedule);
+      if (missing.length) {
+        alert(t("wizard.import.missing", { list: missing.join(", ") }));
+      }
+    } catch (err: any) {
+      const key = `transfer.err.${err?.message || "invalid_json"}`;
+      const msg = t(key);
+      this._importError = msg === key ? t("transfer.err.invalid_json") : msg;
     }
   }
 

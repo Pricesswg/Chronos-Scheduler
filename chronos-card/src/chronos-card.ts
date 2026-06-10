@@ -50,6 +50,7 @@ import "./screens/settings";
 import "./screens/help";
 import "./screens/history";
 import "./screens/card-editor";
+import "./duplicate-modal";
 
 const TITLE_KEYS: Record<Screen, [string, string]> = {
   overview: ["screen.overview.title", "chronos / overview"],
@@ -98,6 +99,8 @@ export class ChronosCard extends LitElement {
   /** When set, the rule builder edits this rule of the selected schedule
    * instead of creating a new one. Reset to -1 when leaving the builder. */
   @state() _editingRuleIdx = -1;
+  /** Schedule id whose duplicate modal is open. "" = closed. */
+  @state() _duplicateSourceId = "";
 
   private _resizeObserver?: ResizeObserver;
 
@@ -324,6 +327,18 @@ export class ChronosCard extends LitElement {
     this.selectSchedule(scheduleId);
     this._editingRuleIdx = ruleIdx;
     this._screen = "weatherRule";
+  }
+
+  /** Open the duplicate-schedule modal. Saves pending editor changes first
+   * so the copy reflects what the user sees and doAddSchedule's refetch
+   * can't clobber unsaved edits on the source. */
+  async openDuplicateModal(scheduleId: string) {
+    if (this.isDirty) await this.saveCurrentSchedule();
+    this._duplicateSourceId = scheduleId;
+  }
+
+  closeDuplicateModal() {
+    this._duplicateSourceId = "";
   }
 
   selectSchedule(id: string, screen?: Screen) {
@@ -606,6 +621,9 @@ export class ChronosCard extends LitElement {
           </div>
         </main>
         ${this._pendingNav ? this._renderDirtyModal() : nothing}
+        ${this._duplicateSourceId
+          ? html`<chronos-duplicate-modal .card=${this} .sourceId=${this._duplicateSourceId}></chronos-duplicate-modal>`
+          : nothing}
       </div>
     `;
   }
