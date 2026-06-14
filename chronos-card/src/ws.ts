@@ -68,6 +68,10 @@ export async function removeRule(hass: HomeAssistant, ruleId: string): Promise<v
   await hass.callWS({ type: "chronos/rules/remove", rule_id: String(ruleId) });
 }
 
+export async function reorderRules(hass: HomeAssistant, order: string[]): Promise<WeatherRule[]> {
+  return hass.callWS({ type: "chronos/rules/reorder", order });
+}
+
 export async function fetchSettings(hass: HomeAssistant): Promise<Settings> {
   return hass.callWS({ type: "chronos/settings/get" });
 }

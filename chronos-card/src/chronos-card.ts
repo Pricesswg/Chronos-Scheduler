@@ -37,6 +37,7 @@ import {
   removeSchedule as wsRemoveSchedule,
   saveRule as wsSaveRule,
   removeRule as wsRemoveRule,
+  reorderRules as wsReorderRules,
   updateSettings as wsUpdateSettings,
 } from "./ws";
 import { fmtHour, computeRepeat, setSnapMinutes, setHassRef } from "./utils";
@@ -104,6 +105,9 @@ export class ChronosCard extends LitElement {
   /** When set, the rule builder edits this global rule instead of creating
    * a new one. Reset to "" when leaving the builder. */
   @state() _editingRuleId = "";
+  /** Screen to return to when the rule builder is cancelled or saved, so
+   * the user lands back where they opened it from (rules list or editor). */
+  @state() _ruleReturnScreen: Screen = "weatherRulesList";
   /** Schedule id whose duplicate modal is open. "" = closed. */
   @state() _duplicateSourceId = "";
 
@@ -316,6 +320,11 @@ export class ChronosCard extends LitElement {
   // --- Public API for screens ---
 
   navigate(screen: Screen) {
+    // Capture where the rule builder is being opened from, so Cancel/Save
+    // can return there. Only the editor and the rules list lead into it.
+    if (screen === "weatherRule" && this._screen !== "weatherRule") {
+      this._ruleReturnScreen = this._screen === "editor" ? "editor" : "weatherRulesList";
+    }
     const isDirty = JSON.stringify(this._schedules) !== JSON.stringify(this._savedSchedules);
     if (isDirty && this._screen === "editor" && screen !== "editor") {
       this._pendingNav = screen;
@@ -333,6 +342,7 @@ export class ChronosCard extends LitElement {
    * scheduleId (optional) selects which schedule provides editing context
    * (e.g. clicked from that schedule's editor). */
   editWeatherRule(ruleId: string, scheduleId?: string) {
+    this._ruleReturnScreen = this._screen === "editor" ? "editor" : "weatherRulesList";
     if (scheduleId) this._selectedId = scheduleId;
     this._editingRuleId = ruleId;
     this._screen = "weatherRule";
@@ -373,6 +383,22 @@ export class ChronosCard extends LitElement {
       console.error("Chronos: removeRule failed", e);
     }
     this._rules = await fetchRules(this.hass);
+  }
+
+  /** Persist a new manual order for the global rules list. Optimistically
+   * applies `orderedIds` locally, then confirms with the backend. */
+  async reorderRules(orderedIds: string[]) {
+    const byId = new Map(this._rules.map((r) => [r.id, r]));
+    const reordered = orderedIds.map((id) => byId.get(id)).filter(Boolean) as WeatherRule[];
+    // Keep any rule not in the list (defensive) at the end.
+    for (const r of this._rules) if (!orderedIds.includes(r.id!)) reordered.push(r);
+    this._rules = reordered;
+    try {
+      this._rules = await wsReorderRules(this.hass, orderedIds);
+    } catch (e) {
+      console.error("Chronos: reorderRules failed", e);
+      this._rules = await fetchRules(this.hass);
+    }
   }
 
   /** Toggle a rule's active flag. Global: affects every target schedule. */

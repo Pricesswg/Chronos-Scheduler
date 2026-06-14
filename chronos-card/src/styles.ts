@@ -503,6 +503,20 @@ export const chronosStyles = css`
   }
   .rule-token--accent { background: var(--accent-soft); border-color: transparent; color: var(--accent-ink); font-weight: 500; }
   .rule-token--weather { background: var(--weather-soft); border-color: transparent; color: var(--weather-ink); font-weight: 500; }
+  /* Drop indicator while reordering rules manually. */
+  .rule-block--dragover { box-shadow: inset 0 2px 0 0 var(--accent); }
+
+  /* Sticky action bar for long builder forms: keeps Save/Cancel reachable
+   * without scrolling to the very bottom of the page. Sits inside the
+   * scrolling .content area, pinned to its bottom edge. */
+  .builder-actions {
+    position: sticky; bottom: 0; z-index: 5;
+    display: flex; justify-content: flex-end; gap: 8px; align-items: center;
+    padding: 12px 4px; margin-top: 4px;
+    background: color-mix(in srgb, var(--bg) 90%, transparent);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    border-top: 1px solid var(--border-soft);
+  }
 
   /* Weather hero */
   .weather-hero {

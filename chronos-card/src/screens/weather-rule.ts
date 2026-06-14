@@ -133,8 +133,9 @@ export class ChronosWeatherRule extends LitElement {
 
         ${effectMeta.needsIf ? this._renderIfSection(weatherAttrs) : this._renderScaleVarSection(weatherAttrs)}
 
-        <div class="row" style="justify-content:flex-end;gap:8px">
-          <button class="btn" @click=${() => this.card.navigate("editor")}>${t("common.cancel")}</button>
+        <div class="builder-actions">
+          <span class="text-xs text-mute" style="margin-right:auto">${this.card._editingRuleId ? t("wr.heading.edit") : t("wr.heading")}</span>
+          <button class="btn" @click=${() => this.card.navigate(this.card._ruleReturnScreen)}>${t("common.cancel")}</button>
           <button class="btn btn--primary" @click=${() => this._saveRule(schedule, typeActions)}>
             ${icon("check", 14)} ${t("common.save")}
           </button>
@@ -732,10 +733,14 @@ export class ChronosWeatherRule extends LitElement {
       if (this._effect === "scale_duration") rule.direction = this._direction;
     }
     const saved = await this.card.doSaveRule(rule);
-    if (saved) {
+    // Return to wherever the builder was opened from. When that's a
+    // schedule's editor, point it at the first target so the new rule is
+    // visible there.
+    const dest = this.card._ruleReturnScreen;
+    if (saved && dest === "editor") {
       this.card.selectSchedule(this._targets[0].schedule_id);
     }
-    this.card.navigate("editor");
+    this.card.navigate(dest);
   }
 
   /** Pre-fill the form fields. Edit mode mirrors the global rule pointed at

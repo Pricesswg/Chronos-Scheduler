@@ -380,6 +380,18 @@ class ChronosStore:
         self.rules = [r for r in self.rules if r.get("id") != rule_id]
         await self._save_rules()
 
+    async def async_reorder_rules(self, order: list[str]) -> None:
+        """Reorder the global rules list to match `order` (a list of rule
+        ids). Rules whose id isn't in `order` (shouldn't happen, but be
+        defensive) keep their relative position at the end. The stored
+        array order is what the UI and the scheduler iterate, so persisting
+        it is all that's needed to make a manual order stick."""
+        pos = {rid: i for i, rid in enumerate(order)}
+        tail = len(pos)
+        # Stable sort: rules sharing the fallback key keep prior order.
+        self.rules.sort(key=lambda r: pos.get(r.get("id"), tail))
+        await self._save_rules()
+
     # --- Settings ---
 
     async def async_update_settings(self, patch: dict[str, Any]) -> dict[str, Any]:

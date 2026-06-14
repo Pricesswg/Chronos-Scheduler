@@ -368,6 +368,18 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
         await store.async_remove_rule(msg["rule_id"])
         connection.send_result(msg["id"], {"success": True})
 
+    @websocket_api.websocket_command({
+        vol.Required("type"): "chronos/rules/reorder",
+        vol.Required("order"): [vol.Coerce(str)],
+    })
+    @websocket_api.async_response
+    async def ws_rules_reorder(
+        hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+    ) -> None:
+        store: ChronosStore = hass.data[DOMAIN]["store"]
+        await store.async_reorder_rules(msg["order"])
+        connection.send_result(msg["id"], store.rules)
+
     # --- Settings ---
 
     @websocket_api.websocket_command({vol.Required("type"): "chronos/settings/get"})
@@ -572,6 +584,7 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_rules_list)
     websocket_api.async_register_command(hass, ws_rules_save)
     websocket_api.async_register_command(hass, ws_rules_remove)
+    websocket_api.async_register_command(hass, ws_rules_reorder)
     websocket_api.async_register_command(hass, ws_settings_get)
     websocket_api.async_register_command(hass, ws_settings_update)
     websocket_api.async_register_command(hass, ws_preview_forecast)

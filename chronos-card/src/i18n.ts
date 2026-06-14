@@ -381,6 +381,13 @@ const STRINGS: Record<string, Record<Lang, string>> = {
 
   // Weather rules list (cross-schedule)
   "wrl.filter.all": { it: "Tutte le schedulazioni", en: "All schedules", fr: "Toutes les planifications", de: "Alle Zeitpläne" },
+  "wrl.sort.manual": { it: "Ordine manuale", en: "Manual order", fr: "Ordre manuel", de: "Manuelle Reihenfolge" },
+  "wrl.sort.schedule": { it: "Per schedulazione", en: "By schedule", fr: "Par planification", de: "Nach Zeitplan" },
+  "wrl.sort.alpha": { it: "Alfabetico", en: "Alphabetical", fr: "Alphabétique", de: "Alphabetisch" },
+  "wrl.manual.drag": { it: "Trascina per riordinare", en: "Drag to reorder", fr: "Glisser pour réordonner", de: "Zum Umsortieren ziehen" },
+  "wrl.manual.up": { it: "Sposta su", en: "Move up", fr: "Monter", de: "Nach oben" },
+  "wrl.manual.down": { it: "Sposta giù", en: "Move down", fr: "Descendre", de: "Nach unten" },
+  "wrl.manual.filter_hint": { it: "Rimuovi il filtro per riordinare manualmente le regole", en: "Remove the filter to reorder rules manually", fr: "Retire le filtre pour réordonner les règles manuellement", de: "Filter entfernen, um Regeln manuell zu sortieren" },
   "wrl.unassigned": { it: "Nessuna schedulazione collegata", en: "No linked schedule", fr: "Aucune planification liée", de: "Kein verknüpfter Zeitplan" },
   "wrl.delete.shared": { it: "Questa regola è collegata a {n} schedulazioni: verrà eliminata da tutte. Continuare?", en: "This rule is linked to {n} schedules: it will be deleted from all of them. Continue?", fr: "Cette règle est liée à {n} planifications : elle sera supprimée de toutes. Continuer ?", de: "Diese Regel ist mit {n} Zeitplänen verknüpft und wird aus allen gelöscht. Fortfahren?" },
 

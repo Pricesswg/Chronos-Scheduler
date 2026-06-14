@@ -14,7 +14,7 @@ A single Lovelace card provides:
 - Rules are independent objects (v1.17+): one rule can drive several schedules at once, and each schedule can combine several rules
 - 7-day week view with per-schedule filtering
 - Live status with weather and device readings; the 24h forecast strip is color-coded by severity (green / yellow / orange / red, wind-aware) and shows per-hour wind speed
-- Weather rules manager with target chips and a per-schedule filter
+- Weather rules manager with target chips, a per-schedule filter, and sorting (by linked schedule, alphabetical, or manual drag-and-drop order that persists)
 - Device detail view shows the weather rules attached to each linked schedule
 - 6-step wizard for guided schedule creation
 - Schedule duplication with editable name, devices and days before the copy is created
