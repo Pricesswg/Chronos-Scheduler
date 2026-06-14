@@ -135,7 +135,7 @@ export class ChronosWeatherRule extends LitElement {
 
         <div class="builder-actions">
           <span class="text-xs text-mute" style="margin-right:auto">${this.card._editingRuleId ? t("wr.heading.edit") : t("wr.heading")}</span>
-          <button class="btn" @click=${() => this.card.navigate(this.card._ruleReturnScreen)}>${t("common.cancel")}</button>
+          <button class="btn" @click=${() => this.card.navigate("weatherRulesList")}>${t("common.cancel")}</button>
           <button class="btn btn--primary" @click=${() => this._saveRule(schedule, typeActions)}>
             ${icon("check", 14)} ${t("common.save")}
           </button>
@@ -732,15 +732,12 @@ export class ChronosWeatherRule extends LitElement {
       rule.scale_out_max = this._scaleOutMax;
       if (this._effect === "scale_duration") rule.direction = this._direction;
     }
-    const saved = await this.card.doSaveRule(rule);
-    // Return to wherever the builder was opened from. When that's a
-    // schedule's editor, point it at the first target so the new rule is
-    // visible there.
-    const dest = this.card._ruleReturnScreen;
-    if (saved && dest === "editor") {
-      this.card.selectSchedule(this._targets[0].schedule_id);
-    }
-    this.card.navigate(dest);
+    await this.card.doSaveRule(rule);
+    // The builder is a sub-page of the weather rules list: always return
+    // there after saving, no matter where it was opened from. (Previously
+    // it jumped to the first target's schedule editor, which landed the
+    // user on an unrelated page when the rule targeted another schedule.)
+    this.card.navigate("weatherRulesList");
   }
 
   /** Pre-fill the form fields. Edit mode mirrors the global rule pointed at

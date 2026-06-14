@@ -105,9 +105,6 @@ export class ChronosCard extends LitElement {
   /** When set, the rule builder edits this global rule instead of creating
    * a new one. Reset to "" when leaving the builder. */
   @state() _editingRuleId = "";
-  /** Screen to return to when the rule builder is cancelled or saved, so
-   * the user lands back where they opened it from (rules list or editor). */
-  @state() _ruleReturnScreen: Screen = "weatherRulesList";
   /** Schedule id whose duplicate modal is open. "" = closed. */
   @state() _duplicateSourceId = "";
 
@@ -320,11 +317,6 @@ export class ChronosCard extends LitElement {
   // --- Public API for screens ---
 
   navigate(screen: Screen) {
-    // Capture where the rule builder is being opened from, so Cancel/Save
-    // can return there. Only the editor and the rules list lead into it.
-    if (screen === "weatherRule" && this._screen !== "weatherRule") {
-      this._ruleReturnScreen = this._screen === "editor" ? "editor" : "weatherRulesList";
-    }
     const isDirty = JSON.stringify(this._schedules) !== JSON.stringify(this._savedSchedules);
     if (isDirty && this._screen === "editor" && screen !== "editor") {
       this._pendingNav = screen;
@@ -342,7 +334,6 @@ export class ChronosCard extends LitElement {
    * scheduleId (optional) selects which schedule provides editing context
    * (e.g. clicked from that schedule's editor). */
   editWeatherRule(ruleId: string, scheduleId?: string) {
-    this._ruleReturnScreen = this._screen === "editor" ? "editor" : "weatherRulesList";
     if (scheduleId) this._selectedId = scheduleId;
     this._editingRuleId = ruleId;
     this._screen = "weatherRule";
