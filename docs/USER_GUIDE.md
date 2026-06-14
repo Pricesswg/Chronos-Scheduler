@@ -74,13 +74,24 @@ Available actions depend on the Home Assistant domain of the selected device.
 
 | Device type | Example actions |
 |---|---|
-| Thermostat | Set temperature, set preset, set HVAC mode |
-| Light | Turn on, turn off, brightness, RGB color, color temperature |
-| Switch | Turn on, turn off |
-| Cover | Open, close, set position |
-| Irrigation valve | Open, close |
+| Thermostat | Set temperature, set preset, turn off |
+| Water heater | Set temperature, operation mode, turn off |
+| Light | Turn on, turn off, brightness, RGB color, color temperature, transition |
+| Switch (plug) | Turn on, turn off |
+| Cover (blind) | Open, close, set position |
+| Irrigation valve | Start with duration, stop. See the Irrigation section. |
+| Fan | Turn on with speed, turn off |
+| Mower | Start, pause, dock |
+| Vacuum | Start, pause, return to base |
+| Alarm panel | Arm home/away/night/vacation, disarm, trigger |
+| Helper boolean | Turn on, turn off, toggle |
+| Helper number | Set value |
+| Helper select | Select option |
 | Scene | Activate one or more scenes |
 | Automation | Turn on, turn off, trigger |
+| Service | Call any Home Assistant service with optional JSON data |
+
+Helper entities (`input_boolean`, `input_number`, `input_select`) let Chronos flip flags, thresholds and state machines at the right times, so existing automations that read them do not need rewriting.
 
 ---
 
@@ -112,6 +123,8 @@ From this section you can:
 - Open the Week view.
 - Create schedules for scenes.
 - Create schedules for automations.
+- Create schedules for service calls.
+- Duplicate an existing schedule.
 
 ---
 
@@ -283,13 +296,13 @@ When the current date is outside the configured range, the schedule is automatic
 
 ![Weather rules](images/weather.PNG)
 
-The **Weather rules** section lets Chronos adapt schedules using weather data, forecast data, sun position or Home Assistant sensors.
+Weather rules let Chronos adapt schedules using weather data, forecast data, sun position or Home Assistant sensors.
 
 Each rule follows this logic:
 
 ```text
 IF condition is true
-THEN apply action
+THEN apply effect
 ```
 
 Examples:
@@ -298,28 +311,71 @@ Examples:
 IF forecast.temp_min_today > 22°C
 THEN skip heating
 
-IF humidity > 90%
-THEN skip irrigation
-
 IF condition is rainy
 THEN skip irrigation
 
 IF wind_speed > 30 km/h
 THEN close blinds
+
+IF temperature > 28 AND humidity > 70
+THEN extend the fan block
 ```
 
-A weather rule can:
+### Rules are independent and shared (since 1.17)
 
-| Action | Description |
+A weather rule is its own object, not a property of a single schedule. Each rule has a list of **targets**, where every target is a schedule plus the block it applies to. This means:
+
+- one rule can drive several schedules at once, for example a single "wind > 30 km/h" rule that closes the blinds and skips the irrigation, and
+- one schedule can combine any number of rules.
+
+Rules created in older versions are migrated automatically the first time the new version starts. Nothing is lost.
+
+You manage rules in two places:
+
+- The **Weather rules** screen lists every rule with chips for the schedules it targets. You can filter by schedule and sort the list by linked schedule, alphabetically, or manually. The manual order is set by drag and drop or the per row up and down buttons, and it is saved (manual reordering is available when no schedule filter is active).
+- A schedule's editor shows the rules targeting that schedule. A counter chip marks rules shared with other schedules. Removing a rule there only detaches it from that schedule; the rule itself is deleted only when that was its last link.
+
+### Conditions
+
+A condition is one or more comparisons combined with `AND`. Every comparison is `key operator value`, and all of them must be true for the rule to apply.
+
+The key can be:
+
+| Key type | Examples |
 |---|---|
-| Skip execution | The block is not executed |
-| Shift block | The block is moved earlier or later |
-| Change duration | The block is shortened or extended |
-| Force action | A different action is executed |
+| Weather attribute | `temperature`, `humidity`, `wind_speed`, `wind_gust`, `pressure`, `uv_index`, `solar_radiation`, `rain_rate`, `condition` |
+| Sun attribute | `sun.elevation`, `sun.minutes_until_sunrise`, `sun.minutes_until_sunset`, `sun.state` |
+| Forecast attribute | `forecast.temp_max_today`, `forecast.temp_min_today`, `forecast.rain_6h`, `forecast.condition_6h` |
+| Home Assistant entity | `sensor.*`, `binary_sensor.*`, `number.*`, `input_number.*`, read directly from the entity state |
 
-Weather rules are useful when a fixed schedule is not enough.
+Reading any sensor directly is useful for off grid setups, battery state of charge, photovoltaic forecast aggregators or instantaneous power.
 
-For example, irrigation should not run only because it is 06:00. It should also consider rain, humidity, soil moisture or forecast data.
+### Effects
+
+| Effect | Description |
+|---|---|
+| Skip | The block is not executed |
+| Shift | The block start and end move earlier or later by a number of minutes |
+| Extend / Shrink | The block duration grows or shrinks; you choose whether the start or the end moves |
+| Force action | A chosen action runs once when the condition becomes true, gated by the fire mode |
+| Replace value | The block action value is replaced |
+| Scale duration | The block duration is interpolated from a weather variable over a range |
+| Scale value | The action value is interpolated from a weather variable over a range |
+
+Continuous effects (shift, extend, shrink, replace value, scale duration, scale value) are recomputed every minute from live weather. The stored schedule is never changed; the effect is applied on the fly.
+
+Effects that use device specific actions (force action, replace value, scale value) require every linked schedule to share the same device type.
+
+### Fire modes
+
+For the force action effect, the fire mode limits how often it can fire:
+
+| Fire mode | Meaning |
+|---|---|
+| Every time | Each time the condition becomes true |
+| Once per day | At most once per calendar day |
+| Once per daytime | At most once between sunrise and the next sunset |
+| Once per nighttime | At most once between sunset and the next sunrise |
 
 ---
 
@@ -336,12 +392,16 @@ You can see:
 | Element | Description |
 |---|---|
 | Weather source | The Home Assistant weather entity used by Chronos |
-| Current weather | Current temperature, condition and other values |
-| 24 hour forecast | Forecast data used by rules |
+| Current weather | Current temperature, condition and wind, in the units reported by the weather entity |
+| 24 hour forecast | Forecast strip used by rules, color coded by severity |
 | Active schedules | Schedules currently evaluated by Chronos |
 | Current block | The block currently running |
 | Next block | The next scheduled block |
 | Rule effects | Whether a weather rule is changing the normal behavior |
+
+Each forecast cell is colored by weather severity: green for fine conditions, yellow for cloud or fog, orange for rain, red for storms, hail or snow. Each cell also shows the hourly wind speed, and strong wind raises the severity even when the sky is clear (at least yellow from 30 km/h, orange from 50, red from 70). This makes it easy to decide at a glance whether to let wind sensitive schedules such as awnings or blinds run.
+
+A schedule is only shown as active when it actually runs today, honoring the weekday mask, the yearly date range and sunrise/sunset anchors. A schedule that does not run today is clearly marked.
 
 Use this section to understand why a schedule is running, waiting, skipped or modified.
 
@@ -377,9 +437,8 @@ Each row shows:
 
 | Field | Description |
 |---|---|
-| Device name | Friendly name of the entity |
+| Device name | Friendly name of the entity (editable alias) |
 | Entity ID | Home Assistant entity ID |
-| Chronos ID | Internal ID used by Chronos |
 | Device type | Detected domain or category |
 | Current state | Current state reported by Home Assistant |
 | Remove | Removes the entity from Chronos |
@@ -434,12 +493,19 @@ Available examples include:
 
 | Example | Purpose |
 |---|---|
-| Day/night heating | Alternates eco and comfort temperatures |
+| Day/night heating | Alternates lower night and comfortable daytime temperatures |
 | Lights at sunset | Turns lights on around sunset |
-| Wind safe automatic blinds | Protects blinds using wind rules |
-| Morning irrigation with rain skip | Runs irrigation only when useful |
+| Wind safe automatic blinds | Protects blinds using a wind rule |
+| Morning irrigation with rain skip | Runs irrigation only when the forecast is dry |
 | Night ECO water heater | Reduces energy use at night |
 | Daily routine with scenes | Activates scenes during the day |
+| Arm alarm at night | Arms night mode overnight, disarms during the day |
+| Off grid water heater | Boosts when the battery is full and there is still daylight |
+| Heat scaled fan | Fan speed rises with the temperature |
+| Summer heat shading blinds | Lowers the blinds when the sun is high and it is hot, summer only |
+| Solar surplus load | A midday plug window skipped on overcast days |
+| Weekday robot vacuum | Cleaning on weekday mornings |
+| Seasonal pool pump | Filtering time grows with the temperature, summer only |
 
 After creating an example schedule, open it and adapt:
 
@@ -601,6 +667,56 @@ Each block can:
 - Trigger one or more automations.
 
 Use automation schedules when you want to enable, disable or manually trigger existing automations based on time, sun position or weather rules.
+
+---
+
+## Service schedules
+
+Service schedules call any Home Assistant service at specific times. Each block holds a service path and an optional JSON payload.
+
+Example:
+
+```text
+07:30    mqtt.publish        {"topic": "home/wake", "payload": "on"}
+03:00    backup.create       {}
+20:00    script.evening_run  {}
+```
+
+Use service schedules for actions that are not tied to a single device, such as backups, MQTT messages, scripts or debug style invocations. If the service path is wrong, the error is recorded in the History section.
+
+---
+
+## Irrigation
+
+Irrigation schedules drive valve entities. A start block opens valves; Chronos closes them for you. There are two modes.
+
+**Global timed mode** is the default. Every valve in the block opens at the same time and closes automatically after the block duration in minutes. A block without a valid duration keeps the old behavior of opening the valves and leaving them open.
+
+**Per valve sequential mode** opens the valves one at a time, each for its own number of minutes, then moves to the next. The total program length is the sum of the individual times. This suits multi station controllers where stations must run one after another because of water pressure limits.
+
+Both modes are restart safe. If Home Assistant restarts while watering, any valves left open are closed defensively on the next start and the event is recorded in History. Only one timed program per schedule runs at a time, so a re trigger while watering does not start a second timer on the same valves.
+
+To skip watering when rain is likely, add a weather rule such as `forecast.rain_6h > 2` with the skip effect on the watering block.
+
+---
+
+## History section
+
+The **History** section is a log of everything Chronos has dispatched. It is the place to look when a schedule did not behave as expected.
+
+You can filter by date range, by schedule, by kind (block or rule) and by outcome (success or error). A daily bar chart summarizes activity, and a detailed list shows each event with its time, action, target entity and any error message. Integration restarts and defensive valve closures are recorded here too.
+
+---
+
+## Duplicate, export and import
+
+You can reuse schedules without rebuilding them.
+
+- **Duplicate** copies an existing schedule. The copy button in the schedule editor, and the first step of the wizard, open a dialog where you adjust the name, devices, days and whether to copy the weather rules before the copy is created. Copies start disabled.
+- **Export** saves a schedule as a JSON file from the schedule editor. Device links are exported as entity ids, and the weather rules targeting the schedule travel with it.
+- **Import** reads a JSON export in the first step of the wizard, by pasting it or choosing a file. Devices are re matched by entity id; any that do not exist on this instance are reported so you can import and link them. Imported schedules start disabled.
+
+Exports stay compatible across versions, so a schedule exported from one Home Assistant instance can be imported into another.
 
 ---
 
