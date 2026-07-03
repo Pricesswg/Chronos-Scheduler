@@ -31,7 +31,10 @@ export class ChronosWizard extends LitElement {
   @state() private _blocks: Block[] = [];
   @state() private _blocksDeviceType: DeviceType | "" = "";
   @state() private _selectedBlockIdx = -1;
-  @state() private _variant: Variant = "linear";
+  /** null = user never touched the view toggle: preview follows the global
+   * default and the created schedule carries no per-schedule preference.
+   * Set = explicit choice, stored in the schedule (issue #13). */
+  @state() private _variant: Variant | null = null;
   // Alternative entry points on step 0: duplicate an existing schedule or
   // import a JSON export from another Chronos instance.
   @state() private _dupPick = "";
@@ -203,7 +206,7 @@ export class ChronosWizard extends LitElement {
               <span class="text-xs text-mute">${t("editor.timeline_variant")}:</span>
               <div class="segmented">
                 ${(["linear", "radial", "list"] as Variant[]).map((v) => html`
-                  <button data-active="${this._variant === v}" @click=${() => { this._variant = v; }}>
+                  <button data-active="${this._effectiveVariant() === v}" @click=${() => { this._variant = v; }}>
                     ${t("timeline." + v)}
                   </button>
                 `)}
@@ -218,7 +221,7 @@ export class ChronosWizard extends LitElement {
             </div>
 
             <chronos-timeline
-              variant="${this._variant}"
+              variant="${this._effectiveVariant()}"
               .deviceType=${deviceType}
               .interactive=${true}
               .blocks=${this._blocks}
@@ -544,6 +547,10 @@ export class ChronosWizard extends LitElement {
     return sum.toFixed(1).replace(/\.0$/, "");
   }
 
+  private _effectiveVariant(): Variant {
+    return this._variant ?? this.card._settings?.default_timeline_variant ?? "linear";
+  }
+
   private async _finish() {
     const deviceType = this._inferDeviceType();
     this._ensureBlocksFor(deviceType);
@@ -555,6 +562,9 @@ export class ChronosWizard extends LitElement {
       days: this._days,
       enabled: true,
       blocks: [...this._blocks].sort((a, b) => a.start - b.start),
+      // Only an explicit pick becomes a per-schedule preference; otherwise
+      // the schedule keeps following the global default.
+      ...(this._variant ? { timeline_variant: this._variant } : {}),
     };
     await this.card.doAddSchedule(schedule);
     // If user opted in for weather logic, jump straight to the rule builder.

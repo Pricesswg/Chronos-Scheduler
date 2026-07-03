@@ -38,6 +38,10 @@ export class ChronosEditor extends LitElement {
     const isDirty = this.card.isDirty;
     // Global rules projected onto this schedule (target block_index inlined).
     const schedRules = this.card.rulesForSchedule(schedule.id);
+    // Per-schedule view preference; schedules without one follow the global
+    // default from Settings.
+    const timelineVariant =
+      schedule.timeline_variant ?? this.card._settings?.default_timeline_variant ?? "linear";
 
     return html`
       <div class="col" style="gap:18px">
@@ -93,14 +97,14 @@ export class ChronosEditor extends LitElement {
                 </div>
                 <div class="segmented">
                   ${(["linear", "radial", "list"] as const).map((v) => html`
-                    <button data-active="${this.card._timelineVariant === v}" @click=${() => this.card.setTimelineVariant(v)}>
+                    <button data-active="${timelineVariant === v}" @click=${() => this.card.setTimelineVariant(schedule.id, v)}>
                       ${t("timeline." + v)}
                     </button>
                   `)}
                 </div>
               </div>
               <chronos-timeline
-                .variant=${this.card._timelineVariant}
+                .variant=${timelineVariant}
                 .deviceType=${deviceType}
                 .blocks=${schedule.blocks}
                 .selectedIdx=${this._selectedBlockIdx}

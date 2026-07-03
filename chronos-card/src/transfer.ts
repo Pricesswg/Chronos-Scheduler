@@ -123,6 +123,9 @@ export function importSchedule(json: string, devices: ChronosDevice[]): ImportRe
       return blk;
     }),
     date_range: raw.date_range ?? null,
+    ...(["linear", "radial", "list"].includes(raw.timeline_variant)
+      ? { timeline_variant: raw.timeline_variant }
+      : {}),
   };
   const rules: WeatherRule[] = Array.isArray(raw.weather_rules)
     ? raw.weather_rules.filter((r: any) => r && typeof r === "object" && r.effect)

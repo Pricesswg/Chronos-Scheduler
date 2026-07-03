@@ -160,6 +160,10 @@ export interface Schedule {
    * dates inside the range, ignoring the year. Wraps across year-end if
    * end_month/day < start_month/day. */
   date_range?: DateRange | null;
+  /** Per-schedule timeline view preference (issue #13). Unset = follow
+   * settings.default_timeline_variant. Persisted outside the dirty/save
+   * flow: flipping the view must not prompt "unsaved changes". */
+  timeline_variant?: "linear" | "radial" | "list";
 }
 
 export interface Settings {

@@ -142,6 +142,8 @@ These are only visual editing sections. They all modify the same schedule.
 
 Changing from Linear to Radial or List does not create a different schedule and does not change the execution logic.
 
+The chosen view is remembered per schedule: pick List for your irrigation schedule and Radial for the thermostat, and each one reopens in its own view. The change is saved immediately (it does not count as an unsaved edit). Schedules where you never picked a view follow the default under **Settings → Default timeline**.
+
 ---
 
 ### Linear section

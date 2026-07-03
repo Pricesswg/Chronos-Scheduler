@@ -87,7 +87,6 @@ export class ChronosCard extends LitElement {
   @state() _rules: WeatherRule[] = [];
   @state() _devices: ChronosDevice[] = [];
   @state() _settings: Settings | null = null;
-  @state() _timelineVariant: "linear" | "radial" | "list" = "linear";
   @state() _pendingNav: Screen | null = null;
   @state() _loading = true;
   @state() _loadError: string | null = null;
@@ -299,9 +298,6 @@ export class ChronosCard extends LitElement {
       setActionsMap(actionsMap);
       setColorSettings(settings);
       if (settings?.snap_minutes) setSnapMinutes(settings.snap_minutes);
-      if (settings?.default_timeline_variant) {
-        this._timelineVariant = settings.default_timeline_variant;
-      }
       if (schedules.length && !this._selectedId) {
         this._selectedId = schedules[0].id;
       }
@@ -656,8 +652,23 @@ export class ChronosCard extends LitElement {
     } catch {}
   }
 
-  setTimelineVariant(v: "linear" | "radial" | "list") {
-    this._timelineVariant = v;
+  /** Per-schedule timeline view preference (issue #13). Deliberately outside
+   * the dirty/save flow: flipping the view while the schedule has pending
+   * block edits must neither trigger the "unsaved changes" prompt nor commit
+   * those edits as a side effect. So we persist the pristine server copy plus
+   * the new variant, and mirror the field into the working copy. */
+  async setTimelineVariant(scheduleId: string, v: "linear" | "radial" | "list") {
+    this._schedules = this._schedules.map((s) =>
+      s.id === scheduleId ? { ...s, timeline_variant: v } : s
+    );
+    const saved = this._savedSchedules.find((s) => s.id === scheduleId);
+    if (!saved) return;
+    saved.timeline_variant = v;
+    try {
+      await wsSaveSchedule(this.hass, saved);
+    } catch (e) {
+      console.error("Chronos: failed to persist timeline variant", e);
+    }
   }
 
   // --- Render ---
