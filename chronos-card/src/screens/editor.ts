@@ -21,6 +21,8 @@ export class ChronosEditor extends LitElement {
   @state() private _selectedBlockIdx = 0;
   @state() private _selectedRuleIdx: number = -1;
   @state() private _confirmDelete = false;
+  /** Transient check-mark feedback after copying the schedule id chip. */
+  @state() private _idCopied = false;
   /** Free-text filter applied to the entity multi-select chip grid. Kept on
    * the editor instance so the search box doesn't lose focus across re-renders. */
   @state() private _entitySearch = "";
@@ -67,6 +69,10 @@ export class ChronosEditor extends LitElement {
               ${schedRules.filter((r) => r.active).length > 0
                 ? html`<span class="chip chip--weather">${icon("cloud", 11)} ${t("overview.rules_count", { n: schedRules.filter((r) => r.active).length })}</span>`
                 : nothing}
+              <span class="chip mono" style="cursor:pointer" title="${t("editor.id_chip.title")}"
+                @click=${() => this._copyScheduleId(schedule.id)}>
+                ${icon(this._idCopied ? "check" : "copy", 11)} ${schedule.id}
+              </span>
             </div>
           </div>
           <div class="row" style="gap:10px;flex-shrink:0;flex-wrap:wrap">
@@ -1008,6 +1014,15 @@ export class ChronosEditor extends LitElement {
   /** Download the schedule as a portable JSON file (device references are
    * exported as entity_ids so another instance can re-link them; global
    * rules targeting this schedule are embedded in legacy shape). */
+  private _copyScheduleId(id: string) {
+    // Il chip resta leggibile anche senza clipboard API (contesti non
+    // sicuri): in quel caso niente feedback, l'utente copia a mano.
+    navigator.clipboard?.writeText(id).then(() => {
+      this._idCopied = true;
+      setTimeout(() => { this._idCopied = false; }, 1200);
+    }).catch(() => {});
+  }
+
   private _exportSchedule(schedule: Schedule) {
     const json = exportSchedule(
       schedule, this.card._devices, CARD_VERSION,

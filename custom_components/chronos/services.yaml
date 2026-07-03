@@ -11,8 +11,38 @@ fire_block:
   fields:
     schedule_id:
       name: Schedule ID
-      description: ID della schedulazione (visibile nella URL del dashboard o nei log)
+      description: ID della schedulazione (chip copiabile nell'header dell'editor)
       required: true
       example: "abc12345"
       selector:
         text:
+
+schedule_toggle:
+  name: Enable/disable schedule
+  description: >
+    Abilita o disabilita una schedulazione Chronos. Pensato per essere
+    chiamato dalle automazioni HA: le schedule non sono esposte come
+    entità, questo servizio è l'equivalente dell'interruttore nella card.
+    Indicare l'ID oppure il nome della schedulazione (il nome deve essere
+    univoco, a parità di nome il servizio non fa nulla e logga un warning).
+  fields:
+    schedule_id:
+      name: Schedule ID
+      description: ID della schedulazione, in alternativa al nome (chip copiabile nell'header dell'editor)
+      required: false
+      example: "abc12345"
+      selector:
+        text:
+    name:
+      name: Schedule name
+      description: Nome esatto della schedulazione, senza distinzione maiuscole/minuscole (in alternativa all'ID)
+      required: false
+      example: "Irrigazione giardino"
+      selector:
+        text:
+    enabled:
+      name: Enabled
+      description: true per abilitare, false per disabilitare
+      required: true
+      selector:
+        boolean:

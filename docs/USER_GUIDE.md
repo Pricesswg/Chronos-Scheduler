@@ -441,9 +441,12 @@ Each row shows:
 |---|---|
 | Device name | Friendly name of the entity (editable alias) |
 | Entity ID | Home Assistant entity ID |
+| Area | Room assigned in Home Assistant, resolved automatically from the HA registries (an area set manually in Chronos takes precedence) |
 | Device type | Detected domain or category |
 | Current state | Current state reported by Home Assistant |
 | Remove | Removes the entity from Chronos |
+
+The area is also shown in the wizard's device picker and in the add-device list, so several devices that share the same friendly name (three "Thermostat"s in different rooms) stay distinguishable. Hovering a device tile in the wizard shows its entity ID.
 
 Use this section to:
 
@@ -719,6 +722,36 @@ You can reuse schedules without rebuilding them.
 - **Import** reads a JSON export in the first step of the wizard, by pasting it or choosing a file. Devices are re matched by entity id; any that do not exist on this instance are reported so you can import and link them. Imported schedules start disabled.
 
 Exports stay compatible across versions, so a schedule exported from one Home Assistant instance can be imported into another.
+
+---
+
+## Controlling Chronos from Home Assistant
+
+Schedules are deliberately not exposed as Home Assistant entities, to avoid filling your instance with switches. To drive Chronos from automations or scripts, use its services:
+
+| Service | What it does |
+|---|---|
+| `chronos.schedule_toggle` | Enables or disables a schedule, same as the toggle in the card. Target by `name` (case-insensitive, must be unique among your schedules) or by `schedule_id`. |
+| `chronos.fire_block` | Fires the currently active block of a schedule immediately, bypassing timing and weather rules. Useful for testing. |
+| `chronos.reload` | Reloads the Chronos configuration from storage. |
+
+Example, pausing irrigation while a vacation flag is on:
+
+```yaml
+automation:
+  - alias: Pause irrigation on vacation
+    triggers:
+      - trigger: state
+        entity_id: input_boolean.vacation
+        to: "on"
+    actions:
+      - action: chronos.schedule_toggle
+        data:
+          name: Garden irrigation
+          enabled: false
+```
+
+If two schedules share the same name, the service refuses to guess: it logs a warning listing the matching ids, and you switch to `schedule_id`. To find a schedule's id, open it in the editor and click the monospace ID chip in the header, which copies it to the clipboard.
 
 ---
 

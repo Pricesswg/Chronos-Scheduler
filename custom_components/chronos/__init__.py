@@ -11,6 +11,12 @@ from homeassistant.components.frontend import add_extra_js_url
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import (
+    area_registry as ar,
+    config_validation as cv,
+    device_registry as dr,
+    entity_registry as er,
+)
 
 from .const import (
     ACTIONS_BY_TYPE,
@@ -194,6 +200,25 @@ async def _upsert_lovelace_resource(hass: HomeAssistant, url: str) -> None:
         _LOGGER.info("Chronos: creata Lovelace resource → %s", url)
 
 
+def _resolve_area_name(hass: HomeAssistant, entity_id: str) -> str:
+    """Nome della stanza dalle registry HA: l'area assegnata direttamente
+    all'entità vince, altrimenti si eredita quella del device fisico.
+    Stringa vuota se l'entità non è nelle registry (es. entità template).
+    Risolta a ogni lettura invece che salvata: se l'utente sposta il
+    dispositivo di stanza in HA, Chronos si aggiorna da solo."""
+    entry = er.async_get(hass).async_get(entity_id)
+    if entry is None:
+        return ""
+    area_id = entry.area_id
+    if not area_id and entry.device_id:
+        device = dr.async_get(hass).async_get(entry.device_id)
+        area_id = device.area_id if device else None
+    if not area_id:
+        return ""
+    area = ar.async_get(hass).async_get_area(area_id)
+    return area.name if area else ""
+
+
 def _register_services(hass: HomeAssistant) -> None:
     """Registra i servizi HA esposti dall'integration."""
     if hass.services.has_service(DOMAIN, "fire_block"):
@@ -211,7 +236,62 @@ def _register_services(hass: HomeAssistant) -> None:
         _svc_fire_block,
         schema=vol.Schema({vol.Required("schedule_id"): str}),
     )
-    _LOGGER.debug("Chronos: service %s.fire_block registered", DOMAIN)
+
+    async def _svc_schedule_toggle(call) -> None:
+        # Abilita/disabilita una schedule dalle automazioni HA senza esporre
+        # entità (scelta deliberata: niente switch per non appesantire HA).
+        # Target per id oppure per nome; il nome è più comodo nelle
+        # automazioni ma deve essere univoco, a pari nome si rifiuta invece
+        # di togglare la schedule sbagliata.
+        store: ChronosStore = hass.data[DOMAIN]["store"]
+        enabled = bool(call.data["enabled"])
+        sched_id = str(call.data.get("schedule_id") or "").strip()
+        name = str(call.data.get("name") or "").strip()
+        if sched_id:
+            sched = store.get_schedule(sched_id)
+            if sched is None:
+                _LOGGER.warning(
+                    "Chronos schedule_toggle: no schedule with id %r", sched_id
+                )
+                return
+        else:
+            matches = [
+                s for s in store.schedules
+                if s.get("name", "").strip().casefold() == name.casefold()
+            ]
+            if not matches:
+                _LOGGER.warning(
+                    "Chronos schedule_toggle: no schedule named %r", name
+                )
+                return
+            if len(matches) > 1:
+                _LOGGER.warning(
+                    "Chronos schedule_toggle: name %r matches %d schedules, "
+                    "use schedule_id instead (%s)",
+                    name, len(matches), ", ".join(s["id"] for s in matches),
+                )
+                return
+            sched = matches[0]
+        await store.async_toggle_schedule(sched["id"], enabled)
+        _LOGGER.info(
+            "Chronos schedule_toggle: %s (%s) -> enabled=%s",
+            sched.get("name"), sched["id"], enabled,
+        )
+
+    hass.services.async_register(
+        DOMAIN,
+        "schedule_toggle",
+        _svc_schedule_toggle,
+        schema=vol.All(
+            vol.Schema({
+                vol.Optional("schedule_id"): str,
+                vol.Optional("name"): str,
+                vol.Required("enabled"): bool,
+            }),
+            cv.has_at_least_one_key("schedule_id", "name"),
+        ),
+    )
+    _LOGGER.debug("Chronos: services %s.fire_block, %s.schedule_toggle registered", DOMAIN, DOMAIN)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -232,7 +312,16 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
         hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
     ) -> None:
         store: ChronosStore = hass.data[DOMAIN]["store"]
-        connection.send_result(msg["id"], store.devices)
+        # Area risolta live dalle registry quando il device non ne ha una
+        # salvata. Solo nella risposta, mai persistita: così un'area
+        # impostata a mano dall'utente vince, e per gli altri device un
+        # cambio stanza in HA si riflette qui senza migrazioni.
+        out = [
+            d if d.get("area")
+            else {**d, "area": _resolve_area_name(hass, d["entity_id"])}
+            for d in store.devices
+        ]
+        connection.send_result(msg["id"], out)
 
     @websocket_api.websocket_command({
         vol.Required("type"): "chronos/devices/add",
@@ -450,7 +539,7 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
             entities.append({
                 "entity_id": state.entity_id,
                 "friendly_name": state.attributes.get("friendly_name", state.entity_id),
-                "area": "",
+                "area": _resolve_area_name(hass, state.entity_id),
                 "type": DOMAIN_TO_TYPE[domain],
             })
         connection.send_result(msg["id"], entities)

@@ -104,6 +104,7 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   // Editor
   "editor.field.name": { it: "Nome", en: "Name", fr: "Nom", de: "Name" },
   "editor.timeline_variant": { it: "Visualizzazione", en: "View", fr: "Affichage", de: "Ansicht" },
+  "editor.id_chip.title": { it: "ID schedulazione, usato dai servizi chronos.schedule_toggle e chronos.fire_block. Click per copiare", en: "Schedule ID, used by the chronos.schedule_toggle and chronos.fire_block services. Click to copy", fr: "ID du planning, utilisé par les services chronos.schedule_toggle et chronos.fire_block. Cliquer pour copier", de: "Zeitplan-ID, verwendet von den Diensten chronos.schedule_toggle und chronos.fire_block. Zum Kopieren klicken" },
   "editor.add_block_hint": { it: "Clicca su una zona vuota della barra per aggiungere una fascia. Trascina i bordi per modificare durata e posizione.", en: "Click on an empty area of the bar to add a block. Drag the edges to adjust duration and position.", fr: "Clique sur une zone vide de la barre pour ajouter un créneau. Fais glisser les bords pour ajuster la durée et la position.", de: "Klicke auf einen freien Bereich der Leiste, um einen Block hinzuzufügen. Ziehe die Ränder, um Dauer und Position anzupassen." },
   "editor.block.from": { it: "Da", en: "From", fr: "De", de: "Von" },
   "editor.block.to": { it: "A", en: "To", fr: "À", de: "Bis" },

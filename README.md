@@ -28,6 +28,7 @@ A single Lovelace card provides:
 - Recurring yearly date ranges to limit a schedule to specific months/days
 - Light advanced parameters (RGB colour, colour temperature, transition) per block
 - Per-device and global settings (theme follows Home Assistant, color customisation, sensor-level weather overrides)
+- Device pickers show each entity's Home Assistant area, resolved live from the HA registries, so identically named devices (three "Thermostat"s in different rooms) stay distinguishable
 - Help screen with 12 ready-made recipes (thermostat day/night, sunset lights, wind-safe blinds, rain-skip irrigation, heat-scaled fan, summer shading, solar-surplus loads, seasonal pool pump, …), quick start, FAQ and glossary
 
 All persisted by Home Assistant, accessible via WebSocket API, and auto-registered as a custom card.
@@ -260,10 +261,27 @@ You can support the development of this scheduler by giving a small donation her
 
 ## Services
 
-| Service               | Description                                                              |
-|-----------------------|--------------------------------------------------------------------------|
-| `chronos.reload`      | Reload Chronos configuration from storage                                |
-| `chronos.fire_block`  | Fire the currently active block of a schedule (bypass timing and rules)  |
+| Service                   | Description                                                              |
+|---------------------------|--------------------------------------------------------------------------|
+| `chronos.reload`          | Reload Chronos configuration from storage                                |
+| `chronos.fire_block`      | Fire the currently active block of a schedule (bypass timing and rules)  |
+| `chronos.schedule_toggle` | Enable or disable a schedule from HA automations/scripts. Target by `schedule_id` or by `name` (case-insensitive, must be unique). Schedules are deliberately not exposed as HA entities; this service is the automation-friendly equivalent of the card's toggle |
+
+Example: disable the irrigation schedule when the vacation input_boolean turns on:
+
+```yaml
+automation:
+  - alias: Pause irrigation on vacation
+    triggers:
+      - trigger: state
+        entity_id: input_boolean.vacation
+        to: "on"
+    actions:
+      - action: chronos.schedule_toggle
+        data:
+          name: Garden irrigation
+          enabled: false
+```
 
 ## Development
 

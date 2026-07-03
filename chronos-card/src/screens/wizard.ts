@@ -175,12 +175,13 @@ export class ChronosWizard extends LitElement {
               </button>
               ${this._specialMode ? nothing : realDevices.map((d) => html`
                 <button class="tile-pick" data-selected="${this._pickedDevices.includes(d.id)}"
+                  title="${d.entity_id}"
                   @click=${() => this._togglePick(d.id)}>
                   <div class="row" style="gap:10px">
                     <div class="tile-pick__icon">${deviceIcon(d.type, 16)}</div>
                     <div style="min-width:0;flex:1">
                       <div class="tile-pick__name truncate">${d.alias}</div>
-                      <div class="tile-pick__desc">${d.area} · ${DEVICE_TYPES[d.type]?.label || d.type}</div>
+                      <div class="tile-pick__desc">${d.area ? html`${d.area} · ` : nothing}${DEVICE_TYPES[d.type]?.label || d.type}</div>
                     </div>
                     ${this._pickedDevices.includes(d.id) ? icon("check", 16) : nothing}
                   </div>
