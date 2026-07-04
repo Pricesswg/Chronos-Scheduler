@@ -159,8 +159,11 @@ Use it when you want to:
 - Drag blocks on the timeline.
 - Resize blocks by changing their start or end time.
 - See empty spaces between blocks.
-- Check if blocks overlap.
 - Understand the full day at a glance.
+
+Blocks cannot overlap. Dragging a block (or one of its edges) over a neighbour trims the neighbour to the new limit: a block that ends up fully covered is removed, one covered in the middle is split in two, and leftovers shorter than 15 minutes are dropped. The trimming is only committed when you release: while the pointer is down you can swing back and the neighbour is restored. The same rules apply on the radial view.
+
+The thin strip at the top of the linear timeline is today's hourly weather forecast from your configured weather entity, aligned with the hour axis (past hours are empty). Hover a cell to see the hour and the condition.
 
 The timeline follows the snap value configured in Settings.
 
@@ -439,7 +442,7 @@ Each row shows:
 
 | Field | Description |
 |---|---|
-| Device name | Friendly name of the entity (editable alias) |
+| Device name | Nickname used inside Chronos. Click it (or the pencil) to rename; the Home Assistant friendly name is not touched |
 | Entity ID | Home Assistant entity ID |
 | Area | Room assigned in Home Assistant, resolved automatically from the HA registries (an area set manually in Chronos takes precedence) |
 | Device type | Detected domain or category |

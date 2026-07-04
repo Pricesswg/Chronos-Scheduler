@@ -94,10 +94,19 @@ export class ChronosDevicesScreen extends LitElement {
                     ${deviceIcon(d.type, 17)}
                   </div>
                   <div class="device-row__main" style="min-width:0">
-                    <input class="input" .value=${d.alias}
-                      @change=${(e: Event) => this.card.doUpdateDevice(d.id, { alias: (e.target as HTMLInputElement).value })}
-                      style="border:1px solid transparent;background:transparent;padding:4px 6px;font-weight:500;font-size:14px;margin-left:-6px;width:100%;max-width:240px"
-                      placeholder="${t("devices.alias")}…"/>
+                    <div class="row" style="gap:2px;align-items:center">
+                      <input class="input input--ghost" .value=${d.alias}
+                        @change=${(e: Event) => this.card.doUpdateDevice(d.id, { alias: (e.target as HTMLInputElement).value })}
+                        style="padding:4px 6px;font-weight:500;font-size:14px;margin-left:-6px;width:100%;max-width:240px"
+                        title="${t("devices.alias.hint")}"
+                        placeholder="${t("devices.alias")}…"/>
+                      <span class="edit-hint" title="${t("devices.alias.hint")}"
+                        @click=${(e: Event) => {
+                          const input = (e.currentTarget as HTMLElement).parentElement?.querySelector("input");
+                          (input as HTMLInputElement | null)?.focus();
+                          (input as HTMLInputElement | null)?.select();
+                        }}>${icon("edit", 12)}</span>
+                    </div>
                     <div class="device-row__meta" style="margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
                       <span style="color:var(--text-muted)">${d.entity_id}</span>
                       ${d.area ? html` · ${d.area}` : nothing}

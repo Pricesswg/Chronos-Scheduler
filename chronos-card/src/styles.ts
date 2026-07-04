@@ -328,6 +328,13 @@ export const chronosStyles = css`
     transition: border-color 120ms, box-shadow 120ms;
   }
   .input:focus, .select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+  /* Inline-editable text that must LOOK editable on hover: transparent at
+   * rest, border + soft background under the pointer. Pair with an .edit-hint
+   * icon in the same .row to make the affordance visible without hovering. */
+  .input--ghost { border-color: transparent; background: transparent; }
+  .input--ghost:hover { border-color: var(--border); background: var(--bg-soft); }
+  .row:hover > .edit-hint, .input--ghost:hover ~ .edit-hint { color: var(--text-soft); }
+  .edit-hint { color: var(--text-muted); opacity: 0.7; flex: 0 0 auto; display: inline-flex; cursor: pointer; }
   .field { display: flex; flex-direction: column; gap: 6px; }
   .field__label { font-size: 12px; font-weight: 500; color: var(--text-soft); }
   .field__hint { font-size: 11.5px; color: var(--text-muted); }
@@ -412,8 +419,8 @@ export const chronosStyles = css`
     border: 2px solid var(--bg);
   }
 
-  .tl-weather { position: absolute; top: 0; left: 0; right: 0; height: 6px; display: flex; }
-  .tl-weather__cell { flex: 1; }
+  .tl-weather { position: absolute; top: 0; left: 0; right: 0; height: 6px; }
+  .tl-weather__cell { position: absolute; top: 0; bottom: 0; }
   .tl-weather__cell[data-state="rain"] { background: color-mix(in srgb, var(--info) 50%, transparent); }
   .tl-weather__cell[data-state="sun"] { background: color-mix(in srgb, var(--weather) 60%, transparent); }
   .tl-weather__cell[data-state="cloud"] { background: color-mix(in srgb, var(--text-muted) 30%, transparent); }

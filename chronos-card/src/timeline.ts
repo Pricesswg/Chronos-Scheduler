@@ -4,8 +4,65 @@ import { chronosStyles } from "./styles";
 import { actionColor, actionLabel, getActionDef } from "./actions";
 import { fmtHour, clamp, snapToGrid, resolveBlockTime, DAY_END_HOUR } from "./utils";
 import { defaultAction } from "./actions";
-import { actionDefLabel } from "./i18n";
+import { actionDefLabel, t } from "./i18n";
 import type { Block, DeviceType, WeatherRule } from "./types";
+
+/** Il blocco trascinato vince sui vicini: le parti coperte vengono
+ * ritagliate al suo bordo. Va chiamata a ogni move sullo SNAPSHOT preso a
+ * inizio drag, mai in modo cumulativo: così passare sopra un blocco e poi
+ * tornare indietro lo ripristina, e il ritaglio diventa definitivo solo al
+ * rilascio. Un vicino coperto per intero (o il cui residuo scende sotto i
+ * 15 minuti) viene eliminato; uno coperto al centro viene spezzato in due.
+ * Il bordo ritagliato perde l'eventuale ancora sole (il taglio è un orario
+ * esplicito, stessa regola del drag); l'altro bordo la conserva. */
+function carveOverlaps(blocks: Block[], dragged: Block): Block[] {
+  const MIN = 0.25;
+  const ds = resolveBlockTime(dragged, "start");
+  const de = resolveBlockTime(dragged, "end");
+  const out: Block[] = [];
+  for (const b of blocks) {
+    if (b === dragged) { out.push(b); continue; }
+    const bs = resolveBlockTime(b, "start");
+    const be = resolveBlockTime(b, "end");
+    if (be <= ds || bs >= de) { out.push(b); continue; }
+    if (bs >= ds && be <= de) continue; // inghiottito per intero
+    if (bs < ds && be > de) {
+      // Il blocco trascinato è finito in pancia a un vicino più largo:
+      // buco al centro, il vicino sopravvive in due metà.
+      if (ds - bs >= MIN) {
+        const left: any = JSON.parse(JSON.stringify(b));
+        left.end = ds;
+        delete left.end_anchor;
+        delete left.end_offset;
+        out.push(left);
+      }
+      if (be - de >= MIN) {
+        const right: any = JSON.parse(JSON.stringify(b));
+        right.start = de;
+        delete right.start_anchor;
+        delete right.start_offset;
+        out.push(right);
+      }
+      continue;
+    }
+    if (bs < ds) {
+      if (ds - bs < MIN) continue;
+      const trimmed: any = JSON.parse(JSON.stringify(b));
+      trimmed.end = ds;
+      delete trimmed.end_anchor;
+      delete trimmed.end_offset;
+      out.push(trimmed);
+    } else {
+      if (be - de < MIN) continue;
+      const trimmed: any = JSON.parse(JSON.stringify(b));
+      trimmed.start = de;
+      delete trimmed.start_anchor;
+      delete trimmed.start_offset;
+      out.push(trimmed);
+    }
+  }
+  return out;
+}
 
 @customElement("chronos-timeline")
 export class ChronosTimeline extends LitElement {
@@ -26,13 +83,14 @@ export class ChronosTimeline extends LitElement {
   @property({ attribute: false }) previewRule: WeatherRule | null = null;
 
   @state() private _drag: {
+    /** Index of the dragged block INSIDE the snapshot (stable for the whole
+     * drag). Live indexes in this.blocks are useless mid-drag: the parent
+     * re-sorts by start and carveOverlaps can drop/split neighbours. */
     idx: number;
-    /** Reference to the block currently being dragged. Updated on every move
-     * because we spread-copy the block to mutate it. Used to find the block's
-     * new index after the parent's `updateBlocksLocal` sort: tracking by index
-     * alone causes us to overwrite a sibling block when the dragged block
-     * crosses it (visible "disappearing block" bug). */
-    ref: Block;
+    /** Deep copy of the blocks as they were at pointerdown. Every move is
+     * recomputed from here (geometry + carveOverlaps), never from the live
+     * array: swinging over a neighbour and back restores it. */
+    snapshot: Block[];
     handle: "l" | "r" | "move";
     startX: number;
     startH?: number;
@@ -207,12 +265,35 @@ export class ChronosTimeline extends LitElement {
 
   private _renderWeatherRibbon() {
     if (!this.forecast.length) return nothing;
+    // Il forecast orario parte dall'ora corrente, non da mezzanotte: ogni
+    // cella va posizionata sulla SUA ora (dal datetime dell'entry), non
+    // stesa in sequenza sull'asse 00-24, altrimenti la cella sopra le 08
+    // non è il meteo delle 08. Si mostrano solo le ore di oggi: le ore già
+    // passate restano vuote, quelle di domani si scartano. Entry senza
+    // datetime (integrazioni minori): fallback sequenziale dall'ora attuale.
+    const now = new Date();
+    const cells: { hour: number; cond: string }[] = [];
+    this.forecast.forEach((w, i) => {
+      const raw = w?.datetime ? new Date(w.datetime) : null;
+      const valid = raw !== null && !isNaN(raw.getTime());
+      const hour = valid ? raw!.getHours() : now.getHours() + i;
+      const sameDay = valid ? raw!.toDateString() === now.toDateString() : hour <= 23;
+      if (!sameDay || hour > 23) return;
+      cells.push({ hour, cond: String(w.condition || w.state || "") });
+    });
+    if (!cells.length) return nothing;
+    const condLabel = (c: string) => {
+      const key = "live.condition." + c;
+      const s = t(key);
+      return s === key ? c : s;
+    };
     return html`
       <div class="tl-weather">
-        ${this.forecast.map((w) => {
-          const state = w.condition || w.state || "cloud";
-          const mapped = state.includes("rain") ? "rain" : state.includes("sun") ? "sun" : state.includes("snow") ? "snow" : "cloud";
-          return html`<div class="tl-weather__cell" data-state="${mapped}"></div>`;
+        ${cells.map(({ hour, cond }) => {
+          const mapped = cond.includes("rain") ? "rain" : cond.includes("sun") ? "sun" : cond.includes("snow") ? "snow" : "cloud";
+          const tip = `${String(hour).padStart(2, "0")}:00${cond ? " · " + condLabel(cond) : ""}`;
+          return html`<div class="tl-weather__cell" data-state="${mapped}"
+            style="left:${(hour / 24) * 100}%;width:${100 / 24}%" title="${tip}"></div>`;
         })}
       </div>
     `;
@@ -377,7 +458,9 @@ export class ChronosTimeline extends LitElement {
     this._fireSelect(idx);
     const b = this.blocks[idx];
     this._drag = {
-      idx, ref: b, handle, startX: e.clientX,
+      idx,
+      snapshot: this.blocks.map((x) => JSON.parse(JSON.stringify(x)) as Block),
+      handle, startX: e.clientX,
       origStart: resolveBlockTime(b, "start"),
       origEnd: resolveBlockTime(b, "end"),
     };
@@ -400,12 +483,12 @@ export class ChronosTimeline extends LitElement {
     const rect = el.getBoundingClientRect();
     const h = clamp(((e.clientX - rect.left) / rect.width) * 24, 0, 24);
     const snap = snapToGrid(h);
-    // Locate the dragged block by reference: its index can shift between moves
-    // because the parent sorts blocks by `start` after each blocks-changed.
-    const curIdx = this.blocks.indexOf(this._drag.ref);
-    if (curIdx < 0) return;
-    const next = [...this.blocks];
-    const b: any = { ...next[curIdx] };
+    // Ricostruisci SEMPRE dallo snapshot di inizio drag: geometria del
+    // blocco trascinato + ritaglio dei vicini (carveOverlaps). Il live
+    // array non va letto qui: il parent riordina per start e il carve può
+    // eliminare o spezzare blocchi tra un move e l'altro.
+    const work = this._drag.snapshot.map((x) => JSON.parse(JSON.stringify(x)) as Block);
+    const b: any = work[this._drag.idx];
     if (this._drag.handle === "l") {
       const newStart = clamp(snap, 0, resolveBlockTime(b, "end") - 0.25);
       b.start = newStart;
@@ -429,9 +512,7 @@ export class ChronosTimeline extends LitElement {
       delete b.end_anchor;
       delete b.end_offset;
     }
-    next[curIdx] = b;
-    this._drag.ref = b;
-    this._fireBlocksChanged(next);
+    this._fireBlocksChanged(carveOverlaps(work, b));
   }
 
   private _onDragUp() {
@@ -473,20 +554,18 @@ export class ChronosTimeline extends LitElement {
     const origStart = resolveBlockTime(b, "start");
     const origEnd = resolveBlockTime(b, "end");
 
-    // Track the dragged block by reference: the parent sorts blocks by `start`
-    // after every blocks-changed event, so the original `idx` would point to
-    // a different (sibling) block once the drag crosses it. Without this
-    // reference tracking, the sibling block gets overwritten and visually
-    // disappears when one block is dragged onto another.
-    let draggedRef: Block = b;
+    // Stesso modello a snapshot del drag lineare: ogni move ricostruisce
+    // dallo stato di inizio drag e riapplica geometria + carveOverlaps.
+    // Gli indici live sono inaffidabili mid-drag (il parent riordina per
+    // start e il carve può eliminare/spezzare vicini).
+    const snapshot = this.blocks.map((x) => JSON.parse(JSON.stringify(x)) as Block);
+    const dragIdx = idx;
 
     const onMove = (ev: PointerEvent | MouseEvent) => {
       const h = hoursFromEvent(ev);
       const snap = snapToGrid(h);
-      const curIdx = this.blocks.indexOf(draggedRef);
-      if (curIdx < 0) return;
-      const next = [...this.blocks];
-      const block: any = { ...next[curIdx] };
+      const work = snapshot.map((x) => JSON.parse(JSON.stringify(x)) as Block);
+      const block: any = work[dragIdx];
       if (handle === "l") {
         block.start = clamp(snap, 0, resolveBlockTime(block, "end") - 0.25);
         delete block.start_anchor;
@@ -508,9 +587,7 @@ export class ChronosTimeline extends LitElement {
         delete block.end_anchor;
         delete block.end_offset;
       }
-      next[curIdx] = block;
-      draggedRef = block;
-      this._fireBlocksChanged(next);
+      this._fireBlocksChanged(carveOverlaps(work, block));
     };
 
     const onUp = () => {
