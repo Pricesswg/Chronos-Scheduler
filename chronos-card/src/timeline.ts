@@ -412,7 +412,7 @@ export class ChronosTimeline extends LitElement {
           return html`
           <div
             class="tl-list__row"
-            style="border-color:${this.selectedIdx === i ? "var(--accent)" : "var(--border-soft)"};background:${this.selectedIdx === i ? "var(--accent-soft)" : "var(--bg-sunken)"}"
+            data-selected="${this.selectedIdx === i}"
             @click=${() => this._fireSelect(i)}
           >
             <div class="tl-list__time">${fmtHour(resolveBlockTime(b, "start"))} → ${fmtHour(resolveBlockTime(b, "end"))}</div>

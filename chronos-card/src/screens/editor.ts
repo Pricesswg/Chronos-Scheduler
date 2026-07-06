@@ -11,6 +11,10 @@ import type { ChronosCard } from "../chronos-card";
 import type { Block, Schedule } from "../types";
 import "../timeline";
 
+/** Device types whose turn_on block offers the auto-off timer. Kept in sync
+ * with AUTO_OFF_SERVICE in the backend's const.py. */
+const AUTO_OFF_TYPES = ["light", "plug", "fan", "thermostat"];
+
 @customElement("chronos-editor")
 export class ChronosEditor extends LitElement {
   static styles = chronosStyles;
@@ -305,6 +309,21 @@ export class ChronosEditor extends LitElement {
                           @input=${(e: InputEvent) => this._setBlockValue(schedule.id, (e.target as HTMLInputElement).value)}
                           style="width:100%;font-weight:500"/>
                       ` : nothing}
+                    </div>
+                  ` : nothing}
+                  ${AUTO_OFF_TYPES.includes(deviceType) && block.action?.id === "turn_on" ? html`
+                    <div class="field">
+                      <label class="field__label">${t("editor.auto_off.label")} <span class="text-mute">(min)</span></label>
+                      <div class="row" style="gap:10px;align-items:center">
+                        <input class="input" type="number" min="0" max="1440" step="1" style="width:110px"
+                          .value=${String(block.action?.auto_off_min ?? "")}
+                          placeholder="—"
+                          @change=${(e: Event) => {
+                            const v = parseFloat((e.target as HTMLInputElement).value);
+                            this._setBlockAutoOff(schedule.id, !isNaN(v) && v > 0 ? Math.min(v, 1440) : null);
+                          }}/>
+                        <span class="field__hint" style="margin:0">${t("editor.auto_off.hint")}</span>
+                      </div>
                     </div>
                   ` : nothing}
                   ${currentActionDef?.extras?.length ? this._renderExtras(schedule.id, block, currentActionDef) : nothing}
@@ -967,6 +986,18 @@ export class ChronosEditor extends LitElement {
       ...block,
       action: { ...block.action, value },
     };
+    this.card.updateBlocksLocal(schedId, newBlocks);
+  }
+
+  private _setBlockAutoOff(schedId: string, minutes: number | null) {
+    const schedule = this.card._schedules.find((s) => s.id === schedId);
+    if (!schedule) return;
+    const newBlocks = [...schedule.blocks];
+    const block = newBlocks[this._selectedBlockIdx];
+    const action: any = { ...block.action };
+    if (minutes && minutes > 0) action.auto_off_min = minutes;
+    else delete action.auto_off_min;
+    newBlocks[this._selectedBlockIdx] = { ...block, action };
     this.card.updateBlocksLocal(schedId, newBlocks);
   }
 

@@ -29,6 +29,7 @@ A single Lovelace card provides:
 - Light advanced parameters (RGB colour, colour temperature, transition) per block
 - Per-device and global settings (theme follows Home Assistant, color customisation, sensor-level weather overrides)
 - Device pickers show each entity's Home Assistant area, resolved live from the HA registries, so identically named devices (three "Thermostat"s in different rooms) stay distinguishable
+- Auto-off timer per block: lights, plugs, fans and climate devices can be switched off automatically N minutes after a turn-on block fires, restart-safe (if HA restarts mid-timer the devices are switched off at startup)
 - Help screen with 12 ready-made recipes (thermostat day/night, sunset lights, wind-safe blinds, rain-skip irrigation, heat-scaled fan, summer shading, solar-surplus loads, seasonal pool pump, …), quick start, FAQ and glossary
 
 All persisted by Home Assistant, accessible via WebSocket API, and auto-registered as a custom card.
@@ -131,7 +132,7 @@ All schedule, device and weather-rule data is persisted by the integration via W
 
 | HA domain        | Chronos type    | Typical capabilities                       |
 |------------------|-----------------|--------------------------------------------|
-| `climate.*`      | Thermostat      | set_temperature, set_hvac_mode, set_preset |
+| `climate.*`      | Thermostat / AC | set_temperature, set_hvac_mode (heat, cool, dry, fan_only, auto, …), set_preset, turn_on, turn_off |
 | `light.*`        | Light           | turn_on, turn_off, brightness, color       |
 | `cover.*`        | Blind           | open, close, set_position                  |
 | `switch.*`       | Plug            | turn_on, turn_off                          |

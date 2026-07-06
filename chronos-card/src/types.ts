@@ -35,6 +35,11 @@ export interface BlockAction {
    * rgb_color, color_temp_kelvin, transition). Keys come from the action def's
    * `extras` array exposed by the backend. */
   extras?: Record<string, any>;
+  /** Auto-off timer for turn_on blocks (light/plug/fan/thermostat): Chronos
+   * switches the devices off this many minutes after turning them on. NOT an
+   * extra because extras are forwarded verbatim to the HA service call.
+   * Unset/0 = disabled. */
+  auto_off_min?: number;
   /** Irrigation only. "global" (default / undefined) = current behaviour:
    * all valves of the block fire in parallel with the single `value`
    * duration. "sequential" = Chronos runs the stations one at a time using

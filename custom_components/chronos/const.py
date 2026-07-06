@@ -1,5 +1,5 @@
 DOMAIN = "chronos"
-VERSION = "1.19.1"
+VERSION = "1.20.0"
 STORAGE_VERSION = 1
 STORAGE_KEY_DEVICES = f"{DOMAIN}.devices"
 STORAGE_KEY_SCHEDULES = f"{DOMAIN}.schedules"
@@ -71,6 +71,23 @@ ACTIONS_BY_TYPE = {
                 "default": "comfort",
             },
         },
+        # set_hvac_mode è la vera "accensione" dei climatizzatori: molti
+        # condizionatori ignorano turn_on o riprendono una modalità
+        # arbitraria; selezionare il modo (cool/heat/dry/...) è deterministico
+        # su tutte le marche. Le opzioni sono i valori canonici di HA.
+        {
+            "id": "set_hvac_mode",
+            "label": "Modalità HVAC",
+            "kind": "preset",
+            "service": "climate.set_hvac_mode",
+            "value": {
+                "type": "enum",
+                "options": ["heat", "cool", "heat_cool", "dry", "fan_only", "auto", "off"],
+                "default": "heat",
+            },
+        },
+        # turn_on semplice: riprende l'ultima modalità del dispositivo.
+        {"id": "turn_on", "label": "Accendi", "kind": "on", "service": "climate.turn_on"},
         {"id": "turn_off", "label": "Spegni", "kind": "off", "service": "climate.turn_off"},
     ],
     "boiler": [
@@ -337,6 +354,17 @@ DEFAULT_SETTINGS = {
     # sequential program overlaps in time with another that shares a
     # valve (water pressure hazard). Default off: warn only, user decides.
     "irrigation_conflict_block": False,
+}
+
+# Auto-off timer per i blocchi turn_on: mappa device type → servizio di
+# spegnimento. Solo i tipi elencati mostrano il campo "spegni da solo dopo
+# N minuti" nell'editor; il runner e la recovery post-riavvio usano il
+# servizio indicato. L'irrigazione ha il suo runner dedicato e non è qui.
+AUTO_OFF_SERVICE = {
+    "light": "light.turn_off",
+    "plug": "switch.turn_off",
+    "fan": "fan.turn_off",
+    "thermostat": "climate.turn_off",
 }
 
 EVENT_BLOCK_EXECUTED = f"{DOMAIN}_block_executed"

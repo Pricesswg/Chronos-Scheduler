@@ -439,6 +439,13 @@ export const chronosStyles = css`
     background: var(--bg-sunken); border: 1px solid var(--border-soft);
     border-radius: var(--r-md); cursor: pointer;
   }
+  /* Selezione: mix di accent sul fondo del tema, NON --accent-soft fisso
+   * chiaro. --accent-soft senza il suo --accent-ink diventa illeggibile in
+   * dark mode (sfondo chiaro + testo chiaro del tema HA). */
+  .tl-list__row[data-selected="true"] {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 14%, var(--bg-sunken));
+  }
   .tl-list__time { font-family: var(--font-mono); font-size: 13px; color: var(--text); font-weight: 500; }
   .tl-list__mode-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; vertical-align: middle; }
   .tl-list__mode { font-size: 13px; font-weight: 500; }

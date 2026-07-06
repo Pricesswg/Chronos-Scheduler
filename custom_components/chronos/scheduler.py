@@ -16,6 +16,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     ACTIONS_BY_TYPE,
+    AUTO_OFF_SERVICE,
     EVENT_BLOCK_EXECUTED,
     EVENT_COMMAND_ERROR,
     EVENT_RULE_TRIGGERED,
@@ -305,32 +306,43 @@ class ChronosScheduler:
 
         closed: list[str] = []
         for key, info in active.items():
+            # Le entry storiche (irrigazione pre-1.20) non hanno off_service:
+            # default valve.close_valve. Quelle nuove (auto-off generico)
+            # dichiarano il servizio di spegnimento del loro dominio.
+            off_service = str(info.get("off_service") or "valve.close_valve")
+            off_domain, _, off_name = off_service.partition(".")
+            is_irrigation = off_service == "valve.close_valve"
             for ent in info.get("entity_ids", []) or []:
                 try:
                     await self._hass.services.async_call(
-                        "valve", "close_valve", {"entity_id": ent}, blocking=False
+                        off_domain, off_name, {"entity_id": ent}, blocking=False
                     )
                     closed.append(ent)
                 except Exception:
                     _LOGGER.exception(
-                        "Chronos: defensive close_valve failed for %s after restart", ent
+                        "Chronos: defensive %s failed for %s after restart",
+                        off_service, ent,
                     )
             self._store.append_history({
                 "ts": dt_util.utcnow().isoformat(),
                 "schedule_id": info.get("schedule_id", ""),
                 "schedule_name": info.get("schedule_name", "?"),
-                "device_type": "irrigation",
+                "device_type": info.get("device_type", "irrigation"),
                 "kind": "system",
-                "action_id": "restart_abort",
+                "action_id": "restart_abort" if is_irrigation else "restart_off",
                 "entity_id": ", ".join(info.get("entity_ids", []) or []) or None,
                 "value": None,
                 "outcome": "error",
-                "error": "Irrigation program interrupted by restart; valves closed defensively",
+                "error": (
+                    "Irrigation program interrupted by restart; valves closed defensively"
+                    if is_irrigation
+                    else "Auto-off timer interrupted by restart; devices switched off defensively"
+                ),
                 "rule_idx": None,
             })
         _LOGGER.warning(
-            "Chronos: restart interrupted %d irrigation program(s); "
-            "defensively closed valves: %s",
+            "Chronos: restart interrupted %d timed program(s); "
+            "defensively switched off: %s",
             len(active), closed,
         )
         await self._store.clear_all_sequences()
@@ -979,6 +991,92 @@ class ChronosScheduler:
             except Exception:
                 _LOGGER.exception("Chronos: history flush failed after timed irrigation")
 
+    async def _run_auto_off(
+        self,
+        sched: dict,
+        seq_key: str,
+        entity_ids: list[str],
+        minutes: float,
+        off_service: str,
+    ) -> None:
+        """Auto-off timer per i blocchi turn_on (luci, prese, ventole,
+        climatizzatori): l'accensione è già stata inviata dal dispatch
+        normale (con brightness/extras/...); qui si aspetta `minutes` e si
+        spegne. Stesso contratto di sicurezza dell'irrigazione a tempo: il
+        set in volo persiste nello store sequences con il proprio
+        off_service, così un riavvio a metà timer spegne i dispositivi al
+        prossimo avvio, e la cancellazione (HA in stop) spegne subito."""
+        sched_name = sched.get("name", "?")
+        sched_id = str(sched.get("id", ""))
+        off_domain, _, off_name = off_service.partition(".")
+        await self._store.set_active_sequence(seq_key, {
+            "schedule_id": sched_id,
+            "schedule_name": sched_name,
+            "entity_ids": list(entity_ids),
+            "started_at": dt_util.utcnow().isoformat(),
+            "off_service": off_service,
+            "device_type": sched.get("device_type", ""),
+        })
+        _LOGGER.info(
+            "Chronos: START auto-off schedule=%s entities=%s in %.0fmin via %s",
+            sched_name, entity_ids, minutes, off_service,
+        )
+
+        async def _switch_off() -> None:
+            for ent in entity_ids:
+                try:
+                    await self._hass.services.async_call(
+                        off_domain, off_name, {"entity_id": ent}, blocking=False
+                    )
+                except Exception:
+                    _LOGGER.exception(
+                        "Chronos: auto-off %s failed for %s", off_service, ent
+                    )
+                    self._store.append_history(_make_history_entry(
+                        sched, kind="block", action_id="auto_off",
+                        entity_id=ent, outcome="error",
+                        error=f"{off_service} failed",
+                    ))
+
+        replaced = False
+        try:
+            await asyncio.sleep(minutes * 60)
+            await _switch_off()
+            for ent in entity_ids:
+                self._store.append_history(_make_history_entry(
+                    sched, kind="block", action_id="auto_off",
+                    entity_id=ent, value=f"{minutes:g}min",
+                ))
+                await _log_to_logbook(
+                    self._hass, sched, action_id="auto_off",
+                    entity_id=ent, extra=f"{minutes:g}min",
+                )
+            _LOGGER.info("Chronos: DONE auto-off schedule=%s", sched_name)
+        except asyncio.CancelledError:
+            # Il marker viaggia sul Task stesso (impostato dal dispatch che
+            # ci sostituisce): niente stato condiviso da ripulire, e se la
+            # cancellazione ci coglie prima del try il flag muore con noi.
+            replaced = bool(getattr(asyncio.current_task(), "_chronos_replaced", False))
+            if not replaced:
+                # HA in stop a metà timer: spegni subito. La recovery al
+                # prossimo avvio ripassa comunque via store per sicurezza.
+                await _switch_off()
+            # Sostituzione: il blocco è stato ri-dispatchato, i dispositivi
+            # sono appena stati riaccesi e il timer nuovo è già partito.
+            # Non toccare niente.
+            raise
+        finally:
+            if not replaced:
+                await self._store.clear_active_sequence(seq_key)
+                # Il task nuovo potrebbe già essersi registrato sulla stessa
+                # chiave: rimuovi solo se la entry è ancora nostra.
+                if self._sequence_tasks.get(seq_key) is asyncio.current_task():
+                    self._sequence_tasks.pop(seq_key, None)
+            try:
+                await self._store.flush_history()
+            except Exception:
+                _LOGGER.exception("Chronos: history flush failed after auto-off")
+
     async def _dispatch_action(self, sched: dict, block: dict) -> None:
         """Internal: execute the block's action on all schedule devices.
 
@@ -1344,6 +1442,8 @@ class ChronosScheduler:
                 service_data["temperature"] = float(value)
             elif action_id == "set_preset" and value is not None:
                 service_data["preset_mode"] = str(value)
+            elif action_id == "set_hvac_mode" and value not in (None, ""):
+                service_data["hvac_mode"] = str(value)
             elif action_id == "set_operation" and value is not None:
                 service_data["operation_mode"] = str(value)
             elif action_id == "turn_on" and device_type == "light" and value is not None:
@@ -1430,6 +1530,38 @@ class ChronosScheduler:
                 f"{action_def['label']}{value_str} · {', '.join(executed_entities)}",
                 title=f"Chronos · {sched_name}",
             )
+
+        # Auto-off timer: se il blocco turn_on chiede lo spegnimento
+        # automatico dopo N minuti e almeno un dispositivo è stato acceso,
+        # spawn del timer. Un re-dispatch dello stesso blocco (fire_now,
+        # ri-trigger) riparte da zero: il timer precedente viene cancellato
+        # e sostituito, coerente con "l'ho appena riacceso".
+        if (
+            executed_entities
+            and action_id == "turn_on"
+            and device_type in AUTO_OFF_SERVICE
+        ):
+            try:
+                auto_off_min = float(action.get("auto_off_min") or 0)
+            except (TypeError, ValueError):
+                auto_off_min = 0
+            if auto_off_min > 0:
+                auto_off_min = min(auto_off_min, 24 * 60)
+                seq_key = f"{sched.get('id')}:auto_off:{block.get('start')}-{block.get('end')}"
+                existing = self._sequence_tasks.get(seq_key)
+                if existing and not existing.done():
+                    # Sostituzione, non shutdown: il task vecchio NON deve
+                    # spegnere i dispositivi appena riaccesi né pulire lo
+                    # store del nuovo. Il marker sta sul Task.
+                    setattr(existing, "_chronos_replaced", True)
+                    existing.cancel()
+                task = self._hass.async_create_task(
+                    self._run_auto_off(
+                        sched, seq_key, list(executed_entities),
+                        auto_off_min, AUTO_OFF_SERVICE[device_type],
+                    )
+                )
+                self._sequence_tasks[seq_key] = task
 
     async def _apply_block(self, sched: dict, block: dict, block_idx: int = -1) -> None:
         """Apply a block transition. Evaluates 'skip' rules targeting this

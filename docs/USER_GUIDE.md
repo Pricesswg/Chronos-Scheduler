@@ -165,6 +165,8 @@ Blocks cannot overlap. Dragging a block (or one of its edges) over a neighbour t
 
 The thin strip at the top of the linear timeline is today's hourly weather forecast from your configured weather entity, aligned with the hour axis (past hours are empty). Hover a cell to see the hour and the condition.
 
+For lights, plugs, fans and climate devices, a turn-on block also offers an **auto-off timer**: Chronos switches the block's devices off N minutes after turning them on. The field lives in the block detail panel next to the action. It is restart-safe (same mechanism as irrigation): if Home Assistant restarts while a timer is running, the devices are switched off at the next startup and the event is recorded in History. Leaving the field empty disables it.
+
 The timeline follows the snap value configured in Settings.
 
 Example:
@@ -789,6 +791,10 @@ Irrigation skipped because condition is rainy
 ```
 
 ---
+
+### The card shows load errors right after Home Assistant restarts
+
+Right after a restart the frontend can reconnect before the Chronos integration has finished loading, so the first requests fail with "Unknown command". The card retries automatically with increasing delays for about half a minute and recovers on its own; there is no need to clear the app cache (that old workaround only worked because it forced a reload). If the errors persist beyond a minute, check Settings → Devices & Services to confirm the integration actually loaded.
 
 ### The timeline looks different from the screenshots
 

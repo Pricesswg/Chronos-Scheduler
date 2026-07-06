@@ -42,6 +42,8 @@ const FALLBACK_ACTIONS: Record<string, ActionDef[]> = {
   thermostat: [
     { id: "set_temperature", label: "Imposta temperatura", kind: "set", service: "climate.set_temperature", value: { type: "number", unit: "°C", min: 5, max: 35, step: 0.5, default: 21 } },
     { id: "set_preset", label: "Preset", kind: "preset", service: "climate.set_preset_mode", value: { type: "enum", options: ["none", "eco", "comfort", "sleep", "away", "boost", "home"], default: "comfort" } },
+    { id: "set_hvac_mode", label: "Modalità HVAC", kind: "preset", service: "climate.set_hvac_mode", value: { type: "enum", options: ["heat", "cool", "heat_cool", "dry", "fan_only", "auto", "off"], default: "heat" } },
+    { id: "turn_on", label: "Accendi", kind: "on", service: "climate.turn_on" },
     { id: "turn_off", label: "Spegni", kind: "off", service: "climate.turn_off" },
   ],
   boiler: [

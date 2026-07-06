@@ -1,3 +1,6 @@
+// Primo import in assoluto: rende customElements.define idempotente per gli
+// elementi chronos-* PRIMA che gli import degli screen li registrino.
+import "./define-guard";
 import { LitElement, html, nothing, PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { chronosStyles, chronosTokens } from "./styles";
@@ -214,6 +217,10 @@ export class ChronosCard extends LitElement {
     super.disconnectedCallback();
     this._resizeObserver?.disconnect();
     window.removeEventListener("resize", this._windowResizeBound);
+    if (this._retryTimer) {
+      clearTimeout(this._retryTimer);
+      this._retryTimer = null;
+    }
   }
 
   async firstUpdated() {
@@ -250,8 +257,22 @@ export class ChronosCard extends LitElement {
   }
   private _appliedLang: string = "";
 
+  /** Retry automatico dei load falliti. Caso tipico: riavvio di HA con la
+   * companion app aperta — il frontend si riconnette prima che l'integrazione
+   * abbia registrato i comandi WS, ogni chiamata risponde "Unknown command"
+   * e senza retry il banner d'errore resta lì finché l'utente non ricarica
+   * a mano (i report parlavano di "cancellare la cache", che funzionava solo
+   * perché forzava un reload). Backoff crescente, poi ci si arrende. */
+  private _retryCount = 0;
+  private _retryTimer: ReturnType<typeof setTimeout> | null = null;
+  private static readonly _RETRY_DELAYS_MS = [2000, 5000, 10000, 20000];
+
   private async _loadAll() {
     if (!this.hass) return;
+    if (this._retryTimer) {
+      clearTimeout(this._retryTimer);
+      this._retryTimer = null;
+    }
     this._loading = true;
     this._loadError = null;
     // Carico ogni risorsa indipendentemente: se una WS fallisce non blocca le altre.
@@ -308,6 +329,16 @@ export class ChronosCard extends LitElement {
       console.error("Chronos: failed to load data", e);
     }
     this._loading = false;
+    if (this._loadError && this._retryCount < ChronosCard._RETRY_DELAYS_MS.length) {
+      const delay = ChronosCard._RETRY_DELAYS_MS[this._retryCount++];
+      console.info(`Chronos: load failed, retrying in ${delay / 1000}s (attempt ${this._retryCount})`);
+      this._retryTimer = setTimeout(() => {
+        this._retryTimer = null;
+        this._loadAll();
+      }, delay);
+    } else if (!this._loadError) {
+      this._retryCount = 0;
+    }
   }
 
   // --- Public API for screens ---
@@ -681,6 +712,7 @@ export class ChronosCard extends LitElement {
     const errorBanner = this._loadError
       ? html`<div style="margin:10px;padding:10px 14px;background:#fef2f2;color:#991b1b;border-left:3px solid #ef4444;border-radius:4px;font-size:12.5px;font-family:ui-monospace,monospace">
           Chronos load errors: ${this._loadError}
+          ${this._retryTimer ? html`<div style="margin-top:6px;font-weight:600">${t("load.retry.hint")}</div>` : nothing}
         </div>`
       : nothing;
 
