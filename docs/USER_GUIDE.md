@@ -792,6 +792,12 @@ Irrigation skipped because condition is rainy
 
 ---
 
+### A device was offline when its block fired
+
+Home Assistant accepts service calls for unavailable entities without erroring, so before v1.21 the History screen recorded a false "ok" for devices that were offline at dispatch. Now the entry says the device was offline, and the **offline recall** retries the action automatically when the entity comes back online, as long as the block is still active at that moment (a light never turns on hours late because its bulb reconnected at 3 AM: when the block window has ended, the recall expires with a note in History).
+
+The recall only arms for devices that were offline at dispatch. It never re-applies actions to devices that were online and were changed manually. Irrigation valves are excluded by design. Settings → Execution behavior lets you turn the recall off or change the maximum number of attempts (default 3). Auto-off timers are honoured: a lamp recovered late still switches off after its configured minutes.
+
 ### The card shows load errors right after Home Assistant restarts
 
 Right after a restart the frontend can reconnect before the Chronos integration has finished loading, so the first requests fail with "Unknown command". The card retries automatically with increasing delays for about half a minute and recovers on its own; there is no need to clear the app cache (that old workaround only worked because it forced a reload). If the errors persist beyond a minute, check Settings → Devices & Services to confirm the integration actually loaded.

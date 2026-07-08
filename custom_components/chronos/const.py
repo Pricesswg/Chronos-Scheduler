@@ -1,5 +1,5 @@
 DOMAIN = "chronos"
-VERSION = "1.20.0"
+VERSION = "1.21.0"
 STORAGE_VERSION = 1
 STORAGE_KEY_DEVICES = f"{DOMAIN}.devices"
 STORAGE_KEY_SCHEDULES = f"{DOMAIN}.schedules"
@@ -354,6 +354,13 @@ DEFAULT_SETTINGS = {
     # sequential program overlaps in time with another that shares a
     # valve (water pressure hazard). Default off: warn only, user decides.
     "irrigation_conflict_block": False,
+    # Offline-device recall: when a target entity is unavailable at block
+    # dispatch, retry the action when it comes back online, as long as the
+    # block is still active. Armed only for devices that were OFFLINE at
+    # dispatch (never state-reconciliation against manual changes).
+    # Irrigation is excluded by design.
+    "offline_recall": True,
+    "offline_recall_max_attempts": 3,
 }
 
 # Auto-off timer per i blocchi turn_on: mappa device type → servizio di

@@ -201,6 +201,12 @@ export interface Settings {
    * that shares a valve (water-pressure hazard). Default false: only a
    * non-blocking warning is shown and the user decides. */
   irrigation_conflict_block?: boolean;
+  /** Offline-device recall: retry a block action on entities that were
+   * unavailable at dispatch, when they come back online and the block is
+   * still active. Default true. */
+  offline_recall?: boolean;
+  /** Max recall attempts per (schedule, entity). Default 3. */
+  offline_recall_max_attempts?: number;
 }
 
 export interface ActionValueSpec {

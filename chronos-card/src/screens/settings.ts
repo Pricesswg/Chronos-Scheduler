@@ -90,6 +90,26 @@ export class ChronosSettingsScreen extends LitElement {
               <span class="field__hint">${t("settings.snap.hint")}</span>
             </div>
           </div>
+          <div class="device-row" style="border-top:1px solid var(--border-soft);border-radius:0;margin-top:12px;padding-top:12px">
+            <div class="device-row__main">
+              <div class="device-row__name">${t("settings.recall.title")}</div>
+              <div class="device-row__meta" style="font-family:var(--font-sans)">${t("settings.recall.desc")}</div>
+            </div>
+            ${(s.offline_recall ?? true) ? html`
+              <div class="segmented" style="flex:0 0 auto">
+                ${[1, 3, 5, 10].map((v) => html`
+                  <button data-active="${(s.offline_recall_max_attempts ?? 3) === v}"
+                    @click=${() => this._updateSetting("offline_recall_max_attempts", v)}>${v}×</button>
+                `)}
+              </div>
+            ` : nothing}
+            <label class="switch">
+              <input type="checkbox" .checked=${s.offline_recall ?? true}
+                @change=${(e: Event) => this._updateSetting("offline_recall", (e.target as HTMLInputElement).checked)}/>
+              <span class="switch__track"></span>
+              <span class="switch__thumb"></span>
+            </label>
+          </div>
         </div>
 
         <div class="card">
