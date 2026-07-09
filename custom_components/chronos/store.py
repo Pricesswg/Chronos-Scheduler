@@ -213,6 +213,24 @@ class ChronosStore:
             self.active_sequences = {}
             await self._save_sequences()
 
+    async def async_remove_entity_from_sequences(self, entity_id: str) -> None:
+        """Rimuove un'entità da ogni entry in-flight; le entry svuotate
+        spariscono. Usata quando un off-recall riesce: quel dispositivo non
+        ha più uno spegnimento in sospeso, la recovery al riavvio non deve
+        più occuparsene."""
+        dirty = False
+        for key in list(self.active_sequences.keys()):
+            info = self.active_sequences[key]
+            ents = [e for e in (info.get("entity_ids") or []) if e != entity_id]
+            if len(ents) != len(info.get("entity_ids") or []):
+                dirty = True
+                if ents:
+                    self.active_sequences[key] = {**info, "entity_ids": ents}
+                else:
+                    self.active_sequences.pop(key, None)
+        if dirty:
+            await self._save_sequences()
+
     async def _save_history(self) -> None:
         await self._store_history.async_save(self.history)
 

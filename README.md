@@ -31,6 +31,7 @@ A single Lovelace card provides:
 - Device pickers show each entity's Home Assistant area, resolved live from the HA registries, so identically named devices (three "Thermostat"s in different rooms) stay distinguishable
 - Auto-off timer per block: lights, plugs, fans and climate devices can be switched off automatically N minutes after a turn-on block fires, restart-safe (if HA restarts mid-timer the devices are switched off at startup)
 - Offline-device recall: if a target entity is unavailable when its block fires, History records it truthfully (no more false "ok") and the action is retried automatically when the device comes back online, as long as the block is still active. Configurable max attempts, on by default, never fights manual changes (it only arms for devices that were offline at dispatch)
+- Missed switch-offs are never lost: if a device is offline when its auto-off timer fires or when an irrigation program closes its valves, Chronos switches it off as soon as it reconnects, regardless of the block window (off-late is the safe direction). Always on, survives HA restarts, gives up after 12h with a note in History
 - Help screen with 12 ready-made recipes (thermostat day/night, sunset lights, wind-safe blinds, rain-skip irrigation, heat-scaled fan, summer shading, solar-surplus loads, seasonal pool pump, …), quick start, FAQ and glossary
 
 All persisted by Home Assistant, accessible via WebSocket API, and auto-registered as a custom card.

@@ -712,6 +712,8 @@ Irrigation schedules drive valve entities. A start block opens valves; Chronos c
 
 Both modes are restart safe. If Home Assistant restarts while watering, any valves left open are closed defensively on the next start and the event is recorded in History. Only one timed program per schedule runs at a time, so a re trigger while watering does not start a second timer on the same valves.
 
+A valve that is offline (unavailable) when its close command is due does not lose the close: Chronos arms an off-recall and closes it as soon as it comes back online, even across a Home Assistant restart. See the off-recall paragraph in the Troubleshooting section.
+
 To skip watering when rain is likely, add a weather rule such as `forecast.rain_6h > 2` with the skip effect on the watering block.
 
 ---
@@ -803,6 +805,8 @@ Irrigation skipped because condition is rainy
 Home Assistant accepts service calls for unavailable entities without erroring, so before v1.21 the History screen recorded a false "ok" for devices that were offline at dispatch. Now the entry says the device was offline, and the **offline recall** retries the action automatically when the entity comes back online, as long as the block is still active at that moment (a light never turns on hours late because its bulb reconnected at 3 AM: when the block window has ended, the recall expires with a note in History).
 
 The recall only arms for devices that were offline at dispatch. It never re-applies actions to devices that were online and were changed manually. Irrigation valves are excluded by design. Settings → Execution behavior lets you turn the recall off or change the maximum number of attempts (default 3). Auto-off timers are honoured: a lamp recovered late still switches off after its configured minutes.
+
+Missed switch-offs get stronger treatment. When an auto-off timer fires (or an irrigation program closes its valves) and the device is offline at that moment, the command would be silently lost and the device would stay on. Chronos records the failure in History and arms an **off-recall**: the device is switched off as soon as it comes back online, regardless of whether the block has ended in the meantime, because switching off late is the safe direction (a valve left open is running water). The off-recall is always on, is not affected by the recall setting above, survives a Home Assistant restart (the pending switch-off is persisted and picked up at startup), and gives up only after 12 hours offline, with a note in History asking you to check the device.
 
 ### The card shows load errors right after Home Assistant restarts
 

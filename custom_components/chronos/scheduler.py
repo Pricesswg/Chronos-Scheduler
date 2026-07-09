@@ -23,6 +23,7 @@ from .const import (
     EVENT_BLOCK_EXECUTED,
     EVENT_COMMAND_ERROR,
     EVENT_RULE_TRIGGERED,
+    OFF_RECALL_MAX_AGE_HOURS,
 )
 from .store import ChronosStore
 
@@ -320,6 +321,7 @@ class ChronosScheduler:
             return
 
         closed: list[str] = []
+        deferred: dict[str, dict] = {}
         for key, info in active.items():
             # Le entry storiche (irrigazione pre-1.20) non hanno off_service:
             # default valve.close_valve. Quelle nuove (auto-off generico)
@@ -327,7 +329,25 @@ class ChronosScheduler:
             off_service = str(info.get("off_service") or "valve.close_valve")
             off_domain, _, off_name = off_service.partition(".")
             is_irrigation = off_service == "valve.close_valve"
+            snap = {
+                "id": info.get("schedule_id", ""),
+                "name": info.get("schedule_name", "?"),
+                "device_type": info.get("device_type", "irrigation"),
+            }
+            still_offline: list[str] = []
             for ent in info.get("entity_ids", []) or []:
+                # Dispositivo ancora offline al riavvio: lo spegnimento
+                # alla cieca andrebbe perso (HA accetta la chiamata e non
+                # succede niente). Si arma l'off-recall e l'entità resta
+                # nello store, così anche un ULTERIORE riavvio la ritrova.
+                state = self._hass.states.get(ent)
+                if state is None or state.state in ("unavailable", "unknown"):
+                    self._arm_off_recall(
+                        snap, ent, off_service,
+                        "close_valve" if is_irrigation else "auto_off",
+                    )
+                    still_offline.append(ent)
+                    continue
                 try:
                     await self._hass.services.async_call(
                         off_domain, off_name, {"entity_id": ent}, blocking=False
@@ -338,6 +358,12 @@ class ChronosScheduler:
                         "Chronos: defensive %s failed for %s after restart",
                         off_service, ent,
                     )
+            if still_offline:
+                deferred[key] = {**info, "entity_ids": still_offline}
+            offline_note = (
+                f" ({len(still_offline)} device(s) still offline, will be "
+                "switched off when back online)" if still_offline else ""
+            )
             self._store.append_history({
                 "ts": dt_util.utcnow().isoformat(),
                 "schedule_id": info.get("schedule_id", ""),
@@ -352,15 +378,18 @@ class ChronosScheduler:
                     "Irrigation program interrupted by restart; valves closed defensively"
                     if is_irrigation
                     else "Auto-off timer interrupted by restart; devices switched off defensively"
-                ),
+                ) + offline_note,
                 "rule_idx": None,
             })
         _LOGGER.warning(
             "Chronos: restart interrupted %d timed program(s); "
-            "defensively switched off: %s",
+            "defensively switched off: %s; deferred (offline): %s",
             len(active), closed,
+            [e for d in deferred.values() for e in d["entity_ids"]],
         )
         await self._store.clear_all_sequences()
+        for key, info in deferred.items():
+            await self._store.set_active_sequence(key, info)
         try:
             await self._store.flush_history()
         except Exception:
@@ -895,12 +924,10 @@ class ChronosScheduler:
                 # Wait the station's run time. Cancellation (HA stopping)
                 # propagates out of the sleep into the finally below.
                 await asyncio.sleep(mins * 60)
-                try:
-                    await self._hass.services.async_call(
-                        "valve", "close_valve", {"entity_id": ent}, blocking=False
-                    )
-                except Exception:
-                    _LOGGER.exception("Chronos: close_valve failed for %s in sequence", ent)
+                # Valvola offline alla chiusura → off-recall (vedi
+                # _off_or_arm): la chiusura persa va recuperata appena
+                # torna raggiungibile, è acqua che scorre.
+                await self._off_or_arm(sched, ent, "valve.close_valve", "close_valve")
                 current = None
             _LOGGER.info("Chronos: DONE sequential irrigation schedule=%s", sched_name)
         except asyncio.CancelledError:
@@ -909,17 +936,10 @@ class ChronosScheduler:
             # sweep on the next boot, but closing here makes a clean stop
             # tidy too.
             if current:
-                try:
-                    await self._hass.services.async_call(
-                        "valve", "close_valve", {"entity_id": current}, blocking=False
-                    )
-                except Exception:
-                    _LOGGER.exception(
-                        "Chronos: close_valve on cancel failed for %s", current
-                    )
+                await self._off_or_arm(sched, current, "valve.close_valve", "close_valve")
             raise
         finally:
-            await self._store.clear_active_sequence(seq_key)
+            await self._settle_sequence_entry(sched, seq_key, all_entities, "valve.close_valve")
             self._sequence_tasks.pop(seq_key, None)
             try:
                 await self._store.flush_history()
@@ -985,27 +1005,20 @@ class ChronosScheduler:
             # Cancellation (HA stopping) propagates out of the sleep into
             # the except/finally below.
             await asyncio.sleep(minutes * 60)
+            # Una valvola offline alla chiusura arma l'off-recall: la
+            # chiusura persa è acqua che scorre, va recuperata appena il
+            # dispositivo torna raggiungibile (vedi _off_or_arm).
             for ent in opened:
-                try:
-                    await self._hass.services.async_call(
-                        "valve", "close_valve", {"entity_id": ent}, blocking=False
-                    )
-                except Exception:
-                    _LOGGER.exception("Chronos: close_valve failed for %s in timed run", ent)
+                await self._off_or_arm(sched, ent, "valve.close_valve", "close_valve")
             _LOGGER.info("Chronos: DONE timed irrigation schedule=%s", sched_name)
         except asyncio.CancelledError:
             # HA is stopping mid-watering: close whatever we opened. The
             # next start() sweeps again defensively via the sequences store.
             for ent in opened:
-                try:
-                    await self._hass.services.async_call(
-                        "valve", "close_valve", {"entity_id": ent}, blocking=False
-                    )
-                except Exception:
-                    _LOGGER.exception("Chronos: close_valve on cancel failed for %s", ent)
+                await self._off_or_arm(sched, ent, "valve.close_valve", "close_valve")
             raise
         finally:
-            await self._store.clear_active_sequence(seq_key)
+            await self._settle_sequence_entry(sched, seq_key, opened, "valve.close_valve")
             self._sequence_tasks.pop(seq_key, None)
             try:
                 await self._store.flush_history()
@@ -1029,7 +1042,6 @@ class ChronosScheduler:
         prossimo avvio, e la cancellazione (HA in stop) spegne subito."""
         sched_name = sched.get("name", "?")
         sched_id = str(sched.get("id", ""))
-        off_domain, _, off_name = off_service.partition(".")
         await self._store.set_active_sequence(seq_key, {
             "schedule_id": sched_id,
             "schedule_name": sched_name,
@@ -1043,27 +1055,22 @@ class ChronosScheduler:
             sched_name, entity_ids, minutes, off_service,
         )
 
-        async def _switch_off() -> None:
+        async def _switch_off() -> list[str]:
+            # Ritorna le sole entità a cui il comando è davvero partito:
+            # quelle offline vengono armate come off-recall da _off_or_arm
+            # (che scrive anche l'entry di errore nello storico) e NON
+            # devono comparire come "executed".
+            done: list[str] = []
             for ent in entity_ids:
-                try:
-                    await self._hass.services.async_call(
-                        off_domain, off_name, {"entity_id": ent}, blocking=False
-                    )
-                except Exception:
-                    _LOGGER.exception(
-                        "Chronos: auto-off %s failed for %s", off_service, ent
-                    )
-                    self._store.append_history(_make_history_entry(
-                        sched, kind="block", action_id="auto_off",
-                        entity_id=ent, outcome="error",
-                        error=f"{off_service} failed",
-                    ))
+                if await self._off_or_arm(sched, ent, off_service, "auto_off"):
+                    done.append(ent)
+            return done
 
         replaced = False
         try:
             await asyncio.sleep(minutes * 60)
-            await _switch_off()
-            for ent in entity_ids:
+            switched = await _switch_off()
+            for ent in switched:
                 self._store.append_history(_make_history_entry(
                     sched, kind="block", action_id="auto_off",
                     entity_id=ent, value=f"{minutes:g}min",
@@ -1088,7 +1095,7 @@ class ChronosScheduler:
             raise
         finally:
             if not replaced:
-                await self._store.clear_active_sequence(seq_key)
+                await self._settle_sequence_entry(sched, seq_key, entity_ids, off_service)
                 # Il task nuovo potrebbe già essersi registrato sulla stessa
                 # chiave: rimuovi solo se la entry è ancora nostra.
                 if self._sequence_tasks.get(seq_key) is asyncio.current_task():
@@ -1120,6 +1127,91 @@ class ChronosScheduler:
         }
         self._refresh_recall_listener()
         return True
+
+    def _arm_off_recall(
+        self, sched: dict, entity_id: str, off_service: str, action_id: str
+    ) -> None:
+        """Arma il recupero di uno SPEGNIMENTO perso (auto-off o chiusura
+        valvole con dispositivo offline). A differenza del recall dei
+        blocchi è SEMPRE attivo, non gated dall'impostazione offline_recall,
+        e non è vincolato alla fascia: un dispositivo lasciato acceso da
+        Chronos va spento appena torna raggiungibile, anche se la fascia è
+        finita (spegnere in ritardo è la direzione sicura). Unico limite:
+        l'età massima OFF_RECALL_MAX_AGE_HOURS, oltre la quale si rinuncia
+        con nota nello storico."""
+        key = f"{sched.get('id')}:off:{entity_id}"
+        self._pending_recalls[key] = {
+            "mode": "off",
+            "schedule_id": str(sched.get("id", "")),
+            "schedule_name": sched.get("name", "?"),
+            "device_type": sched.get("device_type", ""),
+            "entity_id": entity_id,
+            "off_service": off_service,
+            "action_id": action_id,
+            "attempts": 0,
+            "armed_at": dt_util.utcnow().isoformat(),
+        }
+        self._refresh_recall_listener()
+
+    async def _off_or_arm(
+        self, sched: dict, entity_id: str, off_service: str, action_id: str
+    ) -> bool:
+        """Spegne l'entità, oppure — se è offline — arma l'off-recall e
+        scrive la verità nello storico invece del falso 'executed'.
+        True se il comando è partito davvero."""
+        state = self._hass.states.get(entity_id)
+        if state is None or state.state in ("unavailable", "unknown"):
+            self._arm_off_recall(sched, entity_id, off_service, action_id)
+            self._store.append_history(_make_history_entry(
+                sched, kind="block", action_id=action_id,
+                entity_id=entity_id, outcome="error",
+                error="Device offline; off-recall armed, it will be "
+                      "switched off as soon as it comes back online",
+            ))
+            _LOGGER.warning(
+                "Chronos: %s offline at %s; off-recall armed (schedule=%s)",
+                entity_id, action_id, sched.get("name"),
+            )
+            return False
+        try:
+            domain, _, service = off_service.partition(".")
+            await self._hass.services.async_call(
+                domain, service, {"entity_id": entity_id}, blocking=False
+            )
+            return True
+        except Exception:
+            _LOGGER.exception("Chronos: %s failed for %s", off_service, entity_id)
+            self._store.append_history(_make_history_entry(
+                sched, kind="block", action_id=action_id,
+                entity_id=entity_id, outcome="error",
+                error=f"{off_service} failed",
+            ))
+            return False
+
+    async def _settle_sequence_entry(
+        self, sched: dict, seq_key: str, entity_ids: list[str], off_service: str
+    ) -> None:
+        """Chiusura dell'entry dello store a fine runner. Se qualche entità
+        ha un off-recall armato (era offline allo spegnimento), l'entry
+        resta nello store ridotta alle sole entità in sospeso: così un
+        riavvio di HA con l'off-recall ancora pendente non perde lo
+        spegnimento, la recovery in start() se ne riprende carico. Se non
+        c'è niente in sospeso, si pulisce come sempre."""
+        sid = str(sched.get("id", ""))
+        armed_left = [
+            e for e in entity_ids if f"{sid}:off:{e}" in self._pending_recalls
+        ]
+        if armed_left:
+            await self._store.set_active_sequence(seq_key, {
+                "schedule_id": sid,
+                "schedule_name": sched.get("name", "?"),
+                "entity_ids": armed_left,
+                "started_at": dt_util.utcnow().isoformat(),
+                "off_service": off_service,
+                "device_type": sched.get("device_type", ""),
+            })
+        else:
+            await self._store.clear_active_sequence(seq_key)
 
     def _refresh_recall_listener(self) -> None:
         """(Ri)sottoscrive il listener di stato sull'insieme corrente delle
@@ -1160,6 +1252,71 @@ class ChronosScheduler:
             ent = rec["entity_id"]
             if only_entity and ent != only_entity:
                 continue
+
+            # --- Off-recall: spegnimento perso, nessun vincolo di fascia ---
+            if rec.get("mode") == "off":
+                snap = {
+                    "id": rec.get("schedule_id", ""),
+                    "name": rec.get("schedule_name", "?"),
+                    "device_type": rec.get("device_type", ""),
+                }
+                armed = dt_util.parse_datetime(rec.get("armed_at") or "")
+                age_h = (
+                    (dt_util.utcnow() - armed).total_seconds() / 3600
+                    if armed else 0.0
+                )
+                if age_h > OFF_RECALL_MAX_AGE_HOURS:
+                    self._pending_recalls.pop(key, None)
+                    dirty = True
+                    self._store.append_history(_make_history_entry(
+                        snap, kind="block", action_id=rec.get("action_id") or "?",
+                        entity_id=ent, outcome="error",
+                        error=(
+                            f"Off-recall expired after {OFF_RECALL_MAX_AGE_HOURS}h "
+                            "offline; check the device and switch it off manually"
+                        ),
+                    ))
+                    continue
+                state = self._hass.states.get(ent)
+                if state is None or state.state in ("unavailable", "unknown"):
+                    continue
+                rec["attempts"] += 1
+                ok = False
+                try:
+                    off_domain, _, off_name = str(rec.get("off_service") or "").partition(".")
+                    await self._hass.services.async_call(
+                        off_domain, off_name, {"entity_id": ent}, blocking=False
+                    )
+                    ok = True
+                except Exception:
+                    _LOGGER.exception(
+                        "Chronos: off-recall %s failed for %s",
+                        rec.get("off_service"), ent,
+                    )
+                if ok:
+                    _LOGGER.info(
+                        "Chronos: OFF-RECALL dispatched %s to %s (schedule=%s)",
+                        rec.get("off_service"), ent, rec.get("schedule_name"),
+                    )
+                    self._store.append_history(_make_history_entry(
+                        snap, kind="block", action_id=rec.get("action_id") or "?",
+                        entity_id=ent, value="recall",
+                    ))
+                    # Lo spegnimento è partito: la recovery al riavvio non
+                    # deve più occuparsi di questa entità.
+                    await self._store.async_remove_entity_from_sequences(ent)
+                    self._pending_recalls.pop(key, None)
+                    dirty = True
+                elif rec["attempts"] >= max_attempts:
+                    self._pending_recalls.pop(key, None)
+                    dirty = True
+                    self._store.append_history(_make_history_entry(
+                        snap, kind="block", action_id=rec.get("action_id") or "?",
+                        entity_id=ent, outcome="error",
+                        error=f"Off-recall gave up after {rec['attempts']} attempts",
+                    ))
+                continue
+
             sched = self._store.get_schedule(rec["schedule_id"])
             expire_reason: str | None = None
             active_block: dict | None = None

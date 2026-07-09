@@ -1,5 +1,5 @@
 DOMAIN = "chronos"
-VERSION = "1.22.0"
+VERSION = "1.23.0"
 STORAGE_VERSION = 1
 STORAGE_KEY_DEVICES = f"{DOMAIN}.devices"
 STORAGE_KEY_SCHEDULES = f"{DOMAIN}.schedules"
@@ -373,6 +373,13 @@ AUTO_OFF_SERVICE = {
     "fan": "fan.turn_off",
     "thermostat": "climate.turn_off",
 }
+
+# Età massima di un off-recall (spegnimento perso perché il dispositivo era
+# offline, riprovato al rientro online). Oltre questa soglia si rinuncia con
+# nota nello storico: il caso "torna online giorni dopo" può nel frattempo
+# essere stato gestito a mano (o fisicamente sul dispositivo) e uno
+# spegnimento a sorpresa farebbe più danni che altro.
+OFF_RECALL_MAX_AGE_HOURS = 12
 
 EVENT_BLOCK_EXECUTED = f"{DOMAIN}_block_executed"
 EVENT_RULE_TRIGGERED = f"{DOMAIN}_rule_triggered"
