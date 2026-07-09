@@ -254,7 +254,7 @@ Block start and end can be either a fixed hour or anchored to sunrise/sunset wit
 
 ## Translations
 
-UI is available in Italian, English, French and German. Selectable from Settings → Language. Defaults to Home Assistant's language.
+UI is available in Italian, English, French, German, Spanish, Portuguese, Dutch and Polish. Selectable from Settings → Language; defaults to Home Assistant's language. The four newer languages (es/pt/nl/pl) live as overlay dictionaries with English fallback, so a brand-new feature string that hasn't been translated yet shows up in English instead of breaking.
 
 ## Support the integration
 

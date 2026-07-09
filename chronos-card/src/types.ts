@@ -195,7 +195,7 @@ export interface Settings {
    * continuous state range (blind position, fan speed). */
   color_range?: Record<string, { start: string; end: string }>;
   weather_sensor_map?: Record<string, string>;
-  language?: "auto" | "it" | "en" | "fr" | "de";
+  language?: "auto" | "it" | "en" | "fr" | "de" | "es" | "pt" | "nl" | "pl";
   /** When true, the editor blocks saving an irrigation schedule whose
    * sequential program overlaps in time with another sequential program
    * that shares a valve (water-pressure hazard). Default false: only a

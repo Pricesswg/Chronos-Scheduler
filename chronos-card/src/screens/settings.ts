@@ -40,8 +40,8 @@ export class ChronosSettingsScreen extends LitElement {
 
         <div class="card">
           <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("settings.language.title")}</h3><p class="card__sub">${t("settings.language.subtitle")}</p></div></div>
-          <div class="segmented">
-            ${(["auto", "it", "en", "fr", "de"] as const).map((v) => html`
+          <div class="segmented" style="flex-wrap:wrap">
+            ${(["auto", "it", "en", "fr", "de", "es", "pt", "nl", "pl"] as const).map((v) => html`
               <button data-active="${(s.language || "auto") === v}" @click=${() => this._updateSetting("language", v)}>
                 ${v === "auto" ? t("settings.language.auto") : v.toUpperCase()}
               </button>

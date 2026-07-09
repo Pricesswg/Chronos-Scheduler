@@ -1,6 +1,25 @@
-export type Lang = "it" | "en" | "fr" | "de";
+import { ES_STRINGS } from "./i18n/es";
+import { PT_STRINGS } from "./i18n/pt";
+import { NL_STRINGS } from "./i18n/nl";
+import { PL_STRINGS } from "./i18n/pl";
 
-const SUPPORTED: Lang[] = ["it", "en", "fr", "de"];
+/** Le quattro lingue storiche vivono inline in STRINGS (una riga per
+ * chiave); quelle aggiunte dopo (es/pt/nl/pl) vivono in dizionari overlay
+ * piatti in src/i18n/<lang>.ts con fallback sull'inglese. Così una feature
+ * nuova può uscire aggiornando solo STRINGS: nelle lingue overlay le chiavi
+ * mancanti degradano in inglese invece di rompersi, e le traduzioni si
+ * completano con calma. */
+type BaseLang = "it" | "en" | "fr" | "de";
+export type Lang = BaseLang | "es" | "pt" | "nl" | "pl";
+
+const SUPPORTED: Lang[] = ["it", "en", "fr", "de", "es", "pt", "nl", "pl"];
+
+const OVERLAYS: Partial<Record<Lang, Record<string, string>>> = {
+  es: ES_STRINGS,
+  pt: PT_STRINGS,
+  nl: NL_STRINGS,
+  pl: PL_STRINGS,
+};
 
 let _lang: Lang = "it";
 
@@ -16,7 +35,12 @@ export function getLang(): Lang {
 
 export function t(key: string, vars?: Record<string, string | number>): string {
   const dict = STRINGS[key];
-  let val = dict?.[_lang] || dict?.it || key;
+  let val =
+    OVERLAYS[_lang]?.[key] ||
+    (dict as Partial<Record<Lang, string>> | undefined)?.[_lang] ||
+    dict?.en ||
+    dict?.it ||
+    key;
   if (vars) {
     for (const k of Object.keys(vars)) {
       val = val.replace(new RegExp(`\\{${k}\\}`, "g"), String(vars[k]));
@@ -25,7 +49,7 @@ export function t(key: string, vars?: Record<string, string | number>): string {
   return val;
 }
 
-const STRINGS: Record<string, Record<Lang, string>> = {
+const STRINGS: Record<string, Record<BaseLang, string>> = {
   // Common
   "common.cancel": { it: "Annulla", en: "Cancel", fr: "Annuler", de: "Abbrechen" },
   "common.save": { it: "Salva", en: "Save", fr: "Enregistrer", de: "Speichern" },

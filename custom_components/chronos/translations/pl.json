@@ -1,0 +1,19 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Konfiguracja Chronos Scheduler",
+        "description": "Wybierz encję pogodową dla reguł opartych na pogodzie.",
+        "data": {
+          "weather_entity": "Encja pogodowa"
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Już skonfigurowano. Dozwolona jest tylko jedna instancja."
+    },
+    "error": {
+      "invalid_weather_entity": "Wybrana encja pogodowa jest niedostępna."
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Chronos Scheduler instellen",
+        "description": "Selecteer de weerentiteit voor de weergebaseerde regels.",
+        "data": {
+          "weather_entity": "Weerentiteit"
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Al geconfigureerd. Slechts één instantie is toegestaan."
+    },
+    "error": {
+      "invalid_weather_entity": "De geselecteerde weerentiteit is niet beschikbaar."
+    }
+  }
+}

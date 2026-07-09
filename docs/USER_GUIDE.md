@@ -548,6 +548,12 @@ Available options:
 - English.
 - French.
 - German.
+- Spanish.
+- Portuguese.
+- Dutch.
+- Polish.
+
+Spanish, Portuguese, Dutch and Polish fall back to English for any string that has not been translated yet, so new features never show broken labels.
 
 The weather source controls which Home Assistant entity Chronos uses for weather rules.
 
