@@ -1,8 +1,8 @@
 import { css } from "lit";
 
-// Token vars + host-level layout. Applicato SOLO al chronos-card root.
-// I custom property cascadano attraverso shadow DOM, quindi i figli
-// li ereditano senza bisogno di ridefinire :host nei loro stili.
+// Token vars + host-level layout. Applied ONLY to the chronos-card root.
+// Custom properties cascade through shadow DOM, so children
+// inherit them without having to redefine :host in their own styles.
 // Hybrid theme: chrome variables (background, text, border, surface) come from
 // Home Assistant theme tokens with our oklch values as fallback. This way the
 // card automatically follows whatever theme the user has installed (default,
@@ -95,8 +95,8 @@ export const chronosTokens = css`
   }
 `;
 
-// Component styles condivisi. Applicato a tutti i componenti.
-// Non ridefinisce i token: li eredita dal chronos-card root.
+// Shared component styles. Applied to every component.
+// Does not redefine the tokens: inherits them from the chronos-card root.
 export const chronosStyles = css`
   :host { display: block; }
 
@@ -439,9 +439,10 @@ export const chronosStyles = css`
     background: var(--bg-sunken); border: 1px solid var(--border-soft);
     border-radius: var(--r-md); cursor: pointer;
   }
-  /* Selezione: mix di accent sul fondo del tema, NON --accent-soft fisso
-   * chiaro. --accent-soft senza il suo --accent-ink diventa illeggibile in
-   * dark mode (sfondo chiaro + testo chiaro del tema HA). */
+  /* Selection: accent mixed over the theme background, NOT the fixed
+   * light --accent-soft. --accent-soft without its --accent-ink pairing is
+   * unreadable in dark mode (light background + the HA theme's light
+   * text). */
   .tl-list__row[data-selected="true"] {
     border-color: var(--accent);
     background: color-mix(in srgb, var(--accent) 14%, var(--bg-sunken));

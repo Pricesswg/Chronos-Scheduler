@@ -40,109 +40,109 @@ function colorForTemp(temp: number, stops: { max: number; color: string }[]): st
 
 const FALLBACK_ACTIONS: Record<string, ActionDef[]> = {
   thermostat: [
-    { id: "set_temperature", label: "Imposta temperatura", kind: "set", service: "climate.set_temperature", value: { type: "number", unit: "°C", min: 5, max: 35, step: 0.5, default: 21 } },
+    { id: "set_temperature", label: "Set temperature", kind: "set", service: "climate.set_temperature", value: { type: "number", unit: "°C", min: 5, max: 35, step: 0.5, default: 21 } },
     { id: "set_preset", label: "Preset", kind: "preset", service: "climate.set_preset_mode", value: { type: "enum", options: ["none", "eco", "comfort", "sleep", "away", "boost", "home"], default: "comfort" } },
-    { id: "set_hvac_mode", label: "Modalità HVAC", kind: "preset", service: "climate.set_hvac_mode", value: { type: "enum", options: ["heat", "cool", "heat_cool", "dry", "fan_only", "auto", "off"], default: "heat" } },
-    { id: "turn_on", label: "Accendi", kind: "on", service: "climate.turn_on" },
-    { id: "turn_off", label: "Spegni", kind: "off", service: "climate.turn_off" },
+    { id: "set_hvac_mode", label: "HVAC mode", kind: "preset", service: "climate.set_hvac_mode", value: { type: "enum", options: ["heat", "cool", "heat_cool", "dry", "fan_only", "auto", "off"], default: "heat" } },
+    { id: "turn_on", label: "Turn on", kind: "on", service: "climate.turn_on" },
+    { id: "turn_off", label: "Turn off", kind: "off", service: "climate.turn_off" },
   ],
   boiler: [
-    { id: "set_temperature", label: "Imposta temperatura", kind: "set", service: "water_heater.set_temperature", value: { type: "number", unit: "°C", min: 30, max: 75, step: 1, default: 55 } },
+    { id: "set_temperature", label: "Set temperature", kind: "set", service: "water_heater.set_temperature", value: { type: "number", unit: "°C", min: 30, max: 75, step: 1, default: 55 } },
     { id: "set_operation", label: "Operation mode", kind: "preset", service: "water_heater.set_operation_mode", value: { type: "enum", options: ["off", "eco", "electric", "gas", "heat_pump", "high_demand", "performance"], default: "eco" } },
-    { id: "turn_off", label: "Spegni", kind: "off", service: "water_heater.turn_off" },
+    { id: "turn_off", label: "Turn off", kind: "off", service: "water_heater.turn_off" },
   ],
   light: [
     {
-      id: "turn_on", label: "Accendi", kind: "on", service: "light.turn_on",
-      value: { type: "number", unit: "%", min: 1, max: 100, step: 1, default: 80, label: "Luminosità" },
+      id: "turn_on", label: "Turn on", kind: "on", service: "light.turn_on",
+      value: { type: "number", unit: "%", min: 1, max: 100, step: 1, default: 80, label: "Brightness" },
       extras: [
-        { key: "rgb_color", type: "color", label: "Colore RGB" },
-        { key: "color_temp_kelvin", type: "number", label: "Temperatura colore", unit: "K", min: 2000, max: 6500, step: 100 },
-        { key: "transition", type: "number", label: "Transizione", unit: "s", min: 0, max: 60, step: 1 },
+        { key: "rgb_color", type: "color", label: "RGB color" },
+        { key: "color_temp_kelvin", type: "number", label: "Color temperature", unit: "K", min: 2000, max: 6500, step: 100 },
+        { key: "transition", type: "number", label: "Transition", unit: "s", min: 0, max: 60, step: 1 },
       ],
     },
-    { id: "turn_off", label: "Spegni", kind: "off", service: "light.turn_off" },
+    { id: "turn_off", label: "Turn off", kind: "off", service: "light.turn_off" },
   ],
   scene: [
     {
-      id: "activate", label: "Attiva scena", kind: "on", service: "scene.turn_on",
-      value: { type: "entity", domain: "scene", label: "Scena", multi: true },
+      id: "activate", label: "Activate scene", kind: "on", service: "scene.turn_on",
+      value: { type: "entity", domain: "scene", label: "Scene", multi: true },
     },
   ],
   automation: [
     {
-      id: "turn_on", label: "Attiva automazione", kind: "on", service: "automation.turn_on",
-      value: { type: "entity", domain: "automation", label: "Automazione", multi: true },
+      id: "turn_on", label: "Enable automation", kind: "on", service: "automation.turn_on",
+      value: { type: "entity", domain: "automation", label: "Automation", multi: true },
     },
     {
-      id: "turn_off", label: "Disattiva automazione", kind: "off", service: "automation.turn_off",
-      value: { type: "entity", domain: "automation", label: "Automazione", multi: true },
+      id: "turn_off", label: "Disable automation", kind: "off", service: "automation.turn_off",
+      value: { type: "entity", domain: "automation", label: "Automation", multi: true },
     },
     {
-      id: "trigger", label: "Trigger automazione", kind: "cmd", service: "automation.trigger",
-      value: { type: "entity", domain: "automation", label: "Automazione", multi: true },
+      id: "trigger", label: "Trigger automation", kind: "cmd", service: "automation.trigger",
+      value: { type: "entity", domain: "automation", label: "Automation", multi: true },
     },
   ],
   blind: [
-    { id: "set_position", label: "Posiziona", kind: "set", service: "cover.set_cover_position", value: { type: "number", unit: "%", min: 0, max: 100, step: 5, default: 100, label: "Apertura" } },
-    { id: "open_cover", label: "Apri", kind: "on", service: "cover.open_cover" },
-    { id: "close_cover", label: "Chiudi", kind: "off", service: "cover.close_cover" },
+    { id: "set_position", label: "Set position", kind: "set", service: "cover.set_cover_position", value: { type: "number", unit: "%", min: 0, max: 100, step: 5, default: 100, label: "Opening" } },
+    { id: "open_cover", label: "Open", kind: "on", service: "cover.open_cover" },
+    { id: "close_cover", label: "Close", kind: "off", service: "cover.close_cover" },
   ],
   irrigation: [
-    { id: "turn_on", label: "Avvia", kind: "on", service: "valve.open_valve", value: { type: "number", unit: "min", min: 1, max: 240, step: 1, default: 30, label: "Durata" } },
+    { id: "turn_on", label: "Start", kind: "on", service: "valve.open_valve", value: { type: "number", unit: "min", min: 1, max: 240, step: 1, default: 30, label: "Duration" } },
     { id: "turn_off", label: "Stop", kind: "off", service: "valve.close_valve" },
   ],
   plug: [
-    { id: "turn_on", label: "Accendi", kind: "on", service: "switch.turn_on" },
-    { id: "turn_off", label: "Spegni", kind: "off", service: "switch.turn_off" },
+    { id: "turn_on", label: "Turn on", kind: "on", service: "switch.turn_on" },
+    { id: "turn_off", label: "Turn off", kind: "off", service: "switch.turn_off" },
   ],
   fan: [
-    { id: "turn_on", label: "Accendi", kind: "on", service: "fan.turn_on", value: { type: "number", unit: "%", min: 10, max: 100, step: 10, default: 50, label: "Velocità" } },
-    { id: "turn_off", label: "Spegni", kind: "off", service: "fan.turn_off" },
+    { id: "turn_on", label: "Turn on", kind: "on", service: "fan.turn_on", value: { type: "number", unit: "%", min: 10, max: 100, step: 10, default: 50, label: "Speed" } },
+    { id: "turn_off", label: "Turn off", kind: "off", service: "fan.turn_off" },
   ],
   mower: [
-    { id: "start_mowing", label: "Avvia taglio", kind: "on", service: "lawn_mower.start_mowing" },
-    { id: "pause", label: "Pausa", kind: "cmd", service: "lawn_mower.pause" },
-    { id: "dock", label: "Torna in base", kind: "off", service: "lawn_mower.dock" },
+    { id: "start_mowing", label: "Start mowing", kind: "on", service: "lawn_mower.start_mowing" },
+    { id: "pause", label: "Pause", kind: "cmd", service: "lawn_mower.pause" },
+    { id: "dock", label: "Return to dock", kind: "off", service: "lawn_mower.dock" },
   ],
   vacuum: [
-    { id: "start", label: "Avvia pulizia", kind: "on", service: "vacuum.start" },
-    { id: "pause", label: "Pausa", kind: "cmd", service: "vacuum.pause" },
-    { id: "return_to_base", label: "Torna in base", kind: "off", service: "vacuum.return_to_base" },
+    { id: "start", label: "Start cleaning", kind: "on", service: "vacuum.start" },
+    { id: "pause", label: "Pause", kind: "cmd", service: "vacuum.pause" },
+    { id: "return_to_base", label: "Return to dock", kind: "off", service: "vacuum.return_to_base" },
   ],
   input_boolean: [
-    { id: "turn_on", label: "Attiva flag", kind: "on", service: "input_boolean.turn_on" },
-    { id: "turn_off", label: "Disattiva flag", kind: "off", service: "input_boolean.turn_off" },
-    { id: "toggle", label: "Inverti flag", kind: "cmd", service: "input_boolean.toggle" },
+    { id: "turn_on", label: "Turn flag on", kind: "on", service: "input_boolean.turn_on" },
+    { id: "turn_off", label: "Turn flag off", kind: "off", service: "input_boolean.turn_off" },
+    { id: "toggle", label: "Toggle flag", kind: "cmd", service: "input_boolean.toggle" },
   ],
   input_number: [
-    { id: "set_value", label: "Imposta valore", kind: "set", service: "input_number.set_value",
-      value: { type: "number", min: -1000000, max: 1000000, step: 0.1, default: 0, label: "Valore" } },
+    { id: "set_value", label: "Set value", kind: "set", service: "input_number.set_value",
+      value: { type: "number", min: -1000000, max: 1000000, step: 0.1, default: 0, label: "Value" } },
   ],
   input_select: [
-    { id: "select_option", label: "Seleziona opzione", kind: "preset", service: "input_select.select_option",
-      value: { type: "string", label: "Opzione" } },
+    { id: "select_option", label: "Select option", kind: "preset", service: "input_select.select_option",
+      value: { type: "string", label: "Option" } },
   ],
   service: [
-    { id: "call_service", label: "Chiama servizio", kind: "cmd", service: "",
-      value: { type: "string", label: "Servizio HA", placeholder: "es. mqtt.publish, backup.create, script.run" },
+    { id: "call_service", label: "Call service", kind: "cmd", service: "",
+      value: { type: "string", label: "HA service", placeholder: "e.g. mqtt.publish, backup.create, script.run" },
       extras: [
         { key: "service_data", type: "json", label: "Service data (JSON)" },
       ],
     },
   ],
   alarm: [
-    { id: "arm_home", label: "Inserisci (home)", kind: "on", service: "alarm_control_panel.alarm_arm_home",
-      extras: [{ key: "code", type: "string", label: "Codice (PIN)", secret: true }] },
-    { id: "arm_away", label: "Inserisci (away)", kind: "on", service: "alarm_control_panel.alarm_arm_away",
-      extras: [{ key: "code", type: "string", label: "Codice (PIN)", secret: true }] },
-    { id: "arm_night", label: "Inserisci (notte)", kind: "on", service: "alarm_control_panel.alarm_arm_night",
-      extras: [{ key: "code", type: "string", label: "Codice (PIN)", secret: true }] },
-    { id: "arm_vacation", label: "Inserisci (vacanza)", kind: "on", service: "alarm_control_panel.alarm_arm_vacation",
-      extras: [{ key: "code", type: "string", label: "Codice (PIN)", secret: true }] },
-    { id: "disarm", label: "Disinserisci", kind: "off", service: "alarm_control_panel.alarm_disarm",
-      extras: [{ key: "code", type: "string", label: "Codice (PIN)", secret: true }] },
-    { id: "trigger", label: "Attiva sirena", kind: "cmd", service: "alarm_control_panel.alarm_trigger" },
+    { id: "arm_home", label: "Arm (home)", kind: "on", service: "alarm_control_panel.alarm_arm_home",
+      extras: [{ key: "code", type: "string", label: "Code (PIN)", secret: true }] },
+    { id: "arm_away", label: "Arm (away)", kind: "on", service: "alarm_control_panel.alarm_arm_away",
+      extras: [{ key: "code", type: "string", label: "Code (PIN)", secret: true }] },
+    { id: "arm_night", label: "Arm (night)", kind: "on", service: "alarm_control_panel.alarm_arm_night",
+      extras: [{ key: "code", type: "string", label: "Code (PIN)", secret: true }] },
+    { id: "arm_vacation", label: "Arm (vacation)", kind: "on", service: "alarm_control_panel.alarm_arm_vacation",
+      extras: [{ key: "code", type: "string", label: "Code (PIN)", secret: true }] },
+    { id: "disarm", label: "Disarm", kind: "off", service: "alarm_control_panel.alarm_disarm",
+      extras: [{ key: "code", type: "string", label: "Code (PIN)", secret: true }] },
+    { id: "trigger", label: "Trigger siren", kind: "cmd", service: "alarm_control_panel.alarm_trigger" },
   ],
 };
 
@@ -203,8 +203,8 @@ export function actionColor(type: DeviceType, action?: BlockAction): string {
   if (!action) return "var(--mode-off)";
   const def = getActionDef(type, action.id);
 
-  // Per termostati e boiler: usa i colori configurati in Impostazioni
-  // se l'azione è set_temperature (gradiente) o set_preset (palette preset).
+  // Thermostats and boilers: use the colors configured in Settings when
+  // the action is set_temperature (gradient) or set_preset (preset palette).
   if (type === "thermostat" || type === "boiler") {
     if (action.id === "set_preset" || action.id === "set_operation") {
       const presets = getPresetColors(_currentSettings);

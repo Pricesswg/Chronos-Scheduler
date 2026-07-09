@@ -3,12 +3,12 @@ import { PT_STRINGS } from "./i18n/pt";
 import { NL_STRINGS } from "./i18n/nl";
 import { PL_STRINGS } from "./i18n/pl";
 
-/** Le quattro lingue storiche vivono inline in STRINGS (una riga per
- * chiave); quelle aggiunte dopo (es/pt/nl/pl) vivono in dizionari overlay
- * piatti in src/i18n/<lang>.ts con fallback sull'inglese. Così una feature
- * nuova può uscire aggiornando solo STRINGS: nelle lingue overlay le chiavi
- * mancanti degradano in inglese invece di rompersi, e le traduzioni si
- * completano con calma. */
+/** The four historical languages live inline in STRINGS (one line per
+ * key); the ones added later (es/pt/nl/pl) live as flat overlay
+ * dictionaries in src/i18n/<lang>.ts with an English fallback. A new
+ * feature can therefore ship updating only STRINGS: in the overlay
+ * languages the missing keys degrade to English instead of breaking, and
+ * the translations can be completed at leisure. */
 type BaseLang = "it" | "en" | "fr" | "de";
 export type Lang = BaseLang | "es" | "pt" | "nl" | "pl";
 
@@ -865,6 +865,7 @@ const STRINGS: Record<string, Record<BaseLang, string>> = {
   "action.service.call_service": { it: "Chiama servizio", en: "Call service", fr: "Appeler un service", de: "Dienst aufrufen" },
   "action.service.call_service.value": { it: "Servizio HA", en: "HA service", fr: "Service HA", de: "HA-Dienst" },
   "action.extra.service_data": { it: "Dati servizio (JSON)", en: "Service data (JSON)", fr: "Données du service (JSON)", de: "Dienstdaten (JSON)" },
+  "action.extra.code": { it: "Codice (PIN)", en: "Code (PIN)", fr: "Code (PIN)", de: "Code (PIN)" },
 
   "overview.new_service": { it: "Schedula servizi", en: "Schedule services", fr: "Planifier des services", de: "Dienste planen" },
   "overview.new_service.hint": { it: "Crea una schedulazione che chiama servizi HA arbitrari (mqtt.publish, backup.create, script.run, ...)", en: "Create a schedule that calls arbitrary HA services (mqtt.publish, backup.create, script.run, ...)", fr: "Crée une planification qui appelle des services HA arbitraires", de: "Plan erstellen, der beliebige HA-Dienste aufruft" },
@@ -906,7 +907,7 @@ const STRINGS: Record<string, Record<BaseLang, string>> = {
   "history.copy_failed": { it: "Copia fallita", en: "Copy failed", fr: "Copie échouée", de: "Kopieren fehlgeschlagen" },
 };
 
-/** Etichetta tradotta per un weather attribute key, con fallback al label backend. */
+/** Translated label for a weather attribute key, falling back to the backend label. */
 export function attrLabel(key: string, fallback?: string): string {
   const tk = `weather.attr.${key}`;
   const v = t(tk);

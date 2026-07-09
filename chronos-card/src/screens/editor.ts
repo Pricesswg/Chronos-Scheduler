@@ -1046,8 +1046,8 @@ export class ChronosEditor extends LitElement {
    * exported as entity_ids so another instance can re-link them; global
    * rules targeting this schedule are embedded in legacy shape). */
   private _copyScheduleId(id: string) {
-    // Il chip resta leggibile anche senza clipboard API (contesti non
-    // sicuri): in quel caso niente feedback, l'utente copia a mano.
+    // The chip stays readable even without the clipboard API (insecure
+    // contexts): no feedback in that case, the user copies by hand.
     navigator.clipboard?.writeText(id).then(() => {
       this._idCopied = true;
       setTimeout(() => { this._idCopied = false; }, 1200);

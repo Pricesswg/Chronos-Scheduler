@@ -1,5 +1,5 @@
-// Overlay olandese: dizionario piatto chiave → stringa, fallback inglese
-// in t() per le chiavi assenti. Stesso ordine di STRINGS in i18n.ts.
+// Dutch overlay: flat key → string dictionary, English fallback in
+// t() for missing keys. Same key order as STRINGS in i18n.ts.
 export const NL_STRINGS: Record<string, string> = {
   "common.cancel": "Annuleren",
   "common.save": "Opslaan",
@@ -639,6 +639,7 @@ export const NL_STRINGS: Record<string, string> = {
   "action.service.call_service": "Service aanroepen",
   "action.service.call_service.value": "HA-service",
   "action.extra.service_data": "Service data (JSON)",
+  "action.extra.code": "Code (PIN)",
   "overview.new_service": "Services inplannen",
   "overview.new_service.hint": "Maak een schema dat willekeurige HA-services aanroept (mqtt.publish, backup.create, script.run, ...)",
   "overview.new_service_default_name": "Service-aanroepen",

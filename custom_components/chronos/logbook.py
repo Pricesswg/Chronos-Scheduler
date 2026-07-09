@@ -23,7 +23,6 @@ from homeassistant.core import Event, HomeAssistant, callback
 
 from .const import (
     DOMAIN,
-    EVENT_BLOCK_EXECUTED,
     EVENT_COMMAND_ERROR,
     EVENT_RULE_TRIGGERED,
 )

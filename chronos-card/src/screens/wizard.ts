@@ -451,7 +451,7 @@ export class ChronosWizard extends LitElement {
       }
     }
     if (end - start < 0.25) {
-      // nessun buco abbastanza grande: appendi 0-1 con step minimo, sovrapporrà
+      // no gap large enough: append 0-1 with the minimum step, it will overlap
       start = 12;
       end = 13;
     }

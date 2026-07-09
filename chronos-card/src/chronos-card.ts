@@ -1,5 +1,5 @@
-// Primo import in assoluto: rende customElements.define idempotente per gli
-// elementi chronos-* PRIMA che gli import degli screen li registrino.
+// Very first import: makes customElements.define idempotent for the
+// chronos-* elements BEFORE the screen imports register them.
 import "./define-guard";
 import { LitElement, html, nothing, PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
@@ -257,12 +257,12 @@ export class ChronosCard extends LitElement {
   }
   private _appliedLang: string = "";
 
-  /** Retry automatico dei load falliti. Caso tipico: riavvio di HA con la
-   * companion app aperta — il frontend si riconnette prima che l'integrazione
-   * abbia registrato i comandi WS, ogni chiamata risponde "Unknown command"
-   * e senza retry il banner d'errore resta lì finché l'utente non ricarica
-   * a mano (i report parlavano di "cancellare la cache", che funzionava solo
-   * perché forzava un reload). Backoff crescente, poi ci si arrende. */
+  /** Automatic retry of failed loads. Typical case: HA restarts with the
+   * companion app open — the frontend reconnects before the integration
+   * has registered its WS commands, every call answers "Unknown command"
+   * and without a retry the error banner stays until the user reloads
+   * manually (reports mentioned "clearing the cache", which only worked
+   * because it forced a reload). Growing backoff, then give up. */
   private _retryCount = 0;
   private _retryTimer: ReturnType<typeof setTimeout> | null = null;
   private static readonly _RETRY_DELAYS_MS = [2000, 5000, 10000, 20000];
@@ -275,7 +275,7 @@ export class ChronosCard extends LitElement {
     }
     this._loading = true;
     this._loadError = null;
-    // Carico ogni risorsa indipendentemente: se una WS fallisce non blocca le altre.
+    // Load every resource independently: one failing WS doesn't block the others.
     const safe = async <T>(fn: () => Promise<T>, fallback: T, name: string): Promise<T> => {
       try {
         return await fn();

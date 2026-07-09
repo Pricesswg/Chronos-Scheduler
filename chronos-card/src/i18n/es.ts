@@ -1,5 +1,5 @@
-// Overlay spagnolo: dizionario piatto chiave → stringa, fallback inglese
-// in t() per le chiavi assenti. Mantenere l'ordine di STRINGS in i18n.ts.
+// Spanish overlay: flat key → string dictionary, English fallback in
+// t() for missing keys. Keep the same key order as STRINGS in i18n.ts.
 export const ES_STRINGS: Record<string, string> = {
   "common.cancel": "Cancelar",
   "common.save": "Guardar",
@@ -639,6 +639,7 @@ export const ES_STRINGS: Record<string, string> = {
   "action.service.call_service": "Llamar servicio",
   "action.service.call_service.value": "Servicio HA",
   "action.extra.service_data": "Service data (JSON)",
+  "action.extra.code": "Código (PIN)",
   "overview.new_service": "Programar servicios",
   "overview.new_service.hint": "Crea una programación que llama a servicios HA arbitrarios (mqtt.publish, backup.create, script.run, ...)",
   "overview.new_service_default_name": "Llamadas a servicios",

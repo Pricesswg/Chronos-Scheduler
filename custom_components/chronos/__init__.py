@@ -3,14 +3,13 @@ from __future__ import annotations
 import logging
 import shutil
 from pathlib import Path
-from typing import Any
 
 import voluptuous as vol
 from homeassistant.components import websocket_api
 from homeassistant.components.frontend import add_extra_js_url
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers import (
     area_registry as ar,
     config_validation as cv,
@@ -59,39 +58,40 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def _register_frontend_card(hass: HomeAssistant) -> None:
-    """Sincronizza il bundle in /config/www/ e registra il custom card.
+    """Sync the bundle to /config/www/ and register the custom card.
 
-    Due layer di affidabilità:
-      1. Copia il bundle in /config/www/chronos-card.js (servito da HA come /local/...)
-         Se HACS aggiorna il bundle in custom_components/, viene riallineato
-         automaticamente al prossimo restart.
-      2. add_extra_js_url + static path su /chronos_static/chronos-card.js
-         Carica la card a livello frontend, sufficiente per registrare il custom
-         element <chronos-card> e renderlo usabile in dashboard storage o YAML.
+    Two reliability layers:
+      1. Copy the bundle to /config/www/chronos-card.js (served by HA as
+         /local/...). When HACS updates the bundle in custom_components/,
+         it is realigned automatically at the next restart.
+      2. add_extra_js_url + static path at /chronos_static/chronos-card.js.
+         Loads the card at the frontend level, enough to register the
+         <chronos-card> custom element and make it usable in storage or
+         YAML dashboards.
 
-    L'auto-register della Lovelace resource (presente fino a v1.10.3) è stato
-    rimosso in v1.10.4: HACS già registra la resource automaticamente per chi
-    installa via HACS, e l'auto-register di Chronos in alcuni casi confliggeva
-    con quello di HACS lasciando la collection lovelace_resources in stato
-    inconsistente al reboot (issue #2). Per install manuali la card resta
-    comunque caricata grazie al meccanismo 2; chi la vuole anche come Lovelace
-    resource visibile in UI può aggiungerla a mano (vedi README).
+    The Lovelace resource auto-registration (present until v1.10.3) was
+    removed in v1.10.4: HACS already registers the resource for HACS
+    installs, and Chronos's auto-register sometimes conflicted with it,
+    leaving the lovelace_resources collection inconsistent after a reboot
+    (issue #2). Manual installs still get the card via mechanism 2; anyone
+    who also wants a visible Lovelace resource can add it by hand (see
+    README).
     """
     src = Path(__file__).parent / "www" / "chronos-card.js"
     if not src.exists():
         _LOGGER.error(
             "Chronos card bundle NOT FOUND at %s. "
-            "Probabile sync HACS incompleta. "
-            "Scarica manualmente: https://raw.githubusercontent.com/Pricesswg/Chronos-Scheduler/v%s/custom_components/chronos/www/chronos-card.js",
+            "Likely an incomplete HACS sync. "
+            "Download it manually: https://raw.githubusercontent.com/Pricesswg/Chronos-Scheduler/v%s/custom_components/chronos/www/chronos-card.js",
             src, VERSION,
         )
         return
 
-    # --- 1. Copia in /config/www/ ---
+    # --- 1. Copy to /config/www/ ---
     local_url = f"/local/chronos-card.js?v={VERSION}"
     dst_dir = Path(hass.config.path("www"))
     dst = dst_dir / "chronos-card.js"
-    # Icon: anche lei la mettiamo in /config/www/ così la card può puntarci
+    # Icon: copied to /config/www/ too, so the card can point at it
     icon_src = Path(__file__).parent / "brand" / "icon.png"
     if not icon_src.exists():
         icon_src = Path(__file__).parent / "icon.png"  # fallback legacy
@@ -114,17 +114,18 @@ async def _register_frontend_card(hass: HomeAssistant) -> None:
     try:
         result = await hass.async_add_executor_job(_sync_files)
         if result.get("bundle"):
-            _LOGGER.info("Chronos: bundle sincronizzato in %s", dst)
+            _LOGGER.info("Chronos: bundle synced to %s", dst)
         if result.get("icon"):
-            _LOGGER.info("Chronos: icona sincronizzata in %s", icon_dst)
+            _LOGGER.info("Chronos: icon synced to %s", icon_dst)
     except Exception:
-        _LOGGER.exception("Chronos: errore copiando file in /config/www/")
-        # Continuiamo comunque, il fallback static path potrebbe funzionare
+        _LOGGER.exception("Chronos: failed to copy files to /config/www/")
+        # Keep going anyway, the static-path fallback may still work
 
-    # NOTE: l'auto-register della Lovelace resource è stato rimosso in v1.10.4
-    # per evitare conflitti con HACS (vedi docstring sopra e issue #2).
-    # `local_url` resta calcolato perché alcuni log e il README ci puntano,
-    # ma non viene più scritto nella collection lovelace_resources.
+    # NOTE: the Lovelace resource auto-registration was removed in v1.10.4
+    # to avoid conflicts with HACS (see docstring above and issue #2).
+    # `local_url` is still computed because some logs and the README point
+    # at it, but it is no longer written to the lovelace_resources
+    # collection.
     _ = local_url  # noqa: F841
 
     # --- 2. Fallback: static path /chronos_static/ + add_extra_js_url ---
@@ -134,43 +135,43 @@ async def _register_frontend_card(hass: HomeAssistant) -> None:
                 StaticPathConfig(CARD_URL, str(src), False)
             ])
             add_extra_js_url(hass, f"{CARD_URL}?v={VERSION}")
-            _LOGGER.info("Chronos: fallback static path attivo su %s?v=%s", CARD_URL, VERSION)
+            _LOGGER.info("Chronos: fallback static path active at %s?v=%s", CARD_URL, VERSION)
         except Exception:
-            _LOGGER.warning("Chronos: fallback static path non disponibile", exc_info=True)
+            _LOGGER.warning("Chronos: fallback static path not available", exc_info=True)
         hass.data[_CARD_REGISTERED_FLAG] = True
 
 
 async def _upsert_lovelace_resource(hass: HomeAssistant, url: str) -> None:
-    """DEPRECATED, non più chiamato dal setup a partire da v1.10.4.
+    """DEPRECATED, no longer called by the setup as of v1.10.4.
 
-    Causava un conflitto con la registrazione fatta da HACS quando il bundle
-    veniva installato via HACS: i due write ravvicinati sulla stessa
-    collection `lovelace_resources` lasciavano lo state in-memory di HA in
-    una situazione inconsistente, con le resources che sparivano dalla UI
-    dopo il reboot pur restando intatte sul disco (issue #2).
+    It conflicted with the registration performed by HACS when the bundle
+    was installed via HACS: two back-to-back writes on the same
+    `lovelace_resources` collection left HA's in-memory state inconsistent,
+    with resources disappearing from the UI after a reboot while staying
+    intact on disk (issue #2).
 
-    Mantenuta nel modulo come riferimento e per eventuale uso manuale; il
-    setup oggi si affida solo a (1) copia bundle in /config/www e
-    (2) add_extra_js_url su /chronos_static/, sufficienti a far caricare
-    la card senza toccare lovelace_resources. Per chi installa
-    manualmente fuori da HACS, la procedura per aggiungere la resource a
-    mano è descritta nel README."""
+    Kept in the module as a reference and for potential manual use; the
+    setup today relies only on (1) copying the bundle to /config/www and
+    (2) add_extra_js_url on /chronos_static/, which are enough to load the
+    card without touching lovelace_resources. For manual installs outside
+    HACS, the procedure to add the resource by hand is described in the
+    README."""
     lovelace = hass.data.get("lovelace")
     if lovelace is None:
-        _LOGGER.debug("Chronos: lovelace data non disponibile")
+        _LOGGER.debug("Chronos: lovelace data not available")
         return
 
-    # Compatibilità: in HA recenti hass.data["lovelace"] è un oggetto con
-    # attributo .resources; in versioni precedenti è un dict.
+    # Compatibility: recent HA versions expose hass.data["lovelace"] as an
+    # object with a .resources attribute; older ones as a dict.
     resources = getattr(lovelace, "resources", None)
     if resources is None and isinstance(lovelace, dict):
         resources = lovelace.get("resources")
 
     if resources is None:
-        _LOGGER.debug("Chronos: Lovelace resources collection non trovata")
+        _LOGGER.debug("Chronos: Lovelace resources collection not found")
         return
 
-    # Carica se non già caricato
+    # Load if not loaded yet
     loaded = getattr(resources, "loaded", None)
     if loaded is False:
         await resources.async_load()
@@ -191,21 +192,21 @@ async def _upsert_lovelace_resource(hass: HomeAssistant, url: str) -> None:
             await resources.async_update_item(
                 first["id"], {"res_type": "module", "url": url}
             )
-            _LOGGER.info("Chronos: aggiornata Lovelace resource → %s", url)
+            _LOGGER.info("Chronos: updated Lovelace resource → %s", url)
         for dup in matching[1:]:
             await resources.async_delete_item(dup["id"])
-            _LOGGER.info("Chronos: rimossa Lovelace resource duplicata id=%s", dup.get("id"))
+            _LOGGER.info("Chronos: removed duplicate Lovelace resource id=%s", dup.get("id"))
     else:
         await resources.async_create_item({"res_type": "module", "url": url})
-        _LOGGER.info("Chronos: creata Lovelace resource → %s", url)
+        _LOGGER.info("Chronos: created Lovelace resource → %s", url)
 
 
 def _resolve_area_name(hass: HomeAssistant, entity_id: str) -> str:
-    """Nome della stanza dalle registry HA: l'area assegnata direttamente
-    all'entità vince, altrimenti si eredita quella del device fisico.
-    Stringa vuota se l'entità non è nelle registry (es. entità template).
-    Risolta a ogni lettura invece che salvata: se l'utente sposta il
-    dispositivo di stanza in HA, Chronos si aggiorna da solo."""
+    """Room name from the HA registries: the area assigned directly to
+    the entity wins, otherwise it inherits the physical device's one.
+    Empty string when the entity is not in the registries (e.g. template
+    entities). Resolved on every read instead of stored: when the user
+    moves the device to another room in HA, Chronos follows on its own."""
     entry = er.async_get(hass).async_get(entity_id)
     if entry is None:
         return ""
@@ -220,9 +221,9 @@ def _resolve_area_name(hass: HomeAssistant, entity_id: str) -> str:
 
 
 def _register_services(hass: HomeAssistant) -> None:
-    """Registra i servizi HA esposti dall'integration."""
+    """Register the HA services exposed by the integration."""
     if hass.services.has_service(DOMAIN, "fire_block"):
-        return  # già registrato (reload del config entry)
+        return  # already registered (config entry reload)
 
     async def _svc_fire_block(call) -> None:
         scheduler: ChronosScheduler = hass.data[DOMAIN]["scheduler"]
@@ -238,11 +239,11 @@ def _register_services(hass: HomeAssistant) -> None:
     )
 
     async def _svc_schedule_toggle(call) -> None:
-        # Abilita/disabilita una schedule dalle automazioni HA senza esporre
-        # entità (scelta deliberata: niente switch per non appesantire HA).
-        # Target per id oppure per nome; il nome è più comodo nelle
-        # automazioni ma deve essere univoco, a pari nome si rifiuta invece
-        # di togglare la schedule sbagliata.
+        # Enable/disable a schedule from HA automations without exposing
+        # entities (deliberate choice: no switches, keep HA lean). Target
+        # by id or by name; the name is friendlier in automations but must
+        # be unique, on a tie the service refuses instead of toggling the
+        # wrong schedule.
         store: ChronosStore = hass.data[DOMAIN]["store"]
         enabled = bool(call.data["enabled"])
         sched_id = str(call.data.get("schedule_id") or "").strip()
@@ -312,10 +313,10 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
         hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
     ) -> None:
         store: ChronosStore = hass.data[DOMAIN]["store"]
-        # Area risolta live dalle registry quando il device non ne ha una
-        # salvata. Solo nella risposta, mai persistita: così un'area
-        # impostata a mano dall'utente vince, e per gli altri device un
-        # cambio stanza in HA si riflette qui senza migrazioni.
+        # Area resolved live from the registries when the device has no
+        # stored one. Response-only, never persisted: an area set manually
+        # by the user wins, and for the other devices a room change in HA
+        # is reflected here without migrations.
         out = [
             d if d.get("area")
             else {**d, "area": _resolve_area_name(hass, d["entity_id"])}

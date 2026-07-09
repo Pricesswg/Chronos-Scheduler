@@ -1,5 +1,5 @@
-// Overlay portoghese (pt-PT): dizionario piatto chiave → stringa, fallback
-// inglese in t() per le chiavi assenti. Stesso ordine di STRINGS in i18n.ts.
+// Portuguese overlay (pt-PT): flat key → string dictionary, English
+// fallback in t() for missing keys. Same key order as STRINGS in i18n.ts.
 export const PT_STRINGS: Record<string, string> = {
   "common.cancel": "Cancelar",
   "common.save": "Guardar",
@@ -639,6 +639,7 @@ export const PT_STRINGS: Record<string, string> = {
   "action.service.call_service": "Chamar serviço",
   "action.service.call_service.value": "Serviço HA",
   "action.extra.service_data": "Service data (JSON)",
+  "action.extra.code": "Código (PIN)",
   "overview.new_service": "Agendar serviços",
   "overview.new_service.hint": "Crie um agendamento que chama serviços HA arbitrários (mqtt.publish, backup.create, script.run, ...)",
   "overview.new_service_default_name": "Chamadas de serviços",

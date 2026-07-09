@@ -5,13 +5,13 @@ reload:
 fire_block:
   name: Fire current block now
   description: >
-    Esegue immediatamente la fascia oraria attiva di una schedulazione,
-    bypassando le regole meteo. Utile per testare manualmente che le
-    automazioni funzionino senza aspettare il prossimo cambio fascia.
+    Immediately execute the currently active time block of a schedule,
+    bypassing weather rules. Useful to manually verify that the automations
+    work without waiting for the next block transition.
   fields:
     schedule_id:
       name: Schedule ID
-      description: ID della schedulazione (chip copiabile nell'header dell'editor)
+      description: Schedule id (copyable chip in the editor header)
       required: true
       example: "abc12345"
       selector:
@@ -20,29 +20,29 @@ fire_block:
 schedule_toggle:
   name: Enable/disable schedule
   description: >
-    Abilita o disabilita una schedulazione Chronos. Pensato per essere
-    chiamato dalle automazioni HA: le schedule non sono esposte come
-    entità, questo servizio è l'equivalente dell'interruttore nella card.
-    Indicare l'ID oppure il nome della schedulazione (il nome deve essere
-    univoco, a parità di nome il servizio non fa nulla e logga un warning).
+    Enable or disable a Chronos schedule. Meant to be called from HA
+    automations: schedules are not exposed as entities, this service is the
+    equivalent of the toggle in the card. Target by schedule id or by name
+    (the name must be unique; on a tie the service does nothing and logs a
+    warning).
   fields:
     schedule_id:
       name: Schedule ID
-      description: ID della schedulazione, in alternativa al nome (chip copiabile nell'header dell'editor)
+      description: Schedule id, alternative to the name (copyable chip in the editor header)
       required: false
       example: "abc12345"
       selector:
         text:
     name:
       name: Schedule name
-      description: Nome esatto della schedulazione, senza distinzione maiuscole/minuscole (in alternativa all'ID)
+      description: Exact schedule name, case-insensitive (alternative to the id)
       required: false
-      example: "Irrigazione giardino"
+      example: "Garden irrigation"
       selector:
         text:
     enabled:
       name: Enabled
-      description: true per abilitare, false per disabilitare
+      description: true to enable, false to disable
       required: true
       selector:
         boolean:

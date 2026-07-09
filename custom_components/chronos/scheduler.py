@@ -180,12 +180,12 @@ class ChronosScheduler:
         # Tracked so stop() can cancel them and a re-trigger doesn't start
         # a second concurrent run of the same block.
         self._sequence_tasks: dict[str, "asyncio.Task"] = {}
-        # Recall per dispositivi offline al dispatch: key f"{sched_id}:{ent}".
-        # Una sola entry per coppia (schedule, entità): un nuovo blocco che
-        # scatta col dispositivo ancora offline sovrascrive il recall vecchio
-        # (vince l'ultimo stato desiderato). Registro in memoria: al riavvio
-        # il catch-up tick riapplica comunque il blocco attivo, quindi se il
-        # dispositivo è ancora offline il recall si riarma da solo.
+        # Recall for devices offline at dispatch: key f"{sched_id}:{ent}".
+        # One entry per (schedule, entity) pair: a new block firing while
+        # the device is still offline overwrites the old recall (the latest
+        # desired state wins). In-memory registry: after a restart the
+        # catch-up tick re-applies the active block anyway, so a device
+        # that is still offline re-arms its recall on its own.
         self._pending_recalls: dict[str, dict[str, Any]] = {}
         self._unsub_recall = None
         # Hourly forecast cache, refreshed by _weather_poll every
@@ -222,46 +222,47 @@ class ChronosScheduler:
             len(self._store.schedules),
             len(self._store.devices),
         )
-        # Il primo tick fa "catch-up": applica subito la fascia attiva senza
-        # far aspettare l'utente fino al minuto dopo. Ma all'avvio di HA
-        # Chronos può essere caricato PRIMA dell'integrazione `automation` /
-        # `scene`: un catch-up immediato chiamerebbe automation.turn_on prima
-        # che il servizio sia registrato e otterrebbe un ServiceNotFound
-        # fasullo (la fascia poi parte regolarmente al tick successivo, ma
-        # l'utente vede un errore in History). async_at_started esegue il
-        # callback subito se HA è gia' running (reload / install a caldo),
-        # altrimenti lo rinvia all'evento homeassistant_started (boot a
-        # freddo), quando i servizi core sono registrati.
+        # The first tick is a catch-up: apply the currently active block
+        # right away instead of making the user wait for the next minute.
+        # But during HA boot Chronos can be loaded BEFORE the `automation` /
+        # `scene` integrations: an immediate catch-up would call
+        # automation.turn_on before the service is registered and get a
+        # spurious ServiceNotFound (the block then fires normally on the
+        # next tick, but the user sees an error in History).
+        # async_at_started runs the callback immediately when HA is already
+        # running (reload / hot install), otherwise it defers it to the
+        # homeassistant_started event (cold boot), when core services are
+        # registered.
         self._unsub_started = async_at_started(self._hass, self._async_first_tick)
 
     async def _async_first_tick(self, _hass: HomeAssistant) -> None:
-        # Invocato da async_at_started: a questo punto HA è in stato running.
+        # Invoked by async_at_started: HA is in the running state here.
         self._unsub_started = None
-        # Prima il forecast, così il catch-up valuta le regole forecast.*
-        # con dati reali invece che a cache vuota.
+        # Forecast first, so the catch-up evaluates forecast.* rules
+        # against real data instead of an empty cache.
         await self._refresh_forecast_cache()
         try:
             await self._tick(dt_util.utcnow())
         except Exception:
-            _LOGGER.exception("Chronos: errore al primo tick")
+            _LOGGER.exception("Chronos: first catch-up tick failed")
 
     async def fire_now(self, schedule_id: str) -> dict:
-        """Esegue immediatamente la fascia correntemente attiva di una schedule.
+        """Immediately execute the schedule's currently active block.
 
-        Usato dal servizio chronos.fire_block per test manuali. Risolve la
-        fascia sui blocchi EFFETTIVI (con gli effetti continui delle regole
-        applicati, come fa il tick) ma poi dispatcha direttamente, saltando
-        le regole skip: il servizio è documentato come bypass del meteo.
+        Used by the chronos.fire_block service for manual testing. Resolves
+        the block against the EFFECTIVE blocks (with the rules' continuous
+        effects applied, like the tick does) but then dispatches directly,
+        skipping skip-rules: the service is documented as a weather bypass.
         """
         sched = self._store.get_schedule(schedule_id)
         if sched is None:
-            return {"ok": False, "error": f"schedule {schedule_id} non trovata"}
+            return {"ok": False, "error": f"schedule {schedule_id} not found"}
         local_now = dt_util.now()
         current_hour = local_now.hour + local_now.minute / 60
         block, _idx = self._block_at(self._effective_blocks(sched), current_hour)
         if block is None:
-            return {"ok": False, "error": f"nessuna fascia attiva alle {current_hour:.2f}"}
-        _LOGGER.info("Chronos: fire_now manuale schedule=%s block=%s", sched.get("name"), block)
+            return {"ok": False, "error": f"no active block at {current_hour:.2f}"}
+        _LOGGER.info("Chronos: manual fire_now schedule=%s block=%s", sched.get("name"), block)
         await self._dispatch_action(sched, block)
         return {"ok": True, "block": block}
 
@@ -272,9 +273,8 @@ class ChronosScheduler:
         if self._unsub_weather:
             self._unsub_weather()
             self._unsub_weather = None
-        # Se ci scolleghiamo prima che HA finisca l'avvio (unload durante il
-        # boot), annulla il callback differito così non scatta su un
-        # scheduler già fermo.
+        # If we unload before HA finishes booting, cancel the deferred
+        # callback so it can't fire on an already-stopped scheduler.
         if self._unsub_started:
             self._unsub_started()
             self._unsub_started = None
@@ -323,9 +323,9 @@ class ChronosScheduler:
         closed: list[str] = []
         deferred: dict[str, dict] = {}
         for key, info in active.items():
-            # Le entry storiche (irrigazione pre-1.20) non hanno off_service:
-            # default valve.close_valve. Quelle nuove (auto-off generico)
-            # dichiarano il servizio di spegnimento del loro dominio.
+            # Legacy entries (pre-1.20 irrigation) have no off_service:
+            # default to valve.close_valve. Newer ones (generic auto-off)
+            # declare their domain's switch-off service.
             off_service = str(info.get("off_service") or "valve.close_valve")
             off_domain, _, off_name = off_service.partition(".")
             is_irrigation = off_service == "valve.close_valve"
@@ -336,10 +336,10 @@ class ChronosScheduler:
             }
             still_offline: list[str] = []
             for ent in info.get("entity_ids", []) or []:
-                # Dispositivo ancora offline al riavvio: lo spegnimento
-                # alla cieca andrebbe perso (HA accetta la chiamata e non
-                # succede niente). Si arma l'off-recall e l'entità resta
-                # nello store, così anche un ULTERIORE riavvio la ritrova.
+                # Device still offline at startup: a blind switch-off
+                # would be lost (HA accepts the call and nothing happens).
+                # Arm the off-recall and keep the entity in the store, so
+                # even ANOTHER restart still finds it.
                 state = self._hass.states.get(ent)
                 if state is None or state.state in ("unavailable", "unknown"):
                     self._arm_off_recall(
@@ -396,15 +396,15 @@ class ChronosScheduler:
             _LOGGER.exception("Chronos: history flush failed on restart recovery")
 
     async def _tick(self, now) -> None:
-        # Difesa: async_track_time_interval scatta sull'orologio a
-        # prescindere dallo stato di HA. Se un tick cade mentre HA non è
-        # ancora `running` (boot oltre il minuto), saltalo: servizi core
-        # come automation.turn_on potrebbero non essere ancora registrati
-        # e produrremmo un ServiceNotFound fasullo. Al primo tick utile, a
-        # HA avviato, la fascia attiva viene comunque applicata (catch-up).
+        # Defense: async_track_time_interval fires on wall-clock time
+        # regardless of HA's state. If a tick lands while HA is not yet
+        # `running` (boot longer than a minute), skip it: core services
+        # like automation.turn_on may not be registered yet and we would
+        # produce a spurious ServiceNotFound. The first useful tick after
+        # HA is up still applies the active block (catch-up).
         if self._hass.state is not CoreState.running:
             _LOGGER.debug(
-                "Chronos: tick saltato, HA non ancora running (state=%s)",
+                "Chronos: tick skipped, HA not running yet (state=%s)",
                 self._hass.state,
             )
             return
@@ -451,10 +451,9 @@ class ChronosScheduler:
 
             await self._evaluate_triggers(sched, local_now, effective_blocks, current_idx)
 
-        # Rete di sicurezza del recall offline: il listener di stato è il
-        # trigger primario, ma un evento perso (race di sottoscrizione) non
-        # deve lasciare recall orfani. Qui si chiudono anche quelli scaduti
-        # a fascia finita.
+        # Offline-recall safety net: the state listener is the primary
+        # trigger, but a missed event (subscription race) must not leave
+        # orphaned recalls. This also expires the ones whose block ended.
         await self._sweep_recalls()
 
         # Persist any new history entries accumulated during this tick. The
@@ -924,9 +923,9 @@ class ChronosScheduler:
                 # Wait the station's run time. Cancellation (HA stopping)
                 # propagates out of the sleep into the finally below.
                 await asyncio.sleep(mins * 60)
-                # Valvola offline alla chiusura → off-recall (vedi
-                # _off_or_arm): la chiusura persa va recuperata appena
-                # torna raggiungibile, è acqua che scorre.
+                # Valve offline at close time → off-recall (see
+                # _off_or_arm): a lost close must be recovered as soon as
+                # the valve is reachable again, that's running water.
                 await self._off_or_arm(sched, ent, "valve.close_valve", "close_valve")
                 current = None
             _LOGGER.info("Chronos: DONE sequential irrigation schedule=%s", sched_name)
@@ -1005,9 +1004,9 @@ class ChronosScheduler:
             # Cancellation (HA stopping) propagates out of the sleep into
             # the except/finally below.
             await asyncio.sleep(minutes * 60)
-            # Una valvola offline alla chiusura arma l'off-recall: la
-            # chiusura persa è acqua che scorre, va recuperata appena il
-            # dispositivo torna raggiungibile (vedi _off_or_arm).
+            # A valve offline at close time arms the off-recall: a lost
+            # close is running water, it must be recovered as soon as the
+            # device is reachable again (see _off_or_arm).
             for ent in opened:
                 await self._off_or_arm(sched, ent, "valve.close_valve", "close_valve")
             _LOGGER.info("Chronos: DONE timed irrigation schedule=%s", sched_name)
@@ -1033,13 +1032,13 @@ class ChronosScheduler:
         minutes: float,
         off_service: str,
     ) -> None:
-        """Auto-off timer per i blocchi turn_on (luci, prese, ventole,
-        climatizzatori): l'accensione è già stata inviata dal dispatch
-        normale (con brightness/extras/...); qui si aspetta `minutes` e si
-        spegne. Stesso contratto di sicurezza dell'irrigazione a tempo: il
-        set in volo persiste nello store sequences con il proprio
-        off_service, così un riavvio a metà timer spegne i dispositivi al
-        prossimo avvio, e la cancellazione (HA in stop) spegne subito."""
+        """Auto-off timer for turn_on blocks (lights, plugs, fans,
+        climate): the turn-on was already sent by the normal dispatch
+        (with brightness/extras/...); here we wait `minutes` and switch
+        off. Same safety contract as timed irrigation: the in-flight set
+        persists in the sequences store with its own off_service, so a
+        restart mid-timer switches the devices off at the next startup,
+        and cancellation (HA stopping) switches them off immediately."""
         sched_name = sched.get("name", "?")
         sched_id = str(sched.get("id", ""))
         await self._store.set_active_sequence(seq_key, {
@@ -1056,10 +1055,10 @@ class ChronosScheduler:
         )
 
         async def _switch_off() -> list[str]:
-            # Ritorna le sole entità a cui il comando è davvero partito:
-            # quelle offline vengono armate come off-recall da _off_or_arm
-            # (che scrive anche l'entry di errore nello storico) e NON
-            # devono comparire come "executed".
+            # Returns only the entities the command actually reached:
+            # offline ones are armed as off-recalls by _off_or_arm (which
+            # also writes the error entry in History) and must NOT show
+            # up as "executed".
             done: list[str] = []
             for ent in entity_ids:
                 if await self._off_or_arm(sched, ent, off_service, "auto_off"):
@@ -1081,23 +1080,23 @@ class ChronosScheduler:
                 )
             _LOGGER.info("Chronos: DONE auto-off schedule=%s", sched_name)
         except asyncio.CancelledError:
-            # Il marker viaggia sul Task stesso (impostato dal dispatch che
-            # ci sostituisce): niente stato condiviso da ripulire, e se la
-            # cancellazione ci coglie prima del try il flag muore con noi.
+            # The marker travels on the Task itself (set by the dispatch
+            # replacing us): no shared state to clean up, and if the
+            # cancellation catches us before the try, the flag dies with us.
             replaced = bool(getattr(asyncio.current_task(), "_chronos_replaced", False))
             if not replaced:
-                # HA in stop a metà timer: spegni subito. La recovery al
-                # prossimo avvio ripassa comunque via store per sicurezza.
+                # HA stopping mid-timer: switch off now. The startup
+                # recovery sweeps again via the store as a safety net.
                 await _switch_off()
-            # Sostituzione: il blocco è stato ri-dispatchato, i dispositivi
-            # sono appena stati riaccesi e il timer nuovo è già partito.
-            # Non toccare niente.
+            # Replacement: the block was re-dispatched, the devices were
+            # just switched back on and the new timer is already running.
+            # Touch nothing.
             raise
         finally:
             if not replaced:
                 await self._settle_sequence_entry(sched, seq_key, entity_ids, off_service)
-                # Il task nuovo potrebbe già essersi registrato sulla stessa
-                # chiave: rimuovi solo se la entry è ancora nostra.
+                # The new task may already be registered under the same
+                # key: only remove the entry if it is still ours.
                 if self._sequence_tasks.get(seq_key) is asyncio.current_task():
                     self._sequence_tasks.pop(seq_key, None)
             try:
@@ -1106,12 +1105,12 @@ class ChronosScheduler:
                 _LOGGER.exception("Chronos: history flush failed after auto-off")
 
     # --- Offline-device recall -------------------------------------------
-    # Contratto: si arma SOLO per dispositivi offline al momento del
-    # dispatch, mai per dispositivi online il cui stato "non torna" (quello
-    # sarebbe combattere l'utente che ha toccato l'interruttore a mano).
-    # Il retry scatta quando l'entità torna disponibile (listener di stato)
-    # con lo sweep del tick come rete di sicurezza, ed è valido solo finché
-    # la fascia armata è ancora attiva: mai un'azione fuori orario.
+    # Contract: arms ONLY for devices that were offline at dispatch time,
+    # never for online devices whose state "doesn't match" (that would be
+    # fighting a user who flipped the switch by hand). The retry fires when
+    # the entity becomes available again (state listener) with the tick
+    # sweep as a safety net, and it is only valid while the armed block is
+    # still active: never an out-of-schedule action.
 
     def _arm_recall(self, sched: dict, block: dict, device_id: str, entity_id: str) -> bool:
         if not self._store.settings.get("offline_recall", True):
@@ -1131,14 +1130,14 @@ class ChronosScheduler:
     def _arm_off_recall(
         self, sched: dict, entity_id: str, off_service: str, action_id: str
     ) -> None:
-        """Arma il recupero di uno SPEGNIMENTO perso (auto-off o chiusura
-        valvole con dispositivo offline). A differenza del recall dei
-        blocchi è SEMPRE attivo, non gated dall'impostazione offline_recall,
-        e non è vincolato alla fascia: un dispositivo lasciato acceso da
-        Chronos va spento appena torna raggiungibile, anche se la fascia è
-        finita (spegnere in ritardo è la direzione sicura). Unico limite:
-        l'età massima OFF_RECALL_MAX_AGE_HOURS, oltre la quale si rinuncia
-        con nota nello storico."""
+        """Arm the recovery of a LOST SWITCH-OFF (auto-off or valve close
+        with the device offline). Unlike the block recall it is ALWAYS on,
+        not gated by the offline_recall setting, and not bound to the block
+        window: a device left on by Chronos must be switched off as soon as
+        it is reachable again, even if the block has ended (switching off
+        late is the safe direction). Only limit: the max age
+        OFF_RECALL_MAX_AGE_HOURS, after which we give up with a History
+        note."""
         key = f"{sched.get('id')}:off:{entity_id}"
         self._pending_recalls[key] = {
             "mode": "off",
@@ -1156,9 +1155,9 @@ class ChronosScheduler:
     async def _off_or_arm(
         self, sched: dict, entity_id: str, off_service: str, action_id: str
     ) -> bool:
-        """Spegne l'entità, oppure — se è offline — arma l'off-recall e
-        scrive la verità nello storico invece del falso 'executed'.
-        True se il comando è partito davvero."""
+        """Switch the entity off, or — if it is offline — arm the
+        off-recall and write the truth to History instead of a false
+        'executed'. True when the command was actually sent."""
         state = self._hass.states.get(entity_id)
         if state is None or state.state in ("unavailable", "unknown"):
             self._arm_off_recall(sched, entity_id, off_service, action_id)
@@ -1191,12 +1190,12 @@ class ChronosScheduler:
     async def _settle_sequence_entry(
         self, sched: dict, seq_key: str, entity_ids: list[str], off_service: str
     ) -> None:
-        """Chiusura dell'entry dello store a fine runner. Se qualche entità
-        ha un off-recall armato (era offline allo spegnimento), l'entry
-        resta nello store ridotta alle sole entità in sospeso: così un
-        riavvio di HA con l'off-recall ancora pendente non perde lo
-        spegnimento, la recovery in start() se ne riprende carico. Se non
-        c'è niente in sospeso, si pulisce come sempre."""
+        """Settle the store entry at the end of a runner. If some entity
+        has an armed off-recall (it was offline at switch-off time), the
+        entry stays in the store reduced to the pending entities: an HA
+        restart with the off-recall still pending doesn't lose the
+        switch-off, the recovery in start() picks it up. With nothing
+        pending, clean up as usual."""
         sid = str(sched.get("id", ""))
         armed_left = [
             e for e in entity_ids if f"{sid}:off:{e}" in self._pending_recalls
@@ -1214,9 +1213,9 @@ class ChronosScheduler:
             await self._store.clear_active_sequence(seq_key)
 
     def _refresh_recall_listener(self) -> None:
-        """(Ri)sottoscrive il listener di stato sull'insieme corrente delle
-        entità armate. Zero entità = zero listener: il costo esiste solo
-        quando c'è almeno un recall pendente."""
+        """(Re)subscribe the state listener to the current set of armed
+        entities. Zero entities = zero listeners: the cost only exists
+        while at least one recall is pending."""
         if self._unsub_recall:
             self._unsub_recall()
             self._unsub_recall = None
@@ -1234,10 +1233,10 @@ class ChronosScheduler:
         await self._sweep_recalls(only_entity=event.data.get("entity_id"))
 
     async def _sweep_recalls(self, only_entity: str | None = None) -> None:
-        """Valuta i recall pendenti: scaduti (fascia finita, schedule
-        disabilitata, giorno sbagliato) → chiusi con nota nello storico;
-        dispositivo tornato online con fascia ancora attiva → ri-dispatch
-        alla singola entità, fino al numero massimo di tentativi."""
+        """Evaluate pending recalls: expired ones (block ended, schedule
+        disabled, wrong day) → closed with a History note; device back
+        online with the block still active → re-dispatch to the single
+        entity, up to the max number of attempts."""
         if not self._pending_recalls:
             return
         local_now = dt_util.now()
@@ -1253,7 +1252,7 @@ class ChronosScheduler:
             if only_entity and ent != only_entity:
                 continue
 
-            # --- Off-recall: spegnimento perso, nessun vincolo di fascia ---
+            # --- Off-recall: lost switch-off, no block-window bound ---
             if rec.get("mode") == "off":
                 snap = {
                     "id": rec.get("schedule_id", ""),
@@ -1302,8 +1301,8 @@ class ChronosScheduler:
                         snap, kind="block", action_id=rec.get("action_id") or "?",
                         entity_id=ent, value="recall",
                     ))
-                    # Lo spegnimento è partito: la recovery al riavvio non
-                    # deve più occuparsi di questa entità.
+                    # The switch-off went out: the startup recovery no
+                    # longer needs to care about this entity.
                     await self._store.async_remove_entity_from_sequences(ent)
                     self._pending_recalls.pop(key, None)
                     dirty = True
@@ -1346,12 +1345,12 @@ class ChronosScheduler:
                     error=f"Offline recall expired: {expire_reason}",
                 ))
                 continue
-            # Ancora offline (flap o sweep del tick): resta armato senza
-            # consumare tentativi.
+            # Still offline (flap, or tick sweep): stays armed without
+            # consuming attempts.
             state = self._hass.states.get(ent)
             if state is None or state.state in ("unavailable", "unknown"):
                 continue
-            # Il subset per-blocco può essere stato ristretto nel frattempo.
+            # The per-block device subset may have been narrowed meanwhile.
             sched_ids = sched.get("device_ids", []) or []
             subset = active_block.get("device_ids")
             if isinstance(subset, list) and subset:
@@ -1383,9 +1382,9 @@ class ChronosScheduler:
                 _LOGGER.exception("Chronos: history flush failed after recall sweep")
 
     async def _recall_dispatch(self, sched: dict, block: dict, entity_id: str) -> bool:
-        """Ri-dispatch dell'azione del blocco ATTUALE (non dello snapshot
-        armato: se l'utente ha modificato valori nel frattempo, vale la
-        versione corrente) alla singola entità tornata online."""
+        """Re-dispatch the CURRENT block's action (not the armed snapshot:
+        if the user edited values meanwhile, the current version wins) to
+        the single entity that came back online."""
         device_type = sched.get("device_type", "")
         action = block.get("action", {}) or {}
         action_id = action.get("id")
@@ -1394,7 +1393,7 @@ class ChronosScheduler:
             None,
         )
         if not action_def or not action_def.get("service"):
-            return True  # azione non dispatchabile: chiudi il recall senza errori
+            return True  # not dispatchable: close the recall without errors
         domain, _, service = action_def["service"].partition(".")
         service_data = self._build_service_data(device_type, action_id, action, entity_id)
         try:
@@ -1419,10 +1418,10 @@ class ChronosScheduler:
                 "Chronos: RECALL dispatched %s.%s to %s (schedule=%s)",
                 domain, service, entity_id, sched.get("name"),
             )
-            # Il blocco può dichiarare l'auto-off: un'entità recuperata in
-            # ritardo deve comunque spegnersi dopo i suoi minuti, col suo
-            # timer individuale (chiave distinta da quella di blocco per
-            # non cancellare il timer degli altri dispositivi).
+            # The block may declare auto-off: an entity recovered late
+            # must still switch off after its minutes, with its own
+            # individual timer (distinct key from the block-level one so
+            # it can't cancel the other devices' timer).
             if action_id == "turn_on" and device_type in AUTO_OFF_SERVICE:
                 try:
                     auto_off_min = float(action.get("auto_off_min") or 0)
@@ -1453,9 +1452,9 @@ class ChronosScheduler:
     def _build_service_data(
         self, device_type: str, action_id: str, action: dict, entity_id: str
     ) -> dict[str, Any]:
-        """Mappa il value del blocco (e gli extras) nel payload del servizio
-        HA. Estratta dal loop di dispatch perché il recall offline deve
-        ricostruire lo stesso identico payload per una singola entità."""
+        """Map the block's value (and extras) to the HA service payload.
+        Extracted from the dispatch loop because the offline recall must
+        rebuild the exact same payload for a single entity."""
         service_data: dict[str, Any] = {"entity_id": entity_id}
         value = action.get("value")
         if action_id == "set_temperature" and value is not None:
@@ -1849,14 +1848,14 @@ class ChronosScheduler:
                 )
                 continue
 
-            # Dispositivo offline al dispatch: la chiamata al servizio NON
-            # fallirebbe (HA la accetta e non succede niente), quindi prima
-            # di questa verifica lo storico registrava un falso "ok". Ora
-            # l'entry dice la verità e, se il recall è attivo, l'azione
-            # viene riprovata quando l'entità torna online (fascia
-            # permettendo). L'irrigazione è esclusa dal recall: riaprire
-            # una valvola in ritardo fuori dal runner a tempo è un rischio,
-            # non una cortesia.
+            # Device offline at dispatch: the service call would NOT fail
+            # (HA accepts it and nothing happens), so before this check
+            # History recorded a false "ok". Now the entry tells the truth
+            # and, when the recall is enabled, the action is retried once
+            # the entity comes back online (block window permitting).
+            # Irrigation is excluded from the block recall: re-opening a
+            # valve late outside its timed runner is a hazard, not a
+            # courtesy.
             ent_state = self._hass.states.get(device["entity_id"])
             if ent_state is None or ent_state.state in ("unavailable", "unknown"):
                 armed = (
@@ -1931,8 +1930,8 @@ class ChronosScheduler:
                 ))
                 if self._store.settings.get("notify_command_error"):
                     await self._notify(
-                        f"Errore comando: {domain}.{service} su {device['entity_id']}",
-                        title="Chronos · Errore",
+                        f"Command error: {domain}.{service} on {device['entity_id']}",
+                        title="Chronos · Error",
                     )
 
         if executed_count and self._store.settings.get("notify_block_executed", True):
@@ -1945,11 +1944,11 @@ class ChronosScheduler:
                 title=f"Chronos · {sched_name}",
             )
 
-        # Auto-off timer: se il blocco turn_on chiede lo spegnimento
-        # automatico dopo N minuti e almeno un dispositivo è stato acceso,
-        # spawn del timer. Un re-dispatch dello stesso blocco (fire_now,
-        # ri-trigger) riparte da zero: il timer precedente viene cancellato
-        # e sostituito, coerente con "l'ho appena riacceso".
+        # Auto-off timer: when the turn_on block asks for automatic
+        # switch-off after N minutes and at least one device was switched
+        # on, spawn the timer. A re-dispatch of the same block (fire_now,
+        # re-trigger) restarts from zero: the previous timer is cancelled
+        # and replaced, consistent with "I just switched it back on".
         if (
             executed_entities
             and action_id == "turn_on"
@@ -1964,9 +1963,10 @@ class ChronosScheduler:
                 seq_key = f"{sched.get('id')}:auto_off:{block.get('start')}-{block.get('end')}"
                 existing = self._sequence_tasks.get(seq_key)
                 if existing and not existing.done():
-                    # Sostituzione, non shutdown: il task vecchio NON deve
-                    # spegnere i dispositivi appena riaccesi né pulire lo
-                    # store del nuovo. Il marker sta sul Task.
+                    # Replacement, not shutdown: the old task must NOT
+                    # switch off the freshly re-lit devices nor clean up
+                    # the new task's store entry. The marker lives on the
+                    # Task.
                     setattr(existing, "_chronos_replaced", True)
                     existing.cancel()
                 task = self._hass.async_create_task(
@@ -2015,7 +2015,7 @@ class ChronosScheduler:
             )
             if self._store.settings.get("notify_sched_skipped"):
                 await self._notify(
-                    f"Fascia saltata per regola meteo: {rule.get('if', '')}",
+                    f"Block skipped by weather rule: {rule.get('if', '')}",
                     title=f"Chronos · {sched_name}",
                 )
             return
@@ -2063,11 +2063,11 @@ class ChronosScheduler:
     _DIRECT_DOMAINS = {"sensor", "binary_sensor", "number", "input_number"}
 
     def _read_attribute(self, key: str) -> Any:
-        """Legge un attributo meteo. Se l'utente ha mappato il key a un'entità
-        sensor specifica (override), legge da quella; altrimenti dal weather.*
-        principale. Per le chiavi sun.* legge dall'entità sun.sun di HA.
-        Per chiavi che assomigliano a entity_ids (sensor.X, binary_sensor.X,
-        number.X, input_number.X) legge direttamente da hass.states."""
+        """Read a weather attribute. If the user mapped the key to a
+        specific sensor entity (override), read from that one; otherwise
+        from the main weather.* entity. sun.* keys read from HA's sun.sun.
+        Keys that look like entity_ids (sensor.X, binary_sensor.X,
+        number.X, input_number.X) read straight from hass.states."""
         overrides = self._store.settings.get("weather_sensor_map") or {}
         sensor_id = overrides.get(key)
         if sensor_id:
@@ -2091,7 +2091,7 @@ class ChronosScheduler:
                     return None
                 return state.state
 
-        # Sun attributes vengono dall'entità sun.sun (sempre presente in HA)
+        # Sun attributes come from the sun.sun entity (always present in HA)
         if key.startswith("sun."):
             return self._read_sun_attribute(key.split(".", 1)[1])
 
@@ -2106,10 +2106,10 @@ class ChronosScheduler:
         return weather_state.attributes.get(key)
 
     def _read_sun_attribute(self, sub: str) -> Any:
-        """Legge attributi dall'entità sun.sun.
+        """Read attributes from the sun.sun entity.
 
-        Espone elevation, azimuth, state direttamente, più due derivati
-        comodi: minutes_until_sunrise e minutes_until_sunset.
+        Exposes elevation, azimuth and state directly, plus two convenient
+        derived values: minutes_until_sunrise and minutes_until_sunset.
         """
         sun = self._hass.states.get("sun.sun")
         if sun is None:

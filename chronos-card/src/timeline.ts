@@ -7,14 +7,14 @@ import { defaultAction } from "./actions";
 import { actionDefLabel, t } from "./i18n";
 import type { Block, DeviceType, WeatherRule } from "./types";
 
-/** Il blocco trascinato vince sui vicini: le parti coperte vengono
- * ritagliate al suo bordo. Va chiamata a ogni move sullo SNAPSHOT preso a
- * inizio drag, mai in modo cumulativo: così passare sopra un blocco e poi
- * tornare indietro lo ripristina, e il ritaglio diventa definitivo solo al
- * rilascio. Un vicino coperto per intero (o il cui residuo scende sotto i
- * 15 minuti) viene eliminato; uno coperto al centro viene spezzato in due.
- * Il bordo ritagliato perde l'eventuale ancora sole (il taglio è un orario
- * esplicito, stessa regola del drag); l'altro bordo la conserva. */
+/** The dragged block wins over its neighbours: covered parts are carved
+ * away at its edge. Must be called on every move against the SNAPSHOT
+ * taken at drag start, never cumulatively: sweeping over a block and
+ * swinging back restores it, and the carve becomes final only on release.
+ * A fully covered neighbour (or one whose remainder drops below 15
+ * minutes) is removed; one covered in the middle is split in two. The
+ * carved edge loses its sun anchor, if any (the cut is an explicit time,
+ * same rule as dragging); the other edge keeps it. */
 function carveOverlaps(blocks: Block[], dragged: Block): Block[] {
   const MIN = 0.25;
   const ds = resolveBlockTime(dragged, "start");
@@ -27,8 +27,8 @@ function carveOverlaps(blocks: Block[], dragged: Block): Block[] {
     if (be <= ds || bs >= de) { out.push(b); continue; }
     if (bs >= ds && be <= de) continue; // inghiottito per intero
     if (bs < ds && be > de) {
-      // Il blocco trascinato è finito in pancia a un vicino più largo:
-      // buco al centro, il vicino sopravvive in due metà.
+      // The dragged block landed inside a wider neighbour: hole in the
+      // middle, the neighbour survives as two halves.
       if (ds - bs >= MIN) {
         const left: any = JSON.parse(JSON.stringify(b));
         left.end = ds;
@@ -265,12 +265,12 @@ export class ChronosTimeline extends LitElement {
 
   private _renderWeatherRibbon() {
     if (!this.forecast.length) return nothing;
-    // Il forecast orario parte dall'ora corrente, non da mezzanotte: ogni
-    // cella va posizionata sulla SUA ora (dal datetime dell'entry), non
-    // stesa in sequenza sull'asse 00-24, altrimenti la cella sopra le 08
-    // non è il meteo delle 08. Si mostrano solo le ore di oggi: le ore già
-    // passate restano vuote, quelle di domani si scartano. Entry senza
-    // datetime (integrazioni minori): fallback sequenziale dall'ora attuale.
+    // The hourly forecast starts at the current hour, not at midnight:
+    // each cell must be positioned at ITS hour (from the entry's datetime),
+    // not laid out sequentially across the 00-24 axis, otherwise the cell
+    // above 08 is not the 08:00 weather. Only today's hours are shown:
+    // past hours stay empty, tomorrow's are dropped. Entries without a
+    // datetime (minor integrations): sequential fallback from now.
     const now = new Date();
     const cells: { hour: number; cond: string }[] = [];
     this.forecast.forEach((w, i) => {
@@ -355,7 +355,7 @@ export class ChronosTimeline extends LitElement {
         ${this.blocks.map((b) => {
           const rs = resolveBlockTime(b, "start");
           const re = resolveBlockTime(b, "end");
-          // Etichetta sul midpoint dell'arco; solo se l'arco è abbastanza largo (>1.5h)
+          // Label at the arc midpoint; only when the arc is wide enough (>1.5h)
           if (re - rs < 1.5) return svg``;
           const midH = (rs + re) / 2;
           const a = (midH / 24) * Math.PI * 2 - Math.PI / 2;
@@ -483,10 +483,10 @@ export class ChronosTimeline extends LitElement {
     const rect = el.getBoundingClientRect();
     const h = clamp(((e.clientX - rect.left) / rect.width) * 24, 0, 24);
     const snap = snapToGrid(h);
-    // Ricostruisci SEMPRE dallo snapshot di inizio drag: geometria del
-    // blocco trascinato + ritaglio dei vicini (carveOverlaps). Il live
-    // array non va letto qui: il parent riordina per start e il carve può
-    // eliminare o spezzare blocchi tra un move e l'altro.
+    // ALWAYS rebuild from the drag-start snapshot: dragged block geometry
+    // + neighbour carving (carveOverlaps). The live array must not be read
+    // here: the parent re-sorts by start and the carve can drop or split
+    // blocks between moves.
     const work = this._drag.snapshot.map((x) => JSON.parse(JSON.stringify(x)) as Block);
     const b: any = work[this._drag.idx];
     if (this._drag.handle === "l") {
@@ -554,10 +554,10 @@ export class ChronosTimeline extends LitElement {
     const origStart = resolveBlockTime(b, "start");
     const origEnd = resolveBlockTime(b, "end");
 
-    // Stesso modello a snapshot del drag lineare: ogni move ricostruisce
-    // dallo stato di inizio drag e riapplica geometria + carveOverlaps.
-    // Gli indici live sono inaffidabili mid-drag (il parent riordina per
-    // start e il carve può eliminare/spezzare vicini).
+    // Same snapshot model as the linear drag: every move rebuilds from
+    // the drag-start state and re-applies geometry + carveOverlaps. Live
+    // indexes are unreliable mid-drag (the parent re-sorts by start and
+    // the carve can drop/split neighbours).
     const snapshot = this.blocks.map((x) => JSON.parse(JSON.stringify(x)) as Block);
     const dragIdx = idx;
 

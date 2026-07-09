@@ -8,7 +8,6 @@ from homeassistant.helpers.storage import Store
 
 from .const import (
     DEVICELESS_SCHEDULE_TYPES,
-    DOMAIN,
     DOMAIN_TO_TYPE,
     HISTORY_MAX_ENTRIES,
     STORAGE_KEY_DEVICES,
@@ -99,8 +98,8 @@ class ChronosStore:
         if dropped_scene_ids:
             self.devices = [d for d in self.devices if d.get("type") != "scene"]
 
-        # Normalizza gli id a stringa: in passato alcuni potrebbero essere stati
-        # salvati come int (171, 42, …), oggi le WS richiedono str.
+        # Normalise ids to strings: some may have been stored as ints in
+        # the past (171, 42, ...), today the WS commands require str.
         for d in self.devices:
             if not isinstance(d.get("id"), str):
                 d["id"] = str(d.get("id", ""))
@@ -214,10 +213,10 @@ class ChronosStore:
             await self._save_sequences()
 
     async def async_remove_entity_from_sequences(self, entity_id: str) -> None:
-        """Rimuove un'entità da ogni entry in-flight; le entry svuotate
-        spariscono. Usata quando un off-recall riesce: quel dispositivo non
-        ha più uno spegnimento in sospeso, la recovery al riavvio non deve
-        più occuparsene."""
+        """Remove an entity from every in-flight entry; emptied entries
+        are dropped. Used when an off-recall succeeds: that device no
+        longer has a pending switch-off, the startup recovery must not
+        care about it anymore."""
         dirty = False
         for key in list(self.active_sequences.keys()):
             info = self.active_sequences[key]
