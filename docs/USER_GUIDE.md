@@ -432,6 +432,8 @@ It is useful for:
 
 You can filter schedules using the chips at the top of the page.
 
+Disabled schedules are shown too, rendered dimmed with the name in italics (hover shows a "Disabled" tooltip), so a paused schedule is still visible in the weekly plan without looking active. Use the filter chips to hide them if you prefer a view of active schedules only. The "now" marker only appears on enabled schedules.
+
 ---
 
 ## Manage devices section

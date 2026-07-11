@@ -15,17 +15,19 @@ export class ChronosWeek extends LitElement {
   @property({ attribute: false, hasChanged: () => true }) card!: ChronosCard;
   @property({ type: Number }) nowHour = 0;
 
-  // null = mostra tutte; Set = solo questi schedule id
+  // null = show all; Set = only these schedule ids
   @state() private _filter: Set<string> | null = null;
 
   render() {
     const { _schedules: schedules } = this.card;
-    const enabledSchedules = schedules.filter((s) => s.enabled);
-    const activeCount = enabledSchedules.length;
+    // Disabled schedules are shown too, rendered muted (issue #14): the
+    // week view is a planning tool, hiding paused schedules entirely made
+    // them look deleted. The filter chips below let users hide them.
+    const activeCount = schedules.filter((s) => s.enabled).length;
     const filterSet = this._filter;
     const visibleSchedules = filterSet
-      ? enabledSchedules.filter((s) => filterSet.has(s.id))
-      : enabledSchedules;
+      ? schedules.filter((s) => filterSet.has(s.id))
+      : schedules;
     const todayIdx = new Date().getDay();
     const adjustedToday = todayIdx === 0 ? 6 : todayIdx - 1;
     const days = getDays();
@@ -37,7 +39,7 @@ export class ChronosWeek extends LitElement {
           <p class="page-sub">${t("week.subtitle", { n: activeCount })}</p>
         </div>
 
-        ${enabledSchedules.length ? html`
+        ${schedules.length ? html`
           <div class="card" style="padding:14px">
             <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">
               <div class="fw-600 text-sm">${t("week.filter.title")}</div>
@@ -51,11 +53,12 @@ export class ChronosWeek extends LitElement {
               </div>
             </div>
             <div class="row" style="gap:6px;flex-wrap:wrap">
-              ${enabledSchedules.map((s) => {
+              ${schedules.map((s) => {
                 const on = !filterSet || filterSet.has(s.id);
                 return html`
                   <button class="chip"
-                    style="cursor:pointer;background:${on ? "var(--accent-soft)" : "var(--bg-sunken)"};color:${on ? "var(--accent-ink)" : "var(--text-muted)"};border:1px solid ${on ? "transparent" : "var(--border-soft)"}"
+                    title="${s.enabled ? "" : t("schedule.disabled")}"
+                    style="cursor:pointer;background:${on ? "var(--accent-soft)" : "var(--bg-sunken)"};color:${on ? "var(--accent-ink)" : "var(--text-muted)"};border:1px solid ${on ? "transparent" : "var(--border-soft)"};${s.enabled ? "" : "font-style:italic;opacity:0.7"}"
                     @click=${() => this._toggleFilter(s.id)}>
                     ${on ? icon("check", 11) : nothing} ${s.name}
                   </button>
@@ -85,12 +88,13 @@ export class ChronosWeek extends LitElement {
                 <div style="position:relative">
                   <div class="col" style="gap:4px">
                     ${todays.map((s) => html`
-                      <div class="row" style="gap:8px;align-items:center">
-                        <span style="width:90px;font-size:11.5px;color:var(--text-muted);font-weight:500;cursor:pointer" class="truncate"
+                      <div class="row" style="gap:8px;align-items:center;${s.enabled ? "" : "opacity:0.5"}"
+                        title="${s.enabled ? "" : t("schedule.disabled")}">
+                        <span style="width:90px;font-size:11.5px;color:var(--text-muted);font-weight:500;cursor:pointer;${s.enabled ? "" : "font-style:italic"}" class="truncate"
                           @click=${() => this.card.selectSchedule(s.id, "editor")}>${s.name}</span>
                         <div style="flex:1">
                           <chronos-timeline variant="linear" .deviceType=${s.device_type} .blocks=${s.blocks} .interactive=${false} height="mini" .showWeather=${false}
-                            .now=${dayIdx === adjustedToday ? this.nowHour : null}></chronos-timeline>
+                            .now=${dayIdx === adjustedToday && s.enabled ? this.nowHour : null}></chronos-timeline>
                         </div>
                       </div>
                     `)}
@@ -127,12 +131,11 @@ export class ChronosWeek extends LitElement {
   }
 
   private _toggleFilter(id: string) {
-    const cur = this._filter ?? new Set(this.card._schedules.filter((s) => s.enabled).map((s) => s.id));
+    const cur = this._filter ?? new Set(this.card._schedules.map((s) => s.id));
     const next = new Set(cur);
     if (next.has(id)) next.delete(id);
     else next.add(id);
-    // Se stiamo selezionando tutti, torna a null per mostrare default-all
-    const all = this.card._schedules.filter((s) => s.enabled);
-    this._filter = next.size === all.length ? null : next;
+    // When every schedule is selected, collapse back to null (default-all)
+    this._filter = next.size === this.card._schedules.length ? null : next;
   }
 }

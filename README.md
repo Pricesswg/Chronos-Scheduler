@@ -12,7 +12,7 @@ A single Lovelace card provides:
 - Linear / radial / list timeline editor with drag-and-drop and 5/15/30/60-minute snap; the chosen view is remembered per schedule, and blocks can't overlap (dragging over a neighbour trims it to the new limit)
 - IF/THEN weather rules (temperature, rain, wind, UV, sun position, …) to skip, shift, force, or change duration of the active block
 - Rules are independent objects (v1.17+): one rule can drive several schedules at once, and each schedule can combine several rules
-- 7-day week view with per-schedule filtering
+- 7-day week view with per-schedule filtering; disabled schedules stay visible, dimmed, so the weekly plan shows what is paused too
 - Live status with weather and device readings; the 24h forecast strip is color-coded by severity (green / yellow / orange / red, wind-aware) and shows per-hour wind speed
 - Weather rules manager with target chips, a per-schedule filter, and sorting (by linked schedule, alphabetical, or manual drag-and-drop order that persists)
 - Device detail view shows the weather rules attached to each linked schedule
