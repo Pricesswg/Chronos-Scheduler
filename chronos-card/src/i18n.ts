@@ -552,6 +552,15 @@ const STRINGS: Record<string, Record<BaseLang, string>> = {
   "days.short.6": { it: "Dom", en: "Sun", fr: "Dim", de: "So" },
 
   // Timeline
+  // Action-kind labels (week view legend). These name the BLOCK COLORS
+  // (what the action does), not schedule states: the old legend labelled
+  // the off-kind grey as "Disabled", which became actively misleading once
+  // disabled schedules started rendering dimmed in the week view (#14).
+  "kind.on": { it: "Accensione", en: "Turn on", fr: "Allumage", de: "Einschalten" },
+  "kind.off": { it: "Spegnimento", en: "Turn off", fr: "Extinction", de: "Ausschalten" },
+  "kind.set": { it: "Imposta valore", en: "Set value", fr: "Réglage de valeur", de: "Wert einstellen" },
+  "kind.preset": { it: "Preset", en: "Preset", fr: "Préréglage", de: "Voreinstellung" },
+  "kind.cmd": { it: "Comando", en: "Command", fr: "Commande", de: "Befehl" },
   "timeline.linear": { it: "Lineare", en: "Linear", fr: "Linéaire", de: "Linear" },
   "timeline.radial": { it: "Radiale", en: "Radial", fr: "Radial", de: "Radial" },
   "timeline.list": { it: "Lista", en: "List", fr: "Liste", de: "Liste" },

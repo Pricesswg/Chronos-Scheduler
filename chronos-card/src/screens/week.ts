@@ -110,21 +110,16 @@ export class ChronosWeek extends LitElement {
         </div>
 
         <div class="row" style="gap:14px;flex-wrap:wrap">
-          ${Object.entries(KIND_COLORS).map(([k, c]) => {
-            const labels: Record<string, string> = {
-              on: t("schedule.active"),
-              off: t("schedule.disabled"),
-              set: t("common.value"),
-              preset: "Preset",
-              cmd: t("editor.block.action"),
-            };
-            return html`
-              <div class="row" style="gap:6px">
-                <span style="width:12px;height:8px;border-radius:2px;background:${c}"></span>
-                <span class="text-xs">${labels[k]}</span>
-              </div>
-            `;
-          })}
+          ${Object.entries(KIND_COLORS).map(([k, c]) => html`
+            <div class="row" style="gap:6px">
+              <span style="width:12px;height:8px;border-radius:2px;background:${c}"></span>
+              <span class="text-xs">${t("kind." + k)}</span>
+            </div>
+          `)}
+          <div class="row" style="gap:6px;opacity:0.55">
+            <span style="width:12px;height:8px;border-radius:2px;background:${KIND_COLORS.on}"></span>
+            <span class="text-xs" style="font-style:italic">${t("schedule.disabled")}</span>
+          </div>
         </div>
       </div>
     `;
