@@ -1161,9 +1161,11 @@ class ChronosScheduler:
         state = self._hass.states.get(entity_id)
         if state is None or state.state in ("unavailable", "unknown"):
             self._arm_off_recall(sched, entity_id, off_service, action_id)
+            # Warning, not failure: the off-recall owns the switch-off now.
+            # The red entry only appears if it later expires or gives up.
             self._store.append_history(_make_history_entry(
                 sched, kind="block", action_id=action_id,
-                entity_id=entity_id, outcome="error",
+                entity_id=entity_id, outcome="warning",
                 error="Device offline; off-recall armed, it will be "
                       "switched off as soon as it comes back online",
             ))
@@ -1868,10 +1870,13 @@ class ChronosScheduler:
                     ent_state.state if ent_state else "missing",
                     "; recall armed" if armed else "",
                 )
+                # With a recall armed this is a WARNING, not a failure: the
+                # action is pending, not lost. It only turns red later, in
+                # the final entry, if the recall expires or gives up.
                 self._store.append_history(_make_history_entry(
                     sched, kind="block", action_id=action_id,
                     entity_id=device["entity_id"], value=action.get("value"),
-                    outcome="error",
+                    outcome="warning" if armed else "error",
                     error="Device offline at dispatch"
                           + ("; recall armed, will retry when it comes back online" if armed else ""),
                 ))

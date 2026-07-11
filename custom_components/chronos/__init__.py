@@ -621,7 +621,7 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
         vol.Optional("from_ts"): str,
         vol.Optional("to_ts"): str,
         vol.Optional("schedule_id"): str,
-        vol.Optional("outcome"): vol.In(["ok", "error"]),
+        vol.Optional("outcome"): vol.In(["ok", "error", "warning"]),
         vol.Optional("kind"): vol.In(["block", "rule"]),
         vol.Optional("limit"): vol.All(int, vol.Range(min=1, max=5000)),
     })

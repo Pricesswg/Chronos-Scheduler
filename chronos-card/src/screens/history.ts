@@ -23,7 +23,7 @@ export class ChronosHistoryScreen extends LitElement {
   @state() private _from = this._defaultFromIso();
   @state() private _to = this._defaultToIso();
   @state() private _scheduleId = "";
-  @state() private _outcome: "" | "ok" | "error" = "";
+  @state() private _outcome: "" | "ok" | "error" | "warning" = "";
   @state() private _kind: "" | "block" | "rule" = "";
   @state() private _confirmClear = false;
 
@@ -67,7 +67,8 @@ export class ChronosHistoryScreen extends LitElement {
     const schedules = this.card._schedules;
     const total = this._entries.length;
     const errors = this._entries.filter((e) => e.outcome === "error").length;
-    const oks = total - errors;
+    const warns = this._entries.filter((e) => e.outcome === "warning").length;
+    const oks = total - errors - warns;
 
     return html`
       <div class="col" style="gap:18px;max-width:1200px">
@@ -119,13 +120,14 @@ export class ChronosHistoryScreen extends LitElement {
                 @change=${(e: Event) => { this._outcome = (e.target as HTMLSelectElement).value as any; void this._reload(); }}>
                 <option value="" ?selected=${this._outcome === ""}>${t("history.outcome.all")}</option>
                 <option value="ok" ?selected=${this._outcome === "ok"}>${t("history.outcome.ok")}</option>
+                <option value="warning" ?selected=${this._outcome === "warning"}>${t("history.outcome.warning")}</option>
                 <option value="error" ?selected=${this._outcome === "error"}>${t("history.outcome.error")}</option>
               </select>
             </div>
           </div>
         </div>
 
-        <div class="grid-3">
+        <div class="grid-auto" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">
           <div class="kpi">
             <div class="kpi__label">${t("history.kpi.total")}</div>
             <div class="kpi__value">${total}</div>
@@ -135,6 +137,11 @@ export class ChronosHistoryScreen extends LitElement {
             <div class="kpi__label">${t("history.kpi.ok")}</div>
             <div class="kpi__value" style="color:var(--ok)">${oks}</div>
             <div class="kpi__delta">${total ? Math.round((oks / total) * 100) : 0}%</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi__label">${t("history.kpi.warnings")}</div>
+            <div class="kpi__value" style="color:${warns > 0 ? "var(--warn)" : "var(--text-muted)"}">${warns}</div>
+            <div class="kpi__delta">${total ? Math.round((warns / total) * 100) : 0}%</div>
           </div>
           <div class="kpi">
             <div class="kpi__label">${t("history.kpi.errors")}</div>
@@ -171,18 +178,19 @@ export class ChronosHistoryScreen extends LitElement {
    * SVG, no chart library. Heights normalised to the busiest day. */
   private _renderChart() {
     if (!this._entries.length) return nothing;
-    const buckets: Record<string, { ok: number; err: number }> = {};
+    const buckets: Record<string, { ok: number; warn: number; err: number }> = {};
     for (const e of this._entries) {
       const day = (e.ts || "").slice(0, 10); // YYYY-MM-DD
       if (!day) continue;
-      const b = buckets[day] || { ok: 0, err: 0 };
+      const b = buckets[day] || { ok: 0, warn: 0, err: 0 };
       if (e.outcome === "error") b.err++;
+      else if (e.outcome === "warning") b.warn++;
       else b.ok++;
       buckets[day] = b;
     }
     const days = Object.keys(buckets).sort();
     if (!days.length) return nothing;
-    const max = Math.max(...days.map((d) => buckets[d].ok + buckets[d].err));
+    const max = Math.max(...days.map((d) => buckets[d].ok + buckets[d].warn + buckets[d].err));
     const W = 600, H = 120, padX = 30, padY = 10;
     const colW = (W - padX * 2) / Math.max(1, days.length);
     return html`
@@ -191,16 +199,20 @@ export class ChronosHistoryScreen extends LitElement {
         <svg viewBox="0 0 ${W} ${H + 18}" style="width:100%;height:auto;display:block">
           ${days.map((d, i) => {
             const b = buckets[d];
-            const total = b.ok + b.err;
-            const h = max > 0 ? ((H - padY * 2) * total) / max : 0;
-            const errH = max > 0 ? ((H - padY * 2) * b.err) / max : 0;
+            const unit = max > 0 ? (H - padY * 2) / max : 0;
+            const errH = b.err * unit;
+            const warnH = b.warn * unit;
+            const okH = b.ok * unit;
             const x = padX + i * colW + 2;
-            const okY = H - padY - h;
+            // Stack bottom-up: errors, then warnings, then ok on top.
             const errY = H - padY - errH;
+            const warnY = errY - warnH;
+            const okY = warnY - okH;
             const w = Math.max(2, colW - 4);
             return svg`
               <g>
-                <rect x="${x}" y="${okY}" width="${w}" height="${h - errH}" fill="var(--ok)" rx="2"/>
+                <rect x="${x}" y="${okY}" width="${w}" height="${okH}" fill="var(--ok)" rx="2"/>
+                <rect x="${x}" y="${warnY}" width="${w}" height="${warnH}" fill="var(--warn)" rx="2"/>
                 <rect x="${x}" y="${errY}" width="${w}" height="${errH}" fill="var(--danger)" rx="2"/>
                 <text x="${x + w / 2}" y="${H + 12}" text-anchor="middle" font-size="9" fill="var(--text-muted)" font-family="var(--font-mono)">${d.slice(5)}</text>
               </g>
@@ -215,12 +227,16 @@ export class ChronosHistoryScreen extends LitElement {
     const ts = new Date(e.ts);
     const tsStr = isNaN(ts.getTime()) ? e.ts : ts.toLocaleString();
     const isErr = e.outcome === "error";
+    // Warning = pending recall (missed activation, retry armed): amber row,
+    // clearly distinct from a red failure. See ws.ts HistoryEntry.outcome.
+    const isWarn = e.outcome === "warning";
+    const tint = isErr ? "var(--danger)" : "var(--warn)";
     const actionLbl = actionDefLabel(e.device_type, e.action_id, e.action_id);
     const valStr = e.value === undefined || e.value === null || e.value === ""
       ? ""
       : (typeof e.value === "object" ? JSON.stringify(e.value) : String(e.value));
     return html`
-      <div class="col" style="gap:0;padding:8px 12px;border-radius:6px;background:${isErr ? "color-mix(in srgb, var(--danger) 8%, transparent)" : "var(--bg-sunken)"};border:1px solid ${isErr ? "color-mix(in srgb, var(--danger) 30%, transparent)" : "var(--border-soft)"};user-select:text">
+      <div class="col" style="gap:0;padding:8px 12px;border-radius:6px;background:${isErr || isWarn ? `color-mix(in srgb, ${tint} 8%, transparent)` : "var(--bg-sunken)"};border:1px solid ${isErr || isWarn ? `color-mix(in srgb, ${tint} 30%, transparent)` : "var(--border-soft)"};user-select:text">
         <div class="row" style="gap:10px">
           <span class="mono text-xs text-mute" style="min-width:140px;flex-shrink:0">${tsStr}</span>
           <span class="chip" style="flex-shrink:0;background:${e.kind === "rule" ? "color-mix(in srgb, var(--accent) 12%, transparent)" : e.kind === "system" ? "color-mix(in srgb, var(--warn) 14%, transparent)" : "var(--bg)"};color:${e.kind === "rule" ? "var(--accent-ink)" : e.kind === "system" ? "var(--warn)" : "var(--text)"}">
@@ -232,13 +248,13 @@ export class ChronosHistoryScreen extends LitElement {
               ? t("history.system." + e.action_id) || e.action_id
               : html`${actionLbl}${valStr ? ` · ${valStr}` : ""}${e.entity_id ? ` → ${e.entity_id}` : ""}`}
           </span>
-          <span class="chip" style="flex-shrink:0;background:${isErr ? "var(--danger)" : "var(--ok)"};color:white;border-color:transparent">
-            ${isErr ? t("history.outcome.error") : t("history.outcome.ok")}
+          <span class="chip" style="flex-shrink:0;background:${isErr ? "var(--danger)" : isWarn ? "var(--warn)" : "var(--ok)"};color:white;border-color:transparent">
+            ${isErr ? t("history.outcome.error") : isWarn ? t("history.outcome.warning") : t("history.outcome.ok")}
           </span>
         </div>
         ${e.error ? html`
-          <div class="row" style="gap:8px;margin-top:8px;padding:6px 8px;background:color-mix(in srgb, var(--danger) 6%, var(--bg));border-radius:4px;align-items:flex-start">
-            <span class="text-xs mono" style="color:var(--danger);flex:1;white-space:pre-wrap;word-break:break-word;user-select:text;-webkit-user-select:text">${e.error}</span>
+          <div class="row" style="gap:8px;margin-top:8px;padding:6px 8px;background:color-mix(in srgb, ${tint} 6%, var(--bg));border-radius:4px;align-items:flex-start">
+            <span class="text-xs mono" style="color:${tint};flex:1;white-space:pre-wrap;word-break:break-word;user-select:text;-webkit-user-select:text">${e.error}</span>
             <button class="btn btn--icon btn--ghost btn--sm" title="${t("history.copy_error")}"
               @click=${(ev: Event) => this._copyError(ev, e.error || "")}>
               ${icon("info", 12)}

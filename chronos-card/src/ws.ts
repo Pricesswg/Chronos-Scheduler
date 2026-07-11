@@ -128,7 +128,10 @@ export interface HistoryEntry {
   action_id: string;
   entity_id: string | null;
   value: any;
-  outcome: "ok" | "error";
+  /** "warning" (1.25+) marks a pending recall: the action was missed
+   * because the device was offline, but a retry is armed. It only becomes
+   * an "error" in a later final entry if the recall expires or gives up. */
+  outcome: "ok" | "error" | "warning";
   error: string | null;
   rule_idx: number | null;
 }
@@ -137,7 +140,7 @@ export interface HistoryFilters {
   from_ts?: string;
   to_ts?: string;
   schedule_id?: string;
-  outcome?: "ok" | "error";
+  outcome?: "ok" | "error" | "warning";
   kind?: "block" | "rule";
   limit?: number;
 }

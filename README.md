@@ -23,7 +23,7 @@ A single Lovelace card provides:
 - Automation schedules: a single schedule that turns on/off or triggers one or more HA automations per time block
 - Service-call schedules: each block invokes any HA service (mqtt.publish, backup.create, script.run, …) with an optional JSON service_data payload
 - Helper entity support: `input_boolean` (flag toggling), `input_number` (numeric values), `input_select` (option selection), so existing automations that use these as conditions don't need rewriting
-- Execution history screen with date range filter, schedule / kind / outcome filters, daily bar chart and detailed event list, useful for debugging schedules that didn't fire as expected
+- Execution history screen with date range filter, schedule / kind / outcome filters, daily bar chart and detailed event list, useful for debugging schedules that didn't fire as expected. Three outcome tiers: green ok, yellow warning (pending offline recall), red error (final failure)
 - Per-block device subset: in a multi-device schedule, each block can target a custom subset of those devices
 - Recurring yearly date ranges to limit a schedule to specific months/days
 - Light advanced parameters (RGB colour, colour temperature, transition) per block
