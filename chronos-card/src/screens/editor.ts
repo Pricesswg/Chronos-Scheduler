@@ -6,7 +6,7 @@ import { getActionsForType, getActionDef, actionLabel, actionColor, KIND_COLORS,
 import { fmtHour, getDays, DEVICE_TYPES, computeRepeat, resolveBlockTime } from "../utils";
 import { exportSchedule } from "../transfer";
 import { CARD_VERSION } from "../version";
-import { t, actionDefLabel, actionValueLabel, actionExtraLabel } from "../i18n";
+import { t, actionDefLabel, actionValueLabel, actionExtraLabel, deviceTypeLabel } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
 import type { Block, Schedule } from "../types";
 import "../timeline";
@@ -62,7 +62,7 @@ export class ChronosEditor extends LitElement {
             <div class="row" style="margin-top:6px;gap:10px;flex-wrap:wrap">
               <span class="chip ${schedule.enabled ? "chip--on" : ""}"><span class="chip__dot"></span>${schedule.enabled ? t("schedule.active") : t("schedule.disabled")}</span>
               <span class="chip">${icon("repeat", 11)} ${computeRepeat(schedule.days)}</span>
-              <span class="chip chip--accent">${deviceIcon(deviceType, 11)} ${typeDef.label}</span>
+              <span class="chip chip--accent">${deviceIcon(deviceType, 11)} ${deviceTypeLabel(deviceType, typeDef.label)}</span>
               ${!["scene", "automation", "service"].includes(deviceType)
                 ? (devices.length === 0
                     ? html`<span class="chip" style="background:color-mix(in srgb, var(--danger) 15%, transparent);color:var(--danger);border-color:color-mix(in srgb, var(--danger) 35%, transparent)" title="${t("editor.no_devices.tooltip")}">

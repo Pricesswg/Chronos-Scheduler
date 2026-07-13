@@ -5,7 +5,7 @@ import { icon, deviceIcon } from "../icons";
 import { defaultAction, getActionsForType, getActionDef, actionColor } from "../actions";
 import { getDays, DEVICE_TYPES, computeRepeat, DAY_END_HOUR } from "../utils";
 import { importSchedule, ruleForSchedule } from "../transfer";
-import { t, actionDefLabel, actionValueLabel } from "../i18n";
+import { t, actionDefLabel, actionValueLabel, deviceTypeLabel } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
 import type { Block, DeviceType, Schedule } from "../types";
 import "../timeline";
@@ -181,7 +181,7 @@ export class ChronosWizard extends LitElement {
                     <div class="tile-pick__icon">${deviceIcon(d.type, 16)}</div>
                     <div style="min-width:0;flex:1">
                       <div class="tile-pick__name truncate">${d.alias}</div>
-                      <div class="tile-pick__desc">${d.area ? html`${d.area} · ` : nothing}${DEVICE_TYPES[d.type]?.label || d.type}</div>
+                      <div class="tile-pick__desc">${d.area ? html`${d.area} · ` : nothing}${deviceTypeLabel(d.type, DEVICE_TYPES[d.type]?.label || d.type)}</div>
                     </div>
                     ${this._pickedDevices.includes(d.id) ? icon("check", 16) : nothing}
                   </div>

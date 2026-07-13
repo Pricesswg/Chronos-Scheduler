@@ -67,22 +67,22 @@ export function getDays(): string[] {
 }
 
 export const DEVICE_TYPES: Record<string, { label: string; domain: string; capabilities: string[] }> = {
-  thermostat: { label: "Termostato", domain: "climate", capabilities: ["set_temperature", "hvac_mode", "preset_mode"] },
-  light: { label: "Luce", domain: "light", capabilities: ["turn_on", "turn_off", "brightness", "color_temp"] },
-  blind: { label: "Tapparella", domain: "cover", capabilities: ["open", "close", "set_position", "stop"] },
-  irrigation: { label: "Irrigazione", domain: "valve", capabilities: ["turn_on", "turn_off", "duration"] },
-  plug: { label: "Presa smart", domain: "switch", capabilities: ["turn_on", "turn_off"] },
-  fan: { label: "Ventilatore", domain: "fan", capabilities: ["turn_on", "turn_off", "speed", "oscillate"] },
-  boiler: { label: "Boiler", domain: "water_heater", capabilities: ["set_temperature", "operation_mode"] },
-  mower: { label: "Tosaerba", domain: "lawn_mower", capabilities: ["start_mowing", "pause", "dock"] },
-  vacuum: { label: "Robot aspirapolvere", domain: "vacuum", capabilities: ["start", "pause", "return_to_base", "fan_speed"] },
-  scene: { label: "Scena", domain: "scene", capabilities: ["turn_on"] },
-  automation: { label: "Automazione", domain: "automation", capabilities: ["turn_on", "turn_off", "trigger"] },
-  alarm: { label: "Allarme", domain: "alarm_control_panel", capabilities: ["arm_home", "arm_away", "arm_night", "arm_vacation", "disarm", "trigger"] },
-  input_boolean: { label: "Helper booleano", domain: "input_boolean", capabilities: ["turn_on", "turn_off", "toggle"] },
-  input_number: { label: "Helper numerico", domain: "input_number", capabilities: ["set_value"] },
-  input_select: { label: "Helper selettore", domain: "input_select", capabilities: ["select_option"] },
-  service: { label: "Servizio HA", domain: "service", capabilities: ["call_service"] },
+  thermostat: { label: "Thermostat", domain: "climate", capabilities: ["set_temperature", "hvac_mode", "preset_mode"] },
+  light: { label: "Light", domain: "light", capabilities: ["turn_on", "turn_off", "brightness", "color_temp"] },
+  blind: { label: "Blind", domain: "cover", capabilities: ["open", "close", "set_position", "stop"] },
+  irrigation: { label: "Irrigation", domain: "valve", capabilities: ["turn_on", "turn_off", "duration"] },
+  plug: { label: "Smart plug", domain: "switch", capabilities: ["turn_on", "turn_off"] },
+  fan: { label: "Fan", domain: "fan", capabilities: ["turn_on", "turn_off", "speed", "oscillate"] },
+  boiler: { label: "Water heater", domain: "water_heater", capabilities: ["set_temperature", "operation_mode"] },
+  mower: { label: "Mower", domain: "lawn_mower", capabilities: ["start_mowing", "pause", "dock"] },
+  vacuum: { label: "Vacuum", domain: "vacuum", capabilities: ["start", "pause", "return_to_base", "fan_speed"] },
+  scene: { label: "Scene", domain: "scene", capabilities: ["turn_on"] },
+  automation: { label: "Automation", domain: "automation", capabilities: ["turn_on", "turn_off", "trigger"] },
+  alarm: { label: "Alarm", domain: "alarm_control_panel", capabilities: ["arm_home", "arm_away", "arm_night", "arm_vacation", "disarm", "trigger"] },
+  input_boolean: { label: "Boolean helper", domain: "input_boolean", capabilities: ["turn_on", "turn_off", "toggle"] },
+  input_number: { label: "Number helper", domain: "input_number", capabilities: ["set_value"] },
+  input_select: { label: "Select helper", domain: "input_select", capabilities: ["select_option"] },
+  service: { label: "HA service", domain: "service", capabilities: ["call_service"] },
 };
 
 export function computeRepeat(days: number[]): string {
