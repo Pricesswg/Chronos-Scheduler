@@ -565,9 +565,24 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
     ) -> None:
         entities = []
         for state in hass.states.async_all("scene"):
+            # A scene's `entity_id` attribute lists the entities it controls.
+            # Surface their friendly names so the card can show which devices
+            # each scene touches (users often can't tell scenes apart by name
+            # alone). Capped at a handful for the UI; the count is exact.
+            members_raw = state.attributes.get("entity_id") or []
+            if isinstance(members_raw, str):
+                members_raw = [members_raw]
+            member_names = []
+            for ent in members_raw:
+                mstate = hass.states.get(ent)
+                member_names.append(
+                    mstate.attributes.get("friendly_name", ent) if mstate else ent
+                )
             entities.append({
                 "entity_id": state.entity_id,
                 "friendly_name": state.attributes.get("friendly_name", state.entity_id),
+                "members": member_names,
+                "member_count": len(member_names),
             })
         connection.send_result(msg["id"], entities)
 

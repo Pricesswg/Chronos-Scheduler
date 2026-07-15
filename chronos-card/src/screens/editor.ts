@@ -268,8 +268,18 @@ export class ChronosEditor extends LitElement {
                           style="background:${active ? KIND_COLORS[a.kind] : "var(--surface)"};color:${active ? "white" : "var(--text)"};border-color:${active ? "transparent" : "var(--border)"}">
                           ${actionDefLabel(deviceType, a.id, a.label)}</button>`;
                       })}
+                      ${deviceType === "scene" && block.action?.id === "activate" ? html`
+                        <button class="btn btn--sm" title="${t("editor.scene.on_demand.hint")}"
+                          @click=${() => this._setSceneOnDemand(schedule.id, block.action?.mode !== "on_demand")}
+                          style="background:${block.action?.mode === "on_demand" ? "var(--warn)" : "var(--surface)"};color:${block.action?.mode === "on_demand" ? "white" : "var(--text-soft)"};border-color:${block.action?.mode === "on_demand" ? "transparent" : "var(--border)"}">
+                          ${icon(block.action?.mode === "on_demand" ? "check" : "power", 11)} ${t("editor.scene.on_demand.label")}
+                        </button>
+                      ` : nothing}
                     </div>
                     <span class="field__hint mono" style="margin-top:4px">${currentActionDef?.service || ""}</span>
+                    ${deviceType === "scene" && block.action?.id === "activate" && block.action?.mode === "on_demand"
+                      ? html`<span class="field__hint" style="margin-top:4px;color:var(--warn)">${t("editor.scene.on_demand.hint")}</span>`
+                      : nothing}
                   </div>
                   ${deviceType === "irrigation" && block.action?.id === "turn_on"
                     ? this._renderIrrigationMode(schedule, block)
@@ -309,20 +319,6 @@ export class ChronosEditor extends LitElement {
                           @input=${(e: InputEvent) => this._setBlockValue(schedule.id, (e.target as HTMLInputElement).value)}
                           style="width:100%;font-weight:500"/>
                       ` : nothing}
-                    </div>
-                  ` : nothing}
-                  ${deviceType === "scene" && block.action?.id === "activate" ? html`
-                    <div class="device-row" style="border:1px solid var(--border-soft);border-radius:var(--r-md);padding:10px 12px;margin-top:2px">
-                      <div class="device-row__main">
-                        <div class="device-row__name">${t("editor.scene.on_demand.label")}</div>
-                        <div class="device-row__meta" style="font-family:var(--font-sans);white-space:normal">${t("editor.scene.on_demand.hint")}</div>
-                      </div>
-                      <label class="switch">
-                        <input type="checkbox" .checked=${block.action?.mode === "on_demand"}
-                          @change=${(e: Event) => this._setSceneOnDemand(schedule.id, (e.target as HTMLInputElement).checked)}/>
-                        <span class="switch__track"></span>
-                        <span class="switch__thumb"></span>
-                      </label>
                     </div>
                   ` : nothing}
                   ${AUTO_OFF_TYPES.includes(deviceType) && block.action?.id === "turn_on" ? html`
@@ -746,7 +742,8 @@ export class ChronosEditor extends LitElement {
     const visible = q
       ? pool.filter((s: any) => {
           if (selected.includes(s.entity_id)) return true;
-          const haystack = `${s.friendly_name || ""} ${s.entity_id || ""}`.toLowerCase();
+          const members = Array.isArray(s.members) ? s.members.join(" ") : "";
+          const haystack = `${s.friendly_name || ""} ${s.entity_id || ""} ${members}`.toLowerCase();
           return haystack.includes(q);
         })
       : pool;
@@ -758,19 +755,43 @@ export class ChronosEditor extends LitElement {
             placeholder="${t("editor.entity.search")}"
             @input=${(e: InputEvent) => { this._entitySearch = (e.target as HTMLInputElement).value; }}/>
         ` : nothing}
-        <div class="row" style="gap:6px;flex-wrap:wrap">
-          ${visible.length ? visible.map((s: any) => {
-            const id = s.entity_id;
-            const on = selected.includes(id);
-            return html`
-              <button class="btn btn--sm"
-                @click=${() => this._toggleEntitySelection(schedId, id)}
-                style="background:${on ? "var(--accent)" : "var(--bg-sunken)"};color:${on ? "white" : "var(--text)"};border-color:${on ? "transparent" : "var(--border-soft)"}">
-                ${on ? icon("check", 11) : nothing} ${s.friendly_name || id}
-              </button>
-            `;
-          }) : html`<span class="text-xs text-mute">${pool.length ? t("editor.entity.no_match") : t("editor.entity.empty")}</span>`}
-        </div>
+        ${spec.domain === "scene"
+          ? html`<div class="col" style="gap:6px">
+              ${visible.length ? visible.map((s: any) => {
+                const id = s.entity_id;
+                const on = selected.includes(id);
+                const members: string[] = Array.isArray(s.members) ? s.members : [];
+                const shown = members.slice(0, 4).join(", ");
+                const more = members.length > 4 ? ` +${members.length - 4}` : "";
+                return html`
+                  <button class="device-row" @click=${() => this._toggleEntitySelection(schedId, id)}
+                    style="width:100%;text-align:left;padding:8px 10px;border:1px solid ${on ? "var(--accent)" : "var(--border-soft)"};border-radius:var(--r-md);background:${on ? "var(--accent-soft)" : "var(--bg-sunken)"}">
+                    <span style="flex-shrink:0;color:${on ? "var(--accent-ink)" : "var(--text-muted)"}">${icon(on ? "check" : "plus", 13)}</span>
+                    <div class="device-row__main" style="min-width:0">
+                      <div class="device-row__name" style="color:${on ? "var(--accent-ink)" : "var(--text)"}">${s.friendly_name || id}</div>
+                      <div class="device-row__meta" style="white-space:normal">
+                        ${members.length
+                          ? html`${icon("device", 10)} ${shown}${more}`
+                          : html`<span class="mono">${id}</span>`}
+                      </div>
+                    </div>
+                  </button>
+                `;
+              }) : html`<span class="text-xs text-mute">${pool.length ? t("editor.entity.no_match") : t("editor.entity.empty")}</span>`}
+            </div>`
+          : html`<div class="row" style="gap:6px;flex-wrap:wrap">
+              ${visible.length ? visible.map((s: any) => {
+                const id = s.entity_id;
+                const on = selected.includes(id);
+                return html`
+                  <button class="btn btn--sm"
+                    @click=${() => this._toggleEntitySelection(schedId, id)}
+                    style="background:${on ? "var(--accent)" : "var(--bg-sunken)"};color:${on ? "white" : "var(--text)"};border-color:${on ? "transparent" : "var(--border-soft)"}">
+                    ${on ? icon("check", 11) : nothing} ${s.friendly_name || id}
+                  </button>
+                `;
+              }) : html`<span class="text-xs text-mute">${pool.length ? t("editor.entity.no_match") : t("editor.entity.empty")}</span>`}
+            </div>`}
         ${selected.length === 0 ? html`<span class="field__hint" style="color:var(--warn)">${warnText}</span>` : html`<span class="field__hint">${t("editor.entity.count", { n: selected.length })}</span>`}
       </div>
     `;

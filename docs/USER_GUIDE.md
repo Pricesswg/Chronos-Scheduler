@@ -674,7 +674,9 @@ Use scene schedules when you already have Home Assistant scenes and you want Chr
 
 ### Apply on demand
 
-By default a scene block activates the scene when the block starts, which turns on every light the scene controls. If you would rather the scene apply only to lights you actually switch on, enable **Apply on demand** on the scene block (toggle in the block detail panel).
+The scene picker lists each scene with the devices it controls underneath its name, so scenes with similar names are easy to tell apart; the search box also matches those device names.
+
+By default a scene block activates the scene when the block starts, which turns on every light the scene controls. If you would rather the scene apply only to lights you actually switch on, enable **Apply on demand**: it is the button next to the "Activate scene" action in the block detail panel (it turns amber when on).
 
 With it on:
 
