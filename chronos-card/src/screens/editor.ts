@@ -311,6 +311,20 @@ export class ChronosEditor extends LitElement {
                       ` : nothing}
                     </div>
                   ` : nothing}
+                  ${deviceType === "scene" && block.action?.id === "activate" ? html`
+                    <div class="device-row" style="border:1px solid var(--border-soft);border-radius:var(--r-md);padding:10px 12px;margin-top:2px">
+                      <div class="device-row__main">
+                        <div class="device-row__name">${t("editor.scene.on_demand.label")}</div>
+                        <div class="device-row__meta" style="font-family:var(--font-sans);white-space:normal">${t("editor.scene.on_demand.hint")}</div>
+                      </div>
+                      <label class="switch">
+                        <input type="checkbox" .checked=${block.action?.mode === "on_demand"}
+                          @change=${(e: Event) => this._setSceneOnDemand(schedule.id, (e.target as HTMLInputElement).checked)}/>
+                        <span class="switch__track"></span>
+                        <span class="switch__thumb"></span>
+                      </label>
+                    </div>
+                  ` : nothing}
                   ${AUTO_OFF_TYPES.includes(deviceType) && block.action?.id === "turn_on" ? html`
                     <div class="field">
                       <label class="field__label">${t("editor.auto_off.label")} <span class="text-mute">(min)</span></label>
@@ -660,6 +674,19 @@ export class ChronosEditor extends LitElement {
         }));
       action.sequence = seeded;
     }
+    b.action = action;
+    blocks[this._selectedBlockIdx] = b;
+    this._commitBlocks(schedId, blocks, b);
+  }
+
+  private _setSceneOnDemand(schedId: string, on: boolean) {
+    const sched = this.card._schedules.find((s) => s.id === schedId);
+    if (!sched) return;
+    const blocks = [...sched.blocks];
+    const b = { ...blocks[this._selectedBlockIdx] };
+    const action: any = { ...(b.action || { id: "activate" }) };
+    if (on) action.mode = "on_demand";
+    else delete action.mode;
     b.action = action;
     blocks[this._selectedBlockIdx] = b;
     this._commitBlocks(schedId, blocks, b);

@@ -132,6 +132,8 @@ export const PT_STRINGS: Record<string, string> = {
   "wizard.devices.scene_tile": "Ativar cena (genérico)",
   "wizard.devices.scene_tile.desc": "Um agendamento, uma cena diferente por bloco horário",
   "wizard.review.scene_mode": "Modo cenas (sem dispositivos)",
+  "editor.scene.on_demand.label": "Aplicar a pedido",
+  "editor.scene.on_demand.hint": "Não ativa a cena no início do bloco (acenderia as luzes). Aplica-a apenas quando um dispositivo da cena é ligado durante o bloco, ou de imediato se já estiver ligado.",
   "editor.scene.section": "Agendamento baseado em cenas",
   "editor.scene.section.hint": "Os agendamentos de cenas ativam uma cena diferente em cada bloco horário.",
   "editor.scene.no_devices": "As cenas não precisam de dispositivos: cada bloco horário escolhe no painel direito que cena ativar.",

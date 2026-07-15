@@ -672,6 +672,18 @@ A single time block can activate multiple scenes.
 
 Use scene schedules when you already have Home Assistant scenes and you want Chronos to decide when they should run.
 
+### Apply on demand
+
+By default a scene block activates the scene when the block starts, which turns on every light the scene controls. If you would rather the scene apply only to lights you actually switch on, enable **Apply on demand** on the scene block (toggle in the block detail panel).
+
+With it on:
+
+- Chronos does not activate the scene at the start of the block, so nothing turns on by itself.
+- When one of the scene's member entities is switched on during the block window (by you, or by any other automation), Chronos applies the scene at that moment, so the light you just turned on takes the scene's colour and brightness.
+- If a member is already on when the block starts, the scene is applied to it right away.
+
+The watcher lasts only for the block window and re-arms automatically after a Home Assistant restart. Typical use: an "evening ambience" scene that should shape the living-room lights whenever they come on between sunset and midnight, without switching them on at sunset.
+
 ---
 
 ## Automation schedules

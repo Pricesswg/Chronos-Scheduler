@@ -132,6 +132,8 @@ export const NL_STRINGS: Record<string, string> = {
   "wizard.devices.scene_tile": "Scène activeren (generiek)",
   "wizard.devices.scene_tile.desc": "Eén schema, een andere scène per tijdblok",
   "wizard.review.scene_mode": "Scènemodus (geen apparaten)",
+  "editor.scene.on_demand.label": "Op verzoek toepassen",
+  "editor.scene.on_demand.hint": "Activeert de scène niet bij het begin van het blok (dat zou de lichten inschakelen). Past de scène alleen toe wanneer een apparaat van de scène tijdens het blok wordt ingeschakeld, of meteen als er al één aan is.",
   "editor.scene.section": "Schema op basis van scènes",
   "editor.scene.section.hint": "Scèneschema's activeren in elk tijdblok een andere scène.",
   "editor.scene.no_devices": "Scènes hebben geen apparaten nodig: elk tijdblok kiest in het rechterpaneel welke scène wordt geactiveerd.",

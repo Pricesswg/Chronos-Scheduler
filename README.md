@@ -19,7 +19,7 @@ A single Lovelace card provides:
 - 6-step wizard for guided schedule creation
 - Schedule duplication with editable name, devices and days before the copy is created
 - JSON export/import to move schedules between Chronos instances (device links travel as entity ids and are re-matched on import)
-- Scene schedules: a single schedule that fires one or more scenes per time block (multi-select picker)
+- Scene schedules: a single schedule that fires one or more scenes per time block (multi-select picker); optional "apply on demand" mode applies the scene only when a member light is switched on during the window, instead of turning everything on at block start
 - Automation schedules: a single schedule that turns on/off or triggers one or more HA automations per time block
 - Service-call schedules: each block invokes any HA service (mqtt.publish, backup.create, script.run, …) with an optional JSON service_data payload
 - Helper entity support: `input_boolean` (flag toggling), `input_number` (numeric values), `input_select` (option selection), so existing automations that use these as conditions don't need rewriting
@@ -191,6 +191,10 @@ Scenes and automations are not imported as devices. Instead, create a dedicated 
 - **Schedule automations** — each block picks one or more `automation.*` entities and one of three actions: `turn_on`, `turn_off`, `trigger`.
 
 A single schedule can therefore fire different scenes (or toggle different automations) throughout the day — for example "morning" at 07:00, "movie" at 21:00, "night" at 23:30.
+
+### Apply on demand (scenes)
+
+By default a scene block activates the scene at the start of its time block, which turns on every light the scene controls. When that is not what you want, enable **Apply on demand** on the scene block. In that mode Chronos does not activate the scene at block start; instead it applies the scene only when one of the scene's member entities is switched on during the block window (manually, or by any other automation), and immediately for members that are already on. So nothing lights up on its own, but any light you do turn on during the window gets the block's scene (colour, brightness, ...). The watcher re-arms after a Home Assistant restart.
 
 ## Helper entities and service calls
 

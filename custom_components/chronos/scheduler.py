@@ -188,6 +188,14 @@ class ChronosScheduler:
         # that is still offline re-arms its recall on its own.
         self._pending_recalls: dict[str, dict[str, Any]] = {}
         self._unsub_recall = None
+        # On-demand scene blocks (action.mode == "on_demand"): the scene is
+        # NOT fired at block start; it fires when one of its member
+        # entities transitions off → on during the block window, so nothing
+        # lights up on its own but a manual turn-on gets the block's scene.
+        # Keyed by schedule id (the active block owns the schedule).
+        # In-memory: the catch-up tick re-arms after a restart.
+        self._pending_scenes: dict[str, dict[str, Any]] = {}
+        self._unsub_scene_watch = None
         # Hourly forecast cache, refreshed by _weather_poll every
         # polling_minutes. Lets forecast.* clauses be evaluated synchronously
         # (continuous effects) and avoids a blocking weather.get_forecasts
@@ -282,6 +290,10 @@ class ChronosScheduler:
             self._unsub_recall()
             self._unsub_recall = None
         self._pending_recalls.clear()
+        if self._unsub_scene_watch:
+            self._unsub_scene_watch()
+            self._unsub_scene_watch = None
+        self._pending_scenes.clear()
         # Cancel running irrigation sequences. We DON'T close the valves
         # here: a clean stop is usually part of a restart, and the next
         # start() will run _recover_interrupted_sequences() which closes
@@ -455,6 +467,9 @@ class ChronosScheduler:
         # trigger, but a missed event (subscription race) must not leave
         # orphaned recalls. This also expires the ones whose block ended.
         await self._sweep_recalls()
+
+        # Disarm on-demand scene watchers whose block window has closed.
+        self._sweep_pending_scenes()
 
         # Persist any new history entries accumulated during this tick. The
         # store keeps them in memory and only writes to disk on flush, so a
@@ -1491,6 +1506,192 @@ class ChronosScheduler:
                 service_data[k] = v
         return service_data
 
+    # --- On-demand scenes -------------------------------------------------
+    # A scene block with action.mode == "on_demand" does NOT activate the
+    # scene at block start (that would switch on every light the scene
+    # controls). Instead the scene is applied only when one of its member
+    # entities is turned on during the block window (manually, by another
+    # automation, ...), or immediately for members that are already on. So
+    # the ambience is applied to whatever is on, without turning anything
+    # on by itself. In-memory registry keyed by schedule id; the catch-up
+    # tick re-arms after a restart.
+
+    def _scene_members(self, scene_entity: str) -> list[str]:
+        """Entities controlled by a scene, from its `entity_id` attribute."""
+        st = self._hass.states.get(scene_entity)
+        if st is None:
+            return []
+        ents = st.attributes.get("entity_id") or []
+        if isinstance(ents, str):
+            ents = [ents]
+        return [str(e) for e in ents]
+
+    def _is_on(self, entity_id: str) -> bool:
+        st = self._hass.states.get(entity_id)
+        return st is not None and st.state == "on"
+
+    async def _arm_scene_ondemand(self, sched: dict, scene_entity_ids: list[str]) -> None:
+        scenes: list[dict[str, Any]] = []
+        for sc in scene_entity_ids:
+            scenes.append({"scene": sc, "members": self._scene_members(sc)})
+        key = str(sched.get("id"))
+        self._pending_scenes[key] = {
+            "schedule_id": key,
+            "schedule_name": sched.get("name", "?"),
+            "scenes": scenes,
+            # Monotonic ts of our last scene application, for echo
+            # suppression (applying a scene can turn a member on, which
+            # would re-trigger the watcher).
+            "last_fire": 0.0,
+        }
+        self._refresh_scene_watch()
+        _LOGGER.info(
+            "Chronos: armed on-demand scene(s) %s for schedule=%s",
+            [s["scene"] for s in scenes], sched.get("name"),
+        )
+        # Members already on at block start get the scene right away: the
+        # user's intent is "apply the ambience to whatever is on", and this
+        # never turns on anything that is off.
+        to_fire = [e for e in scenes if any(self._is_on(m) for m in e["members"])]
+        if to_fire:
+            # Set the echo-suppression timestamp BEFORE applying: _apply_scene
+            # awaits, and the member-on events the scene itself causes could
+            # otherwise slip back into the watcher before we mark the window.
+            self._pending_scenes[key]["last_fire"] = self._hass.loop.time()
+            for entry in to_fire:
+                await self._apply_scene(sched, entry["scene"])
+            try:
+                await self._store.flush_history()
+            except Exception:
+                _LOGGER.exception("Chronos: history flush failed after on-demand arm")
+
+    def _refresh_scene_watch(self) -> None:
+        """(Re)subscribe the state listener to the union of member entities
+        of all armed on-demand scenes. Zero armed = zero listeners."""
+        if self._unsub_scene_watch:
+            self._unsub_scene_watch()
+            self._unsub_scene_watch = None
+        ents: set[str] = set()
+        for p in self._pending_scenes.values():
+            for entry in p["scenes"]:
+                ents.update(entry["members"])
+        if not ents:
+            return
+        self._unsub_scene_watch = async_track_state_change_event(
+            self._hass, sorted(ents), self._on_scene_member_change
+        )
+
+    async def _on_scene_member_change(self, event) -> None:
+        new_state = event.data.get("new_state")
+        old_state = event.data.get("old_state")
+        # Only an off/away → on transition applies the scene. An on → on
+        # change (e.g. brightness) or a turn-off must not.
+        if new_state is None or new_state.state != "on":
+            return
+        if old_state is not None and old_state.state == "on":
+            return
+        await self._fire_ondemand_for_member(event.data.get("entity_id"))
+
+    async def _fire_ondemand_for_member(self, entity_id: str | None) -> None:
+        if not entity_id or not self._pending_scenes:
+            return
+        dirty = False
+        for key, pending in list(self._pending_scenes.items()):
+            matched = [e for e in pending["scenes"] if entity_id in e["members"]]
+            if not matched:
+                continue
+            sched = self._store.get_schedule(pending["schedule_id"])
+            block = self._ondemand_active_block(sched) if sched else None
+            if block is None:
+                # Window ended, schedule disabled/removed, or the active
+                # block is no longer an on-demand scene: disarm.
+                self._pending_scenes.pop(key, None)
+                self._refresh_scene_watch()
+                continue
+            # Echo suppression: skip transitions our own scene application
+            # just caused (a scene that turns a member on re-enters here).
+            if self._hass.loop.time() - pending.get("last_fire", 0.0) < 2.0:
+                continue
+            # Mark BEFORE applying: the scene's own member-on events must
+            # find the suppression window already open (see _arm note).
+            pending["last_fire"] = self._hass.loop.time()
+            for entry in matched:
+                await self._apply_scene(sched, entry["scene"])
+            dirty = True
+        if dirty:
+            try:
+                await self._store.flush_history()
+            except Exception:
+                _LOGGER.exception("Chronos: history flush failed after on-demand fire")
+
+    def _ondemand_active_block(self, sched: dict) -> dict | None:
+        """Return the currently active block IFF it is the schedule's
+        on-demand scene block, else None. Same validity gates as the tick
+        (enabled, day mask, date range, active window)."""
+        if not sched or not sched.get("enabled"):
+            return None
+        local_now = dt_util.now()
+        weekday = local_now.weekday()
+        days = sched.get("days", [0] * 7)
+        if weekday < len(days) and not days[weekday]:
+            return None
+        if not self._is_in_date_range(sched, local_now):
+            return None
+        current_hour = local_now.hour + local_now.minute / 60
+        block, _idx = self._block_at(self._effective_blocks(sched), current_hour)
+        if block is None:
+            return None
+        action = block.get("action") or {}
+        if action.get("id") != "activate" or action.get("mode") != "on_demand":
+            return None
+        return block
+
+    def _sweep_pending_scenes(self) -> None:
+        """Disarm on-demand scenes whose block is no longer active. Called
+        each tick: a block that ends into an empty slot triggers no dispatch,
+        so the tick is the only place that notices the window closed."""
+        if not self._pending_scenes:
+            return
+        changed = False
+        for key in list(self._pending_scenes.keys()):
+            sched = self._store.get_schedule(key)
+            if sched is None or self._ondemand_active_block(sched) is None:
+                self._pending_scenes.pop(key, None)
+                changed = True
+        if changed:
+            self._refresh_scene_watch()
+
+    async def _apply_scene(self, sched: dict, scene_entity: str) -> None:
+        try:
+            child_ctx = _fire_with_context(self._hass, EVENT_BLOCK_EXECUTED, {
+                "device_id": None,
+                "entity_id": scene_entity,
+                "action_id": "activate",
+                "value": scene_entity,
+            }, sched)
+            await self._hass.services.async_call(
+                "scene", "turn_on", {"entity_id": scene_entity},
+                blocking=False, context=child_ctx,
+            )
+            self._store.append_history(_make_history_entry(
+                sched, kind="block", action_id="activate", entity_id=scene_entity,
+            ))
+            await _log_to_logbook(
+                self._hass, sched, action_id="activate",
+                entity_id=scene_entity, extra="on-demand",
+            )
+            _LOGGER.info(
+                "Chronos: applied on-demand scene %s (schedule=%s)",
+                scene_entity, sched.get("name"),
+            )
+        except Exception:
+            _LOGGER.exception("Chronos: on-demand scene apply failed for %s", scene_entity)
+            self._store.append_history(_make_history_entry(
+                sched, kind="block", action_id="activate",
+                entity_id=scene_entity, outcome="error",
+                error="on-demand scene apply failed",
+            ))
+
     async def _dispatch_action(self, sched: dict, block: dict) -> None:
         """Internal: execute the block's action on all schedule devices.
 
@@ -1508,6 +1709,14 @@ class ChronosScheduler:
                 device_type, action_id, sched_name,
             )
             return
+
+        # A new block dispatch supersedes any on-demand scene watcher this
+        # schedule had armed for the previous block. Clear it before doing
+        # anything else; the scene branch below re-arms if the new block is
+        # itself an on-demand scene block.
+        if str(sched.get("id")) in self._pending_scenes:
+            self._pending_scenes.pop(str(sched.get("id")), None)
+            self._refresh_scene_watch()
 
         # Service-type schedules invoke an arbitrary HA service. The block's
         # value holds the "domain.service_name" string, and an optional
@@ -1676,6 +1885,14 @@ class ChronosScheduler:
                     "Chronos: schedule=%s %s block has no target entity selected",
                     sched_name, device_type,
                 )
+                return
+            # On-demand scene: do NOT activate the scene now (that would turn
+            # on the lights it controls). Instead arm a watcher so the scene
+            # applies only when one of its member entities is switched on
+            # during the block window, or immediately for members already on.
+            # See _arm_scene_ondemand.
+            if device_type == "scene" and action.get("mode") == "on_demand":
+                await self._arm_scene_ondemand(sched, entity_ids)
                 return
             executed: list[str] = []
             for ent in entity_ids:

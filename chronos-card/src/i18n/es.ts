@@ -132,6 +132,8 @@ export const ES_STRINGS: Record<string, string> = {
   "wizard.devices.scene_tile": "Activar escena (genérico)",
   "wizard.devices.scene_tile.desc": "Una programación, una escena distinta por bloque horario",
   "wizard.review.scene_mode": "Modo escenas (sin dispositivos)",
+  "editor.scene.on_demand.label": "Aplicar bajo demanda",
+  "editor.scene.on_demand.hint": "No activa la escena al inicio del bloque (encendería las luces). La aplica solo cuando un dispositivo de la escena se enciende durante el bloque, o de inmediato si ya está encendido.",
   "editor.scene.section": "Programación basada en escenas",
   "editor.scene.section.hint": "Las programaciones de escenas activan una escena distinta en cada bloque horario.",
   "editor.scene.no_devices": "Las escenas no necesitan dispositivos: cada bloque horario elige en el panel derecho qué escena activar.",

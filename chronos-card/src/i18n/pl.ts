@@ -132,6 +132,8 @@ export const PL_STRINGS: Record<string, string> = {
   "wizard.devices.scene_tile": "Aktywacja sceny (ogólne)",
   "wizard.devices.scene_tile.desc": "Jeden harmonogram, inna scena w każdym bloku czasowym",
   "wizard.review.scene_mode": "Tryb scen (bez urządzeń)",
+  "editor.scene.on_demand.label": "Zastosuj na żądanie",
+  "editor.scene.on_demand.hint": "Nie aktywuje sceny na początku bloku (włączyłoby to światła). Stosuje scenę dopiero, gdy urządzenie ze sceny zostanie włączone w trakcie bloku, albo od razu, jeśli już jest włączone.",
   "editor.scene.section": "Harmonogram oparty na scenach",
   "editor.scene.section.hint": "Harmonogramy scen aktywują inną scenę w każdym bloku czasowym.",
   "editor.scene.no_devices": "Sceny nie potrzebują urządzeń: każdy blok czasowy wybiera w prawym panelu, którą scenę aktywować.",

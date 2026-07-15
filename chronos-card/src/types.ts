@@ -40,11 +40,14 @@ export interface BlockAction {
    * extra because extras are forwarded verbatim to the HA service call.
    * Unset/0 = disabled. */
   auto_off_min?: number;
-  /** Irrigation only. "global" (default / undefined) = current behaviour:
-   * all valves of the block fire in parallel with the single `value`
-   * duration. "sequential" = Chronos runs the stations one at a time using
-   * the per-valve durations in `sequence`. */
-  mode?: "global" | "sequential";
+  /** Per-device-type behaviour flag.
+   * Irrigation: "global" (default) = all valves in parallel for `value`
+   * minutes; "sequential" = one station at a time using `sequence`.
+   * Scene: "on_demand" = don't activate the scene at block start (which
+   * would switch its lights on); apply it only when a member entity is
+   * turned on during the block window, or immediately for members already
+   * on. Unset = the classic behaviour (activate at block start). */
+  mode?: "global" | "sequential" | "on_demand";
   /** Irrigation sequential mode: ordered list of stations. The scheduler
    * opens each valve, waits its minutes, closes it, then moves to the
    * next. Total program length = sum of all minutes. */
