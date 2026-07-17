@@ -3,6 +3,7 @@ import { customElement, property } from "lit/decorators.js";
 import { chronosStyles } from "../styles";
 import { icon } from "../icons";
 import { t, attrLabel } from "../i18n";
+import { langFlag, haLogo } from "../flags";
 import {
   DEFAULT_TEMP_STOPS_CLIMATE,
   DEFAULT_TEMP_STOPS_BOILER,
@@ -42,8 +43,11 @@ export class ChronosSettingsScreen extends LitElement {
           <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("settings.language.title")}</h3><p class="card__sub">${t("settings.language.subtitle")}</p></div></div>
           <div class="segmented" style="flex-wrap:wrap">
             ${(["auto", "it", "en", "fr", "de", "es", "pt", "nl", "pl"] as const).map((v) => html`
-              <button data-active="${(s.language || "auto") === v}" @click=${() => this._updateSetting("language", v)}>
-                ${v === "auto" ? t("settings.language.auto") : v.toUpperCase()}
+              <button data-active="${(s.language || "auto") === v}" @click=${() => this._updateSetting("language", v)}
+                style="display:inline-flex;align-items:center;gap:6px">
+                ${v === "auto"
+                  ? html`${haLogo(14)} ${t("settings.language.auto")}`
+                  : html`${langFlag(v, 15)} ${v.toUpperCase()}`}
               </button>
             `)}
           </div>
