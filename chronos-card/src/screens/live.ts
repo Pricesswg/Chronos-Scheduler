@@ -153,16 +153,8 @@ export class ChronosLive extends LitElement {
         <!-- Interactive 24h strip -->
         ${forecast.length ? this._renderHourly(forecast, windUnit) : nothing}
 
-        <!-- Weather map -->
-        ${mapEnabled ? html`
-          <div class="card">
-            <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("live.map.title")}</h3><p class="card__sub">${t("live.map.subtitle")}</p></div></div>
-            <chronos-weather-map .lat=${lat} .lon=${lon}
-              .owmKey=${(settings as any)?.owm_api_key || ""} .dark=${isDark}></chronos-weather-map>
-          </div>
-        ` : nothing}
-
-        <!-- Live schedules -->
+        <!-- Live schedules: kept above the map so the "what is Chronos
+             doing right now" answer never scrolls below a 380px map. -->
         <div class="card">
           <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("live.schedules.title")}</h3><p class="card__sub">${liveSchedules.filter((l) => l.active).length}</p></div></div>
           <div class="col" style="gap:12px">
@@ -185,6 +177,15 @@ export class ChronosLive extends LitElement {
             `)}
           </div>
         </div>
+
+        <!-- Weather map -->
+        ${mapEnabled ? html`
+          <div class="card">
+            <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("live.map.title")}</h3><p class="card__sub">${t("live.map.subtitle")}</p></div></div>
+            <chronos-weather-map .lat=${lat} .lon=${lon}
+              .owmKey=${(settings as any)?.owm_api_key || ""} .dark=${isDark}></chronos-weather-map>
+          </div>
+        ` : nothing}
 
         <!-- Devices live -->
         <div class="card">

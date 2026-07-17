@@ -398,15 +398,37 @@ You can see:
 
 | Element | Description |
 |---|---|
-| Weather source | The Home Assistant weather entity used by Chronos |
-| Current weather | Current temperature, condition and wind, in the units reported by the weather entity |
-| 24 hour forecast | Forecast strip used by rules, color coded by severity |
-| Active schedules | Schedules currently evaluated by Chronos |
-| Current block | The block currently running |
-| Next block | The next scheduled block |
-| Rule effects | Whether a weather rule is changing the normal behavior |
+| Weather hero | Current temperature, feels-like, condition and stat chips (humidity, wind, gust, UV, pressure, rain rate) |
+| Source switcher | Only when local sensor overrides are mapped: read the weather entity, your local station, or compare both |
+| Sun card | Sunrise-to-sunset arc with the current sun position, daylight duration and a countdown to the next event |
+| Next 24 hours | Interactive forecast strip, color coded by severity; tap an hour for its details |
+| Active schedules | Schedules currently evaluated by Chronos, each with its running block and a compact timeline |
+| Weather map | Interactive map with animated rain radar (optional extra layers, see below) |
+| Devices | Real-time state of every imported device |
 
-Each forecast cell is colored by weather severity: green for fine conditions, yellow for cloud or fog, orange for rain, red for storms, hail or snow. Each cell also shows the hourly wind speed, and strong wind raises the severity even when the sky is clear (at least yellow from 30 km/h, orange from 50, red from 70). This makes it easy to decide at a glance whether to let wind sensitive schedules such as awnings or blinds run.
+### Local station compare
+
+If you mapped dedicated sensors in `Settings → Language and weather source → sensor overrides`, the hero shows a three-way switcher:
+
+- **Weather entity** reads the main `weather.*` entity (default).
+- **Local station** reads your mapped sensors; attributes without a mapped sensor show a dash.
+- **Compare** shows both values side by side. Each attribute gets a delta badge colored by how far apart the two sources are: green for physiological drift, amber for a gap worth watching, red for serious misalignment. Thresholds are tuned per attribute (for example 1 °C on temperature, 5% on humidity, 2 hPa on pressure).
+
+Use Compare to spot a drifting or miscalibrated probe at a glance, or to decide whether your local station is trustworthy enough to drive weather rules.
+
+### Interactive forecast
+
+Each forecast cell is colored by weather severity: green for fine conditions, yellow for cloud or fog, orange for rain, red for storms, hail or snow. Strong wind raises the severity even when the sky is clear (at least yellow from 30 km/h, orange from 50, red from 70). This makes it easy to decide at a glance whether to let wind sensitive schedules such as awnings or blinds run.
+
+Tapping a cell opens a detail row with the condition, temperature, rain amount and probability, wind and humidity for that hour.
+
+### Weather map
+
+The map is centered on your Home Assistant home zone and shows an animated precipitation radar (RainViewer): past frames plus a short nowcast, with play and scrub controls. The radar and the OpenStreetMap base map are free and need no account.
+
+The extra overlays (Temperature, Wind, Clouds, Pressure) use OpenWeatherMap tiles and require a personal API key entered under `Settings → Live screen`; see [Live screen](#live-screen) below for the registration steps. Without a key those chips stay disabled, the radar keeps working.
+
+Map tiles and radar frames are downloaded from the internet when the screen is open. If your installation must stay fully offline, turn the map off in `Settings → Live screen`; the rest of the Live status screen works without any external request.
 
 A schedule is only shown as active when it actually runs today, honoring the weekday mask, the yearly date range and sunrise/sunset anchors. A schedule that does not run today is clearly marked.
 
@@ -573,6 +595,22 @@ Dew point from a local weather station
 ```
 
 If an override is empty, Chronos uses the main weather entity for that attribute.
+
+---
+
+### Live screen
+
+This card controls the weather map shown on the Live status screen.
+
+**Show weather map** turns the interactive map on or off. The map downloads OpenStreetMap tiles and RainViewer radar frames from the internet at view time: turn it off if your installation must stay fully offline. Everything else on the Live status screen keeps working without external requests.
+
+**OpenWeatherMap API key** unlocks the extra map overlays: temperature, wind, clouds and pressure. The rain radar never needs it. To get a key:
+
+1. Create a free account at [home.openweathermap.org/users/sign_up](https://home.openweathermap.org/users/sign_up).
+2. Open the **My API keys** page and copy the default key. A freshly generated key can take a few hours to become active on OpenWeatherMap's side.
+3. Paste the key into `Settings → Live screen → OpenWeatherMap API key`. The field saves when you leave it.
+
+Once the key is active, the Temperature, Wind, Clouds and Pressure chips on the map toolbar become selectable. While the key is missing (or not active yet) the chips stay disabled, with a tooltip pointing back to this setting.
 
 ---
 
