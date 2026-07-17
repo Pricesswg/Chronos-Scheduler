@@ -239,6 +239,7 @@ The Live screen shows current conditions and running schedules at a glance:
 - **Sun card** with a sunrise-to-sunset arc, current sun position, daylight duration, and a countdown to the next sunset/sunrise.
 - **Interactive 24h strip**: tap any forecast hour to see its details (condition, temperature, rain amount and probability, wind, humidity). Cells are color-coded by weather severity, wind included.
 - **Weather map**: an interactive map (OpenStreetMap) centered on your home zone with an animated precipitation radar (RainViewer, past frames plus nowcast, play/scrub controls). The radar is free and needs no account.
+- **Animated weather backdrop**: the hero subtly animates with the current condition: breathing sun glow (cool variant on clear nights), drifting clouds, fog banks, rain with individually randomized drops, storm with wind-slanted rain and lightning flashes, snowfall. Pure CSS behind the content, honors the system reduced-motion preference, and can be turned off in `Settings → Live screen`.
 
 ### OpenWeatherMap layers (optional)
 

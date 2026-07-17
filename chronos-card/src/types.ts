@@ -218,6 +218,10 @@ export interface Settings {
    * clouds / pressure overlays on the Live weather map. Empty = only the
    * free RainViewer radar layer is available. */
   owm_api_key?: string;
+  /** Animated weather backdrop on the Live hero (sun glow, clouds, rain,
+   * lightning, snow driven by the weather condition). Default true;
+   * prefers-reduced-motion disables it regardless. */
+  live_fx?: boolean;
 }
 
 export interface ActionValueSpec {

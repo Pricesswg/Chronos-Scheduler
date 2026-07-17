@@ -76,6 +76,18 @@ export class ChronosSettingsScreen extends LitElement {
           <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("settings.live.title")}</h3><p class="card__sub">${t("settings.live.subtitle")}</p></div></div>
           <div class="device-row" style="border:none;padding:0 0 12px">
             <div class="device-row__main">
+              <div class="device-row__name">${t("settings.live.fx.title")}</div>
+              <div class="device-row__meta" style="font-family:var(--font-sans)">${t("settings.live.fx.desc")}</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" .checked=${s.live_fx ?? true}
+                @change=${(e: Event) => this._updateSetting("live_fx", (e.target as HTMLInputElement).checked)}/>
+              <span class="switch__track"></span>
+              <span class="switch__thumb"></span>
+            </label>
+          </div>
+          <div class="device-row" style="border:none;border-top:1px solid var(--border-soft);border-radius:0;padding:12px 0">
+            <div class="device-row__main">
               <div class="device-row__name">${t("settings.live.map.title")}</div>
               <div class="device-row__meta" style="font-family:var(--font-sans)">${t("settings.live.map.desc")}</div>
             </div>

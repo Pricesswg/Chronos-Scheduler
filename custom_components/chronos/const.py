@@ -1,5 +1,5 @@
 DOMAIN = "chronos"
-VERSION = "1.27.3"
+VERSION = "1.28.0"
 STORAGE_VERSION = 1
 STORAGE_KEY_DEVICES = f"{DOMAIN}.devices"
 STORAGE_KEY_SCHEDULES = f"{DOMAIN}.schedules"
@@ -369,6 +369,10 @@ DEFAULT_SETTINGS = {
     # clouds / pressure overlays on the Live weather map. Empty string =
     # radar only (RainViewer needs no key).
     "owm_api_key": "",
+    # Animated weather backdrop on the Live hero (sun glow, clouds, rain,
+    # lightning, snow picked from the weather condition). CSS-only; the
+    # card also honors prefers-reduced-motion regardless of this flag.
+    "live_fx": True,
 }
 
 # Auto-off timer for turn_on blocks: device type → switch-off service

@@ -74,6 +74,37 @@ const TEMP_BAD_TH = 2.5;
 
 type Source = "weather" | "local" | "compare";
 
+/** Animated hero backdrop, keyed off the weather entity's condition.
+ * Kinds group HA's condition states into one effect each. */
+type FxKind = "" | "sun" | "sun-night" | "partly" | "cloudy" | "windy" | "fog" | "rain" | "pour" | "storm" | "snow";
+
+const FX_BY_CONDITION: Record<string, FxKind> = {
+  sunny: "sun", "clear-night": "sun-night", partlycloudy: "partly",
+  cloudy: "cloudy", windy: "windy", "windy-variant": "windy", fog: "fog",
+  rainy: "rain", pouring: "pour",
+  lightning: "storm", "lightning-rainy": "storm", hail: "storm", exceptional: "storm",
+  snowy: "snow", "snowy-rainy": "snow",
+};
+
+interface FxDrop { left: number; dur: number; delay: number; len: number; op: number; w: number }
+
+/** Each drop gets its own random position, fall duration, phase, length,
+ * width and opacity, so no repeating pattern can show up (a tiled
+ * gradient would). speed > 1 makes the whole population fall faster. */
+function genDrops(n: number, speed: number): FxDrop[] {
+  return Array.from({ length: n }, () => {
+    const dur = (0.75 + Math.random() * 0.95) / speed;
+    return {
+      left: Math.random() * 104 - 2,
+      dur,
+      delay: -Math.random() * dur,
+      len: 14 + ((Math.random() * 26) | 0),
+      op: 0.22 + Math.random() * 0.5,
+      w: Math.random() < 0.22 ? 2 : 1,
+    };
+  });
+}
+
 function fmtNum(v: number): string {
   return Number.isInteger(v) ? String(v) : v.toFixed(1);
 }
@@ -98,6 +129,25 @@ export class ChronosLive extends LitElement {
   @state() private _source: Source = "weather";
   @state() private _selHour = 0;
 
+  /** Current backdrop kind and its generated raindrops. Plain fields on
+   * purpose: they change only when the condition (or the setting) does,
+   * which already arrives through a re-render. Memoizing here keeps hass
+   * churn from rerolling the random drops on every state update. */
+  private _fxKind: FxKind | null = null;
+  private _fxDrops: FxDrop[] = [];
+
+  private _fx(condition: string, enabled: boolean): FxKind {
+    const kind: FxKind = enabled ? FX_BY_CONDITION[condition] ?? "" : "";
+    if (kind !== this._fxKind) {
+      this._fxKind = kind;
+      this._fxDrops =
+        kind === "rain" ? genDrops(85, 1) :
+        kind === "pour" ? genDrops(115, 1.25) :
+        kind === "storm" ? genDrops(125, 1.45) : [];
+    }
+    return kind;
+  }
+
   render() {
     const { _schedules: schedules, _devices: devices, _forecast: forecast, _settings: settings } = this.card;
     const weatherEntity = settings?.weather_entity || "";
@@ -108,6 +158,7 @@ export class ChronosLive extends LitElement {
 
     const condition = weatherState?.state || "cloud";
     const windUnit = weatherState?.attributes?.wind_speed_unit || "km/h";
+    const fx = this._fx(condition, (settings as any)?.live_fx !== false);
 
     // Backend convention: days[0] = Monday (Python weekday()). JS getDay()
     // is 0 = Sunday, hence the +6 rotation. A schedule that doesn't run
@@ -146,7 +197,7 @@ export class ChronosLive extends LitElement {
 
         <!-- Hero: current conditions + sun arc -->
         <div class="grid-2" style="align-items:stretch">
-          ${this._renderHero(weatherState, weatherEntity, condition, sensorMap, hasLocal, source)}
+          ${this._renderHero(weatherState, weatherEntity, condition, sensorMap, hasLocal, source, fx)}
           ${this._renderSunCard()}
         </div>
 
@@ -214,6 +265,52 @@ export class ChronosLive extends LitElement {
 
   // ---------------------------------------------------------------- hero
 
+  /** The animated backdrop for the hero. Static markup per kind; rain
+   * kinds add the pre-generated random drops. */
+  private _renderFx(kind: FxKind) {
+    if (!kind) return nothing;
+    const clouds = (durations: number[]) => durations.map((d, i) => html`
+      <div class="lv-fx__cloud" style="width:${[340, 240, 200][i]}px;top:${[8, 44, 66][i]}%;animation-duration:${d}s;animation-delay:-${[0, 18, 31][i]}s;${i === 2 ? "opacity:.7" : ""}"></div>
+    `);
+    const drops = html`
+      <div class="lv-fx__drops ${kind === "storm" ? "lv-fx__drops--storm" : ""}">
+        ${this._fxDrops.map((d) => html`<i style="left:${d.left.toFixed(2)}%;height:${d.len}px;width:${d.w}px;opacity:${d.op.toFixed(2)};animation-duration:${d.dur.toFixed(2)}s;animation-delay:${d.delay.toFixed(2)}s"></i>`)}
+      </div>`;
+    switch (kind) {
+      case "sun":
+        return html`<div class="lv-fx__glow"></div>`;
+      case "sun-night":
+        return html`<div class="lv-fx__glow lv-fx__glow--night"></div>`;
+      case "partly":
+        return html`<div class="lv-fx__glow" style="opacity:.7"></div>
+          <div class="lv-fx__cloud" style="width:300px;top:16%;animation-duration:44s"></div>`;
+      case "cloudy":
+        return html`${clouds([36, 52, 44])}`;
+      case "windy":
+        return html`${clouds([15, 21, 18])}`;
+      case "fog":
+        return html`
+          <div class="lv-fx__fog" style="top:14%"></div>
+          <div class="lv-fx__fog" style="top:46%;animation-delay:-9s"></div>
+          <div class="lv-fx__fog" style="top:72%;animation-delay:-17s;height:60px"></div>`;
+      case "rain":
+      case "pour":
+        return html`
+          ${kind === "pour" ? html`<div class="lv-fx__dim" style="background:rgba(8,10,16,0.18)"></div>` : nothing}
+          <div class="lv-fx__cloud" style="width:320px;top:4%;animation-duration:47s"></div>
+          ${drops}`;
+      case "storm":
+        return html`
+          <div class="lv-fx__dim"></div>
+          <div class="lv-fx__cloud" style="width:360px;top:2%;animation-duration:30s"></div>
+          ${drops}
+          <div class="lv-fx__flash"></div>
+          <div class="lv-fx__flash lv-fx__flash--b"></div>`;
+      case "snow":
+        return html`<div class="lv-fx__snow lv-fx__snow--far"></div><div class="lv-fx__snow"></div>`;
+    }
+  }
+
   private _renderHero(
     weatherState: any,
     weatherEntity: string,
@@ -221,6 +318,7 @@ export class ChronosLive extends LitElement {
     sensorMap: Record<string, string>,
     hasLocal: boolean,
     source: Source,
+    fx: FxKind,
   ) {
     const wTemp = this._weatherVal(weatherState, "temperature");
     const lTemp = this._localVal("temperature");
@@ -240,6 +338,7 @@ export class ChronosLive extends LitElement {
 
     return html`
       <div class="lv-hero">
+        ${fx ? html`<div class="lv-fx">${this._renderFx(fx)}</div>` : nothing}
         ${hasLocal ? html`
           <div class="row" style="gap:6px;margin-bottom:12px">
             ${(["weather", "local", "compare"] as Source[]).map((s) => html`

@@ -725,4 +725,6 @@ export const PT_STRINGS: Record<string, string> = {
   "settings.live.owm.placeholder": "cole a sua chave…",
   "help.map.title": "Mapa meteorológico e API key",
   "help.map.body": "O ecrã Ao vivo inclui um mapa meteorológico interativo: o radar de chuva (RainViewer) e o mapa base (OpenStreetMap) são gratuitos e não exigem registo. As camadas adicionais (temperatura, vento, nuvens, pressão) usam mosaicos da OpenWeatherMap e precisam de uma API key pessoal: crie uma conta gratuita em openweathermap.org, abra a página \"My API keys\", copie a chave e cole-a em Definições → Ecrã ao vivo (uma chave recém-criada pode demorar algumas horas a ativar). Todos os dados do mapa são descarregados da internet ao visualizar: se a sua instalação tiver de ficar offline, desative o mapa na mesma secção das Definições.",
+  "settings.live.fx.title": "Fundo meteorológico animado",
+  "settings.live.fx.desc": "O painel do tempo do ecrã Ao vivo anima-se conforme as condições: sol, nuvens, nevoeiro, chuva, trovoada com relâmpagos, neve. Efeitos leves só em CSS; desativados automaticamente se o sistema pedir menos movimento.",
 };

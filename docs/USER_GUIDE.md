@@ -600,7 +600,9 @@ If an override is empty, Chronos uses the main weather entity for that attribute
 
 ### Live screen
 
-This card controls the weather map shown on the Live status screen.
+This card controls the Live status screen extras.
+
+**Animated weather background** animates the weather hero with the current condition: sun glow, drifting clouds, fog, randomized rain, storm with lightning, snow. The effects are lightweight CSS behind the text and are disabled automatically when the operating system asks for reduced motion. Turn this off if you prefer a fully static screen.
 
 **Show weather map** turns the interactive map on or off. The map downloads OpenStreetMap tiles and RainViewer radar frames from the internet at view time: turn it off if your installation must stay fully offline. Everything else on the Live status screen keeps working without external requests.
 

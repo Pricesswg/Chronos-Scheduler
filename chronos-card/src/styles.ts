@@ -576,6 +576,82 @@ export const chronosStyles = css`
   }
   .lv-src[data-on="1"] { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
 
+  /* Live hero: animated weather backdrop. Everything is transform /
+   * opacity / background-position CSS loops behind the hero content,
+   * capped at low opacity so the numbers stay readable. Rain drops are
+   * individual elements with randomized inline styles (see live.ts);
+   * the rest is static markup per condition. */
+  .lv-hero > :not(.lv-fx) { position: relative; z-index: 1; }
+  .lv-fx {
+    position: absolute; inset: 0; z-index: 0;
+    overflow: hidden; border-radius: inherit; pointer-events: none;
+  }
+  .lv-fx__glow {
+    position: absolute; width: 440px; height: 440px; right: -130px; top: -170px; border-radius: 50%;
+    background: radial-gradient(circle,
+      color-mix(in srgb, var(--weather) 30%, transparent),
+      color-mix(in srgb, var(--weather) 10%, transparent) 45%, transparent 70%);
+    animation: lvfx-breathe 7s ease-in-out infinite;
+  }
+  .lv-fx__glow--night {
+    background: radial-gradient(circle,
+      color-mix(in srgb, var(--info) 20%, transparent),
+      color-mix(in srgb, var(--info) 7%, transparent) 45%, transparent 70%);
+  }
+  @keyframes lvfx-breathe { 0%, 100% { transform: scale(1); opacity: .75; } 50% { transform: scale(1.14); opacity: 1; } }
+  .lv-fx__cloud {
+    position: absolute; height: 90px; border-radius: 999px;
+    background: color-mix(in srgb, var(--text) 6%, transparent); filter: blur(17px);
+    animation: lvfx-drift linear infinite;
+  }
+  @keyframes lvfx-drift { from { transform: translateX(-420px); } to { transform: translateX(1400px); } }
+  .lv-fx__fog {
+    position: absolute; left: -30%; width: 160%; height: 74px; border-radius: 999px;
+    background: color-mix(in srgb, var(--text) 5%, transparent); filter: blur(22px);
+    animation: lvfx-fogdrift 26s ease-in-out infinite alternate;
+  }
+  @keyframes lvfx-fogdrift { from { transform: translateX(-5%); } to { transform: translateX(5%); } }
+  .lv-fx__drops { position: absolute; inset: -20%; transform: rotate(12deg); }
+  .lv-fx__drops--storm { transform: rotate(18deg); }
+  .lv-fx__drops i {
+    position: absolute; top: -46px; display: block; border-radius: 1px;
+    background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--info) 75%, transparent));
+    animation: lvfx-drop linear infinite;
+  }
+  @keyframes lvfx-drop { to { transform: translateY(840px); } }
+  .lv-fx__dim { position: absolute; inset: 0; background: rgba(8, 10, 16, 0.32); }
+  .lv-fx__flash {
+    position: absolute; inset: 0; opacity: 0;
+    background: radial-gradient(80% 60% at 62% 0%,
+      rgba(214, 226, 255, 0.85), rgba(160, 190, 255, 0.22) 55%, transparent 78%);
+    animation: lvfx-lightning 7s infinite;
+  }
+  .lv-fx__flash--b { animation-delay: 3.4s; animation-duration: 9.5s; }
+  @keyframes lvfx-lightning {
+    0%, 96.4%, 100% { opacity: 0; }
+    97% { opacity: .55; }
+    97.5% { opacity: .06; }
+    98.1% { opacity: .8; }
+    99% { opacity: 0; }
+  }
+  .lv-fx__snow {
+    position: absolute; inset: 0; opacity: .8;
+    background-image:
+      radial-gradient(2.1px 2.1px at 22% 24%, color-mix(in srgb, var(--text) 55%, transparent), transparent 60%),
+      radial-gradient(1.7px 1.7px at 64% 58%, color-mix(in srgb, var(--text) 42%, transparent), transparent 60%),
+      radial-gradient(1.4px 1.4px at 86% 12%, color-mix(in srgb, var(--text) 34%, transparent), transparent 60%),
+      radial-gradient(1.9px 1.9px at 40% 80%, color-mix(in srgb, var(--text) 48%, transparent), transparent 60%);
+    background-size: 150px 150px;
+    animation: lvfx-snowfall 11s linear infinite;
+  }
+  .lv-fx__snow--far { background-size: 220px 220px; opacity: .5; animation: lvfx-snowfall-far 17s linear infinite; }
+  @keyframes lvfx-snowfall { from { background-position: 0 0; } to { background-position: 150px 300px; } }
+  @keyframes lvfx-snowfall-far { from { background-position: 0 0; } to { background-position: -220px 440px; } }
+  @media (prefers-reduced-motion: reduce) {
+    .lv-fx, .lv-fx * { animation: none !important; }
+    .lv-fx__drops, .lv-fx__flash { display: none; }
+  }
+
   /* Live screen: interactive hourly strip */
   .lv-hours { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 6px; }
   .lv-hour {
