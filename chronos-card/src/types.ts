@@ -210,6 +210,14 @@ export interface Settings {
   offline_recall?: boolean;
   /** Max recall attempts per (schedule, entity). Default 3. */
   offline_recall_max_attempts?: number;
+  /** Weather map on the Live screen. Tiles (OpenStreetMap) and radar
+   * (RainViewer) are fetched from the internet at view time, so offline
+   * installations can switch the whole map off. Default true. */
+  live_map?: boolean;
+  /** Optional OpenWeatherMap API key. Unlocks the temperature / wind /
+   * clouds / pressure overlays on the Live weather map. Empty = only the
+   * free RainViewer radar layer is available. */
+  owm_api_key?: string;
 }
 
 export interface ActionValueSpec {

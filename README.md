@@ -230,6 +230,28 @@ A dedicated History screen lists every block dispatch and rule trigger Chronos p
 
 Useful for debugging "why didn't my schedule fire" or "did the SOC rule trigger last night".
 
+## Live screen
+
+The Live screen shows current conditions and running schedules at a glance:
+
+- **Weather hero** with temperature, feels-like, and stat chips (humidity, wind, gust, UV, pressure, rain rate) read from your weather entity.
+- **Local station compare**: if you mapped local sensors in `Settings → Weather → sensor overrides`, a source switcher appears on the hero. "Local station" reads your own probes, "Compare" shows both sources side by side with a color-coded delta badge per attribute, making drift between your station and the provider visible immediately.
+- **Sun card** with a sunrise-to-sunset arc, current sun position, daylight duration, and a countdown to the next sunset/sunrise.
+- **Interactive 24h strip**: tap any forecast hour to see its details (condition, temperature, rain amount and probability, wind, humidity). Cells are color-coded by weather severity, wind included.
+- **Weather map**: an interactive map (OpenStreetMap) centered on your home zone with an animated precipitation radar (RainViewer, past frames plus nowcast, play/scrub controls). The radar is free and needs no account.
+
+### OpenWeatherMap layers (optional)
+
+The map's extra overlays (temperature, wind, clouds, pressure) use OpenWeatherMap tiles and need a personal API key:
+
+1. Create a free account at [openweathermap.org](https://home.openweathermap.org/users/sign_up).
+2. Open the "My API keys" page and copy the default key (a freshly created key can take a few hours to activate).
+3. Paste it into `Settings → Live screen → OpenWeatherMap API key`.
+
+Without a key the map still works with the RainViewer radar; the OWM layer chips just stay disabled.
+
+Note: map tiles and radar frames are fetched from the internet by the browser at view time. If your installation must stay fully offline, turn the map off in `Settings → Live screen`; the rest of the Live screen works without any external request.
+
 ## Sequential irrigation
 
 Irrigation schedules support two duration modes per time block:

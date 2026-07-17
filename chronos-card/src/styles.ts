@@ -533,47 +533,71 @@ export const chronosStyles = css`
     border-top: 1px solid var(--border-soft);
   }
 
-  /* Weather hero */
-  .weather-hero {
-    display: grid; grid-template-columns: auto 1fr auto;
-    gap: 18px; align-items: center; padding: 18px;
-    border-radius: var(--r-lg);
-    background: linear-gradient(135deg, color-mix(in srgb, var(--weather) 14%, var(--surface)), var(--surface));
-    border: 1px solid var(--border);
+  /* Live screen: weather hero with source switcher */
+  .lv-hero {
+    position: relative; overflow: hidden; padding: 18px;
+    border-radius: var(--r-lg); border: 1px solid var(--border);
+    background:
+      radial-gradient(120% 140% at 85% -20%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 55%),
+      radial-gradient(90% 120% at 10% 120%, color-mix(in srgb, var(--info) 15%, transparent), transparent 60%),
+      var(--surface);
   }
-  .weather-hero__icon {
-    width: 64px; height: 64px; border-radius: 18px;
-    background: color-mix(in srgb, var(--weather) 25%, white);
+  .lv-hero__icon {
+    width: 56px; height: 56px; border-radius: 16px; flex: 0 0 auto;
+    background: color-mix(in srgb, var(--weather) 22%, var(--surface));
     display: grid; place-items: center; color: var(--weather-ink);
   }
-  .weather-hero__icon svg { width: 32px; height: 32px; }
-  .weather-hero__temp { font-size: 34px; font-weight: 700; letter-spacing: -0.03em; font-family: var(--font-mono); }
-  .weather-hero__cond { color: var(--text-soft); font-size: 13px; }
+  .lv-temp {
+    font-size: 48px; font-weight: 700; letter-spacing: -0.04em; line-height: 1;
+    font-family: var(--font-mono);
+  }
+  .lv-temp__alt { font-size: 22px; color: var(--text-soft); margin-left: 4px; }
+  .lv-cond { color: var(--text-soft); font-size: 14px; margin-top: 5px; }
+  .lv-stats { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+  .lv-stat {
+    background: color-mix(in srgb, var(--text) 4%, transparent);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--r-md); padding: 8px 12px; min-width: 88px;
+  }
+  .lv-stat b { display: block; font-size: 15px; font-weight: 650; font-family: var(--font-mono); }
+  .lv-stat .lbl { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .lv-stat .cmp { display: block; font-size: 11px; color: var(--text-soft); font-family: var(--font-mono); margin-top: 2px; }
+  .lv-delta {
+    display: inline-block; margin-left: 5px; padding: 0 5px; border-radius: 6px;
+    font-size: 9.5px; font-family: var(--font-mono); vertical-align: middle;
+  }
+  .lv-delta[data-lvl="ok"] { background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok); }
+  .lv-delta[data-lvl="warn"] { background: color-mix(in srgb, var(--warn) 15%, transparent); color: var(--warn); }
+  .lv-delta[data-lvl="bad"] { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
+  .lv-src {
+    padding: 3px 10px; border-radius: var(--r-pill); font-size: 11px; cursor: pointer;
+    background: var(--bg-sunken); border: 1px solid var(--border-soft);
+    color: var(--text-soft); font-family: inherit;
+  }
+  .lv-src[data-on="1"] { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
 
-  /* Forecast strip: fixed grid, no horizontal scroll. 12 cells split in
-   * two rows of 6 so all hours stay visible without panning. The grid
-   * naturally fits the parent card width: when the card narrows the cells
-   * shrink instead of overflowing or scrolling. */
-  .forecast-row {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 8px;
-    width: 100%;
+  /* Live screen: interactive hourly strip */
+  .lv-hours { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 6px; }
+  .lv-hour {
+    flex: 1 0 44px; border: 1px solid transparent; border-radius: var(--r-md);
+    padding: 8px 3px 6px; text-align: center; cursor: pointer;
+    background: transparent; color: var(--text); font-family: inherit;
   }
-  .forecast-cell {
-    min-width: 0;
-    text-align: center; padding: 10px 4px;
-    border-radius: var(--r-md); background: var(--bg-sunken); border: 1px solid var(--border-soft);
-    overflow: hidden;
+  .lv-hour:hover { background: var(--bg-sunken); }
+  .lv-hour[data-sel="1"] { background: var(--accent-soft); border-color: var(--accent); }
+  .lv-hour .h { font-size: 10px; color: var(--text-muted); }
+  .lv-hour .ic { margin-top: 4px; }
+  .lv-hour .ic svg { width: 16px; height: 16px; }
+  .lv-hour .tp { font-size: 12.5px; font-weight: 650; margin-top: 2px; }
+  .lv-hour .bar { width: 6px; margin: 5px auto 0; border-radius: 3px; opacity: 0.85; }
+  .lv-hour .rn { font-size: 9px; color: var(--info); margin-top: 2px; min-height: 11px; }
+  .lv-detail {
+    display: flex; gap: 20px; flex-wrap: wrap; padding: 10px 4px 0;
+    color: var(--text-soft); font-size: 12.5px;
+    border-top: 1px solid var(--border-soft); margin-top: 6px;
   }
-  .forecast-cell__hour { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
-  .forecast-cell__icon { color: var(--weather-ink); margin: 6px 0 4px; }
-  .forecast-cell__icon svg { width: 20px; height: 20px; }
-  .forecast-cell__temp { font-size: 13px; font-weight: 600; font-family: var(--font-mono); }
-  .forecast-cell__wind {
-    font-size: 10px; color: var(--text-muted); font-family: var(--font-mono);
-    display: flex; align-items: center; justify-content: center; gap: 3px; margin-top: 3px;
-  }
+  .lv-detail b { color: var(--text); font-weight: 650; }
+  .lv-detail span { display: inline-flex; align-items: center; gap: 5px; }
 
   /* KPI */
   .kpi { padding: 16px; border-radius: var(--r-lg); background: var(--surface); border: 1px solid var(--border); }
@@ -694,9 +718,10 @@ export const chronosStyles = css`
     .kpi__value { font-size: 22px; }
     .sched-card { padding: 12px; gap: 10px; }
     .grid-auto { grid-template-columns: 1fr !important; }
-    /* Forecast: fewer columns on phone so each hour stays legible. 12
-     * cells become 3 rows of 4 instead of 2 rows of 6. */
-    .forecast-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    /* Hourly strip on phone: keep the horizontal scroll but make the
+     * tap targets a touch wider so fingers land on the right hour. */
+    .lv-hour { flex-basis: 48px; }
+    .lv-temp { font-size: 40px; }
     .wr-vars { max-height: 260px; }
     .segmented button { padding: 5px 8px; font-size: 11.5px; }
     .btn { padding: 7px 10px; font-size: 12.5px; }

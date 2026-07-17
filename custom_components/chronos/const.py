@@ -1,5 +1,5 @@
 DOMAIN = "chronos"
-VERSION = "1.26.2"
+VERSION = "1.27.0"
 STORAGE_VERSION = 1
 STORAGE_KEY_DEVICES = f"{DOMAIN}.devices"
 STORAGE_KEY_SCHEDULES = f"{DOMAIN}.schedules"
@@ -361,6 +361,14 @@ DEFAULT_SETTINGS = {
     # Irrigation is excluded by design.
     "offline_recall": True,
     "offline_recall_max_attempts": 3,
+    # Live screen weather map. Base tiles (OpenStreetMap) and the rain
+    # radar (RainViewer) are fetched by the browser at view time, so
+    # offline installations can turn the map off entirely.
+    "live_map": True,
+    # Optional OpenWeatherMap API key: unlocks the temperature / wind /
+    # clouds / pressure overlays on the Live weather map. Empty string =
+    # radar only (RainViewer needs no key).
+    "owm_api_key": "",
 }
 
 # Auto-off timer for turn_on blocks: device type → switch-off service

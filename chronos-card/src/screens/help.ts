@@ -291,6 +291,18 @@ export class ChronosHelpScreen extends LitElement {
         ${this._renderFaq()}
 
         <div class="card">
+          <h3 class="card__title" style="margin:0 0 6px">${t("help.map.title")}</h3>
+          <p class="text-sm" style="margin:0;color:var(--text-soft);line-height:1.55">
+            ${t("help.map.body")}
+          </p>
+          <a class="btn btn--ghost btn--sm" href="https://home.openweathermap.org/users/sign_up"
+            target="_blank" rel="noopener noreferrer"
+            style="text-decoration:none;margin-top:10px;display:inline-flex">
+            ${icon("cloud", 13)} openweathermap.org
+          </a>
+        </div>
+
+        <div class="card">
           <h3 class="card__title" style="margin:0 0 10px">${t("help.glossary.title")}</h3>
           <div class="col" style="gap:10px">
             ${[

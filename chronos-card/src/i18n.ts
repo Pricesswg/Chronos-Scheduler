@@ -391,6 +391,59 @@ const STRINGS: Record<string, Record<BaseLang, string>> = {
   "live.condition.windy": { it: "Ventoso", en: "Windy", fr: "Venteux", de: "Windig" },
   "live.not_today": { it: "Non in programma oggi", en: "Not scheduled today", fr: "Pas prévu aujourd'hui", de: "Heute nicht geplant" },
 
+  // Live: weather source switcher (weather entity vs local station sensors)
+  "live.source.weather": { it: "Entità weather", en: "Weather entity", fr: "Entité météo", de: "Wetter-Entität" },
+  "live.source.local": { it: "Stazione locale", en: "Local station", fr: "Station locale", de: "Lokale Station" },
+  "live.source.compare": { it: "Confronto", en: "Compare", fr: "Comparer", de: "Vergleich" },
+  "live.source.local_short": { it: "locale", en: "local", fr: "locale", de: "lokal" },
+  "live.source.note.local": { it: "Sorgente: sensori della stazione locale (Impostazioni → override sensori)", en: "Source: local station sensors (Settings → sensor overrides)", fr: "Source : capteurs de la station locale (Réglages → surcharges capteurs)", de: "Quelle: Sensoren der lokalen Station (Einstellungen → Sensor-Overrides)" },
+  "live.source.note.compare": { it: "Entità weather vs stazione locale · il badge indica lo scostamento", en: "Weather entity vs local station · the badge shows the offset", fr: "Entité météo vs station locale · le badge indique l'écart", de: "Wetter-Entität vs. lokale Station · das Badge zeigt die Abweichung" },
+  "live.feels_like": { it: "percepita {v}", en: "feels like {v}", fr: "ressenti {v}", de: "gefühlt {v}" },
+  "live.stat.humidity": { it: "Umidità", en: "Humidity", fr: "Humidité", de: "Luftfeuchte" },
+  "live.stat.wind": { it: "Vento", en: "Wind", fr: "Vent", de: "Wind" },
+  "live.stat.gust": { it: "Raffica", en: "Gust", fr: "Rafale", de: "Böe" },
+  "live.stat.uv": { it: "UV", en: "UV", fr: "UV", de: "UV" },
+  "live.stat.pressure": { it: "Pressione", en: "Pressure", fr: "Pression", de: "Druck" },
+  "live.stat.rain": { it: "Pioggia", en: "Rain", fr: "Pluie", de: "Regen" },
+
+  // Live: sun arc card
+  "live.sun.title": { it: "Sole", en: "Sun", fr: "Soleil", de: "Sonne" },
+  "live.sun.daylight": { it: "{v} di luce", en: "{v} of daylight", fr: "{v} de jour", de: "{v} Tageslicht" },
+  "live.sun.to_sunset": { it: "{v} al tramonto", en: "{v} to sunset", fr: "{v} avant le coucher", de: "{v} bis Sonnenuntergang" },
+  "live.sun.to_sunrise": { it: "{v} all'alba", en: "{v} to sunrise", fr: "{v} avant le lever", de: "{v} bis Sonnenaufgang" },
+
+  // Live: interactive hourly strip
+  "live.hourly.title": { it: "Prossime 24 ore", en: "Next 24 hours", fr: "Prochaines 24 heures", de: "Nächste 24 Stunden" },
+  "live.hourly.hint": { it: "Tocca un'ora per i dettagli", en: "Tap an hour for details", fr: "Touchez une heure pour les détails", de: "Für Details eine Stunde antippen" },
+  "live.hourly.rain_prob": { it: "prob. pioggia", en: "rain chance", fr: "prob. pluie", de: "Regenrisiko" },
+
+  // Live: weather map
+  "live.map.title": { it: "Mappa meteo", en: "Weather map", fr: "Carte météo", de: "Wetterkarte" },
+  "live.map.subtitle": { it: "Radar pioggia RainViewer · mappa OpenStreetMap", en: "RainViewer rain radar · OpenStreetMap tiles", fr: "Radar de pluie RainViewer · fond OpenStreetMap", de: "RainViewer-Regenradar · OpenStreetMap-Karte" },
+  "live.map.layer.radar": { it: "Radar", en: "Radar", fr: "Radar", de: "Radar" },
+  "live.map.layer.temp": { it: "Temperatura", en: "Temperature", fr: "Température", de: "Temperatur" },
+  "live.map.layer.wind": { it: "Vento", en: "Wind", fr: "Vent", de: "Wind" },
+  "live.map.layer.clouds": { it: "Nuvole", en: "Clouds", fr: "Nuages", de: "Wolken" },
+  "live.map.layer.pressure": { it: "Pressione", en: "Pressure", fr: "Pression", de: "Druck" },
+  "live.map.needs_key": { it: "Richiede una API key OpenWeatherMap · Impostazioni → Schermata live", en: "Needs an OpenWeatherMap API key · Settings → Live screen", fr: "Nécessite une clé API OpenWeatherMap · Réglages → Écran en direct", de: "Benötigt einen OpenWeatherMap-API-Schlüssel · Einstellungen → Live-Ansicht" },
+  "live.map.radar_error": { it: "Radar non disponibile", en: "Radar unavailable", fr: "Radar indisponible", de: "Radar nicht verfügbar" },
+  "live.map.nowcast": { it: "previsione", en: "forecast", fr: "prévision", de: "Prognose" },
+  "live.map.play": { it: "Avvia l'animazione radar", en: "Play the radar animation", fr: "Lancer l'animation radar", de: "Radar-Animation abspielen" },
+  "live.map.pause": { it: "Pausa", en: "Pause", fr: "Pause", de: "Pause" },
+
+  // Settings: Live screen section
+  "settings.live.title": { it: "Schermata live", en: "Live screen", fr: "Écran en direct", de: "Live-Ansicht" },
+  "settings.live.subtitle": { it: "Meteo interattivo e mappa", en: "Interactive weather and map", fr: "Météo interactive et carte", de: "Interaktives Wetter und Karte" },
+  "settings.live.map.title": { it: "Mostra mappa meteo", en: "Show weather map", fr: "Afficher la carte météo", de: "Wetterkarte anzeigen" },
+  "settings.live.map.desc": { it: "Mappa interattiva con radar pioggia nella schermata Live. Tile OpenStreetMap e radar RainViewer vengono scaricati da internet alla visualizzazione: disattiva per installazioni offline.", en: "Interactive map with rain radar on the Live screen. OpenStreetMap tiles and the RainViewer radar are fetched from the internet at view time: turn off for offline installations.", fr: "Carte interactive avec radar de pluie sur l'écran en direct. Les tuiles OpenStreetMap et le radar RainViewer sont téléchargés à l'affichage : désactivez pour les installations hors ligne.", de: "Interaktive Karte mit Regenradar in der Live-Ansicht. OpenStreetMap-Kacheln und das RainViewer-Radar werden beim Anzeigen aus dem Internet geladen: für Offline-Installationen abschalten." },
+  "settings.live.owm.title": { it: "API key OpenWeatherMap", en: "OpenWeatherMap API key", fr: "Clé API OpenWeatherMap", de: "OpenWeatherMap-API-Schlüssel" },
+  "settings.live.owm.desc": { it: "Opzionale: sblocca i layer temperatura, vento, nuvole e pressione sulla mappa. Crea un account gratuito su openweathermap.org e incolla qui la chiave dalla pagina \"My API keys\" (l'attivazione può richiedere qualche ora).", en: "Optional: unlocks the temperature, wind, clouds and pressure map layers. Create a free account at openweathermap.org and paste the key from the \"My API keys\" page here (activation can take a few hours).", fr: "Facultatif : débloque les couches température, vent, nuages et pression sur la carte. Créez un compte gratuit sur openweathermap.org et collez ici la clé de la page « My API keys » (l'activation peut prendre quelques heures).", de: "Optional: schaltet die Karten-Overlays Temperatur, Wind, Wolken und Druck frei. Kostenloses Konto auf openweathermap.org anlegen und den Schlüssel von der Seite \"My API keys\" hier einfügen (Aktivierung kann einige Stunden dauern)." },
+  "settings.live.owm.placeholder": { it: "incolla la chiave…", en: "paste your key…", fr: "collez votre clé…", de: "Schlüssel einfügen…" },
+
+  // Help: weather map & OWM key guide
+  "help.map.title": { it: "Mappa meteo e API key", en: "Weather map & API key", fr: "Carte météo et clé API", de: "Wetterkarte & API-Schlüssel" },
+  "help.map.body": { it: "La schermata Live include una mappa meteo interattiva: il radar pioggia (RainViewer) e la mappa di base (OpenStreetMap) sono gratuiti e non richiedono registrazione. I layer aggiuntivi (temperatura, vento, nuvole, pressione) usano le tile di OpenWeatherMap e richiedono una API key personale: crea un account gratuito su openweathermap.org, apri la pagina \"My API keys\", copia la chiave e incollala in Impostazioni → Schermata live (l'attivazione di una chiave nuova può richiedere qualche ora). Tutti i dati della mappa vengono scaricati da internet al momento della visualizzazione: se la tua installazione deve restare offline, disattiva la mappa dalla stessa sezione delle Impostazioni.", en: "The Live screen includes an interactive weather map: the rain radar (RainViewer) and the base map (OpenStreetMap) are free and need no registration. The extra layers (temperature, wind, clouds, pressure) use OpenWeatherMap tiles and need a personal API key: create a free account at openweathermap.org, open the \"My API keys\" page, copy the key and paste it into Settings → Live screen (a freshly created key can take a few hours to activate). All map data is fetched from the internet at view time: if your installation must stay offline, turn the map off in the same Settings section.", fr: "L'écran en direct inclut une carte météo interactive : le radar de pluie (RainViewer) et le fond de carte (OpenStreetMap) sont gratuits et sans inscription. Les couches supplémentaires (température, vent, nuages, pression) utilisent les tuiles OpenWeatherMap et nécessitent une clé API personnelle : créez un compte gratuit sur openweathermap.org, ouvrez la page « My API keys », copiez la clé et collez-la dans Réglages → Écran en direct (une nouvelle clé peut mettre quelques heures à s'activer). Toutes les données de la carte sont téléchargées d'internet à l'affichage : si votre installation doit rester hors ligne, désactivez la carte dans la même section des Réglages.", de: "Die Live-Ansicht enthält eine interaktive Wetterkarte: Regenradar (RainViewer) und Basiskarte (OpenStreetMap) sind kostenlos und ohne Registrierung. Die zusätzlichen Ebenen (Temperatur, Wind, Wolken, Druck) nutzen OpenWeatherMap-Kacheln und benötigen einen persönlichen API-Schlüssel: kostenloses Konto auf openweathermap.org anlegen, die Seite \"My API keys\" öffnen, den Schlüssel kopieren und unter Einstellungen → Live-Ansicht einfügen (die Aktivierung eines neuen Schlüssels kann einige Stunden dauern). Alle Kartendaten werden beim Anzeigen aus dem Internet geladen: muss die Installation offline bleiben, die Karte im selben Einstellungsbereich abschalten." },
+
   // Week
   "week.subtitle": { it: "Vista a 7 giorni · {n} schedulazioni attive", en: "7-day view · {n} active schedules", fr: "Vue 7 jours · {n} planifications actives", de: "7-Tage-Ansicht · {n} aktive Zeitpläne" },
   "week.legend": { it: "Legenda", en: "Legend", fr: "Légende", de: "Legende" },

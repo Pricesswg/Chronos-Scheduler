@@ -1,13 +1,14 @@
 import { LitElement, html, nothing } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import { chronosStyles } from "../styles";
 import { icon, deviceIcon, weatherIcon } from "../icons";
 import { getDeviceColor } from "../device-colors";
 import { actionLabel } from "../actions";
-import { fmtHour, resolveBlockTime } from "../utils";
+import { resolveBlockTime } from "../utils";
 import { t } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
 import "../timeline";
+import "../weather-map";
 
 /** Weather severity buckets for the forecast strip: 0 = fine (green),
  * 1 = degraded (cloudy/fog/wind, yellow), 2 = bad (rain, orange),
@@ -40,6 +41,53 @@ function severityFor(cond: string, windKmh: number | null): number {
   return sev;
 }
 
+/** Chronos attribute key → possible attribute names on the weather entity.
+ * Chronos keys match the rules engine / sensor override map; the aliases
+ * cover HA core naming (apparent_temperature, wind_gust_speed) so the hero
+ * shows values for standard weather integrations too. */
+const ATTR_ALIASES: Record<string, string[]> = {
+  temperature: ["temperature"],
+  feels_like: ["feels_like", "apparent_temperature"],
+  humidity: ["humidity"],
+  wind_speed: ["wind_speed"],
+  wind_gust: ["wind_gust", "wind_gust_speed"],
+  pressure: ["pressure"],
+  uv_index: ["uv_index"],
+  rain_rate: ["rain_rate", "precipitation"],
+};
+
+/** Hero stat chips. warnTh/badTh: |weather − local| thresholds that color
+ * the compare badge (green below warnTh, amber, red from badTh). Units are
+ * whatever each source reports; thresholds assume the HA defaults (%, km/h,
+ * hPa, mm/h), which is also what the rules engine assumes. */
+const HERO_STATS: { key: string; label: string; unitAttr: string; defUnit: string; warnTh: number; badTh: number }[] = [
+  { key: "humidity", label: "live.stat.humidity", unitAttr: "", defUnit: "%", warnTh: 5, badTh: 12 },
+  { key: "wind_speed", label: "live.stat.wind", unitAttr: "wind_speed_unit", defUnit: "km/h", warnTh: 5, badTh: 12 },
+  { key: "wind_gust", label: "live.stat.gust", unitAttr: "wind_speed_unit", defUnit: "km/h", warnTh: 8, badTh: 15 },
+  { key: "uv_index", label: "live.stat.uv", unitAttr: "", defUnit: "", warnTh: 1, badTh: 2.5 },
+  { key: "pressure", label: "live.stat.pressure", unitAttr: "pressure_unit", defUnit: "hPa", warnTh: 2, badTh: 5 },
+  { key: "rain_rate", label: "live.stat.rain", unitAttr: "precipitation_unit", defUnit: "mm", warnTh: 0.5, badTh: 2 },
+];
+
+const TEMP_WARN_TH = 1;
+const TEMP_BAD_TH = 2.5;
+
+type Source = "weather" | "local" | "compare";
+
+function fmtNum(v: number): string {
+  return Number.isInteger(v) ? String(v) : v.toFixed(1);
+}
+
+function fmtDur(ms: number): string {
+  const m = Math.max(0, Math.round(ms / 60000));
+  const h = Math.floor(m / 60);
+  return h > 0 ? `${h}h ${String(m % 60).padStart(2, "0")}m` : `${m}m`;
+}
+
+function fmtClock(d: Date): string {
+  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
 @customElement("chronos-live")
 export class ChronosLive extends LitElement {
   static styles = chronosStyles;
@@ -47,21 +95,19 @@ export class ChronosLive extends LitElement {
   @property({ attribute: false, hasChanged: () => true }) card!: ChronosCard;
   @property({ type: Number }) nowHour = 0;
 
+  @state() private _source: Source = "weather";
+  @state() private _selHour = 0;
+
   render() {
     const { _schedules: schedules, _devices: devices, _forecast: forecast, _settings: settings } = this.card;
     const weatherEntity = settings?.weather_entity || "";
     const weatherState = weatherEntity ? this.card.hass?.states?.[weatherEntity] : null;
+    const sensorMap: Record<string, string> = (settings as any)?.weather_sensor_map || {};
+    const hasLocal = Object.keys(sensorMap).some((k) => this._localVal(k) !== null);
+    const source: Source = hasLocal ? this._source : "weather";
 
-    const temp = weatherState?.attributes?.temperature ?? "—";
-    const tempUnit = weatherState?.attributes?.temperature_unit || "°C";
     const condition = weatherState?.state || "cloud";
-    const humidity = weatherState?.attributes?.humidity ?? "—";
-    const windSpeed = weatherState?.attributes?.wind_speed ?? "—";
     const windUnit = weatherState?.attributes?.wind_speed_unit || "km/h";
-    const heroColor = SEVERITY_COLORS[severityFor(
-      condition,
-      typeof windSpeed === "number" ? toKmh(windSpeed, windUnit) : null,
-    )];
 
     // Backend convention: days[0] = Monday (Python weekday()). JS getDay()
     // is 0 = Sunday, hence the +6 rotation. A schedule that doesn't run
@@ -79,6 +125,13 @@ export class ChronosLive extends LitElement {
       return { schedule: s, active, today };
     });
 
+    const homeZone = this.card.hass?.states?.["zone.home"];
+    const lat = homeZone?.attributes?.latitude;
+    const lon = homeZone?.attributes?.longitude;
+    const mapEnabled = (settings as any)?.live_map !== false && typeof lat === "number" && typeof lon === "number";
+    const isDark = settings?.theme === "dark"
+      || (settings?.theme !== "light" && !!this.card.hass?.themes?.darkMode);
+
     return html`
       <div class="col" style="gap:22px">
         <div class="sp-between">
@@ -91,43 +144,23 @@ export class ChronosLive extends LitElement {
           </div>
         </div>
 
-        <!-- Weather hero -->
-        <div class="grid-2">
-          <div class="weather-hero">
-            <div class="weather-hero__icon" style="color:${heroColor};background:color-mix(in srgb, ${heroColor} 16%, var(--surface))">${weatherIcon(condition, 32)}</div>
-            <div>
-              <div class="weather-hero__temp">${temp}<span style="font-size:16px;color:var(--text-muted)">${tempUnit}</span></div>
-              <div class="weather-hero__cond">${this._conditionLabel(condition)}</div>
-            </div>
-            <div class="col" style="gap:4px;align-items:flex-end">
-              <span class="chip">${icon("droplet", 11)} ${humidity}%</span>
-              <span class="chip">${icon("wind", 11)} ${windSpeed} ${windUnit}</span>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("live.forecast.title")}</h3><p class="card__sub">${t("live.forecast.title")}</p></div></div>
-            <div class="forecast-row">
-              ${forecast.filter((_, i) => i % 2 === 0).slice(0, 12).map((w) => {
-                const h = new Date(w.datetime || "").getHours?.() ?? 0;
-                const cond = w.condition || "cloud";
-                const wind = typeof w.wind_speed === "number" ? w.wind_speed : null;
-                const sev = severityFor(cond, wind !== null ? toKmh(wind, windUnit) : null);
-                const c = SEVERITY_COLORS[sev];
-                return html`
-                  <div class="forecast-cell"
-                    style="background:color-mix(in srgb, ${c} 10%, var(--bg-sunken));border-color:color-mix(in srgb, ${c} 30%, transparent)"
-                    title="${this._conditionLabel(cond)}${wind !== null ? ` · ${Math.round(wind)} ${windUnit}` : ""}">
-                    <div class="forecast-cell__hour">${String(h).padStart(2, "0")}</div>
-                    <div class="forecast-cell__icon" style="color:${c}">${weatherIcon(cond, 20)}</div>
-                    <div class="forecast-cell__temp">${w.temperature ?? "—"}°</div>
-                    ${wind !== null ? html`<div class="forecast-cell__wind">${icon("wind", 9)} ${Math.round(wind)}</div>` : nothing}
-                  </div>
-                `;
-              })}
-            </div>
-          </div>
+        <!-- Hero: current conditions + sun arc -->
+        <div class="grid-2" style="align-items:stretch">
+          ${this._renderHero(weatherState, weatherEntity, condition, sensorMap, hasLocal, source)}
+          ${this._renderSunCard()}
         </div>
+
+        <!-- Interactive 24h strip -->
+        ${forecast.length ? this._renderHourly(forecast, windUnit) : nothing}
+
+        <!-- Weather map -->
+        ${mapEnabled ? html`
+          <div class="card">
+            <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("live.map.title")}</h3><p class="card__sub">${t("live.map.subtitle")}</p></div></div>
+            <chronos-weather-map .lat=${lat} .lon=${lon}
+              .owmKey=${(settings as any)?.owm_api_key || ""} .dark=${isDark}></chronos-weather-map>
+          </div>
+        ` : nothing}
 
         <!-- Live schedules -->
         <div class="card">
@@ -159,7 +192,6 @@ export class ChronosLive extends LitElement {
           <div class="col" style="gap:0">
             ${devices.map((d) => {
               const state = this.card.hass?.states?.[d.entity_id];
-              const stateStr = state?.state || "—";
               const color = getDeviceColor(d, state, this.card._settings);
               const barPct = this._computeBarPercent(d, state);
               return html`
@@ -179,6 +211,242 @@ export class ChronosLive extends LitElement {
       </div>
     `;
   }
+
+  // ---------------------------------------------------------------- hero
+
+  private _renderHero(
+    weatherState: any,
+    weatherEntity: string,
+    condition: string,
+    sensorMap: Record<string, string>,
+    hasLocal: boolean,
+    source: Source,
+  ) {
+    const wTemp = this._weatherVal(weatherState, "temperature");
+    const lTemp = this._localVal("temperature");
+    const feels = source === "local"
+      ? this._localVal("feels_like") ?? this._weatherVal(weatherState, "feels_like")
+      : this._weatherVal(weatherState, "feels_like");
+    const tempUnit = weatherState?.attributes?.temperature_unit || "°C";
+
+    const bigTemp =
+      source === "local" ? lTemp :
+      wTemp;
+
+    const note =
+      source === "local" ? t("live.source.note.local") :
+      source === "compare" ? t("live.source.note.compare") :
+      weatherEntity ? t("live.weather.subtitle", { entity: weatherEntity }) : t("live.no_weather");
+
+    return html`
+      <div class="lv-hero">
+        ${hasLocal ? html`
+          <div class="row" style="gap:6px;margin-bottom:12px">
+            ${(["weather", "local", "compare"] as Source[]).map((s) => html`
+              <button class="lv-src" data-on=${source === s ? "1" : "0"} @click=${() => { this._source = s; }}>
+                ${t("live.source." + s)}
+              </button>
+            `)}
+          </div>
+        ` : nothing}
+        <div class="row" style="gap:14px;align-items:flex-start">
+          <div class="lv-hero__icon">${weatherIcon(condition, 30)}</div>
+          <div style="flex:1">
+            <div class="lv-temp">
+              ${source === "compare" && wTemp !== null && lTemp !== null ? html`
+                ${fmtNum(wTemp)}°<span class="lv-temp__alt">/ ${fmtNum(lTemp)}°</span>${this._delta(wTemp, lTemp, TEMP_WARN_TH, TEMP_BAD_TH)}
+              ` : bigTemp !== null ? html`
+                ${fmtNum(bigTemp)}<span style="font-size:20px;color:var(--text-muted)">${tempUnit}</span>
+              ` : "—"}
+            </div>
+            <div class="lv-cond">
+              ${this._conditionLabel(condition)}${feels !== null ? html` · ${t("live.feels_like", { v: fmtNum(feels) + "°" })}` : nothing}
+            </div>
+          </div>
+        </div>
+        <div class="lv-stats">
+          ${HERO_STATS.map((def) => this._renderStat(weatherState, sensorMap, def, source))}
+        </div>
+        <div class="page-sub" style="margin-top:10px">${note}</div>
+      </div>
+    `;
+  }
+
+  private _renderStat(
+    weatherState: any,
+    sensorMap: Record<string, string>,
+    def: { key: string; label: string; unitAttr: string; defUnit: string; warnTh: number; badTh: number },
+    source: Source,
+  ) {
+    const w = this._weatherVal(weatherState, def.key);
+    const l = this._localVal(def.key);
+    if (w === null && l === null) return nothing;
+    const unit = (def.unitAttr && weatherState?.attributes?.[def.unitAttr])
+      || this._localUnit(sensorMap[def.key])
+      || def.defUnit;
+
+    if (source === "compare") {
+      return html`
+        <div class="lv-stat">
+          <span class="lbl">${t(def.label)}</span>
+          <b>${w !== null ? `${fmtNum(w)}${unit ? ` ${unit}` : ""}` : "—"}</b>
+          <span class="cmp">
+            ${t("live.source.local_short")} ${l !== null ? fmtNum(l) : "—"}
+            ${w !== null && l !== null ? this._delta(w, l, def.warnTh, def.badTh) : nothing}
+          </span>
+        </div>
+      `;
+    }
+    const v = source === "local" ? l : w;
+    return html`
+      <div class="lv-stat">
+        <span class="lbl">${t(def.label)}</span>
+        <b>${v !== null ? `${fmtNum(v)}${unit ? ` ${unit}` : ""}` : "—"}</b>
+      </div>
+    `;
+  }
+
+  /** Compare badge: local − weather, colored by |delta| thresholds. */
+  private _delta(w: number, l: number, warnTh: number, badTh: number) {
+    const d = Math.abs(w - l);
+    const lvl = d >= badTh ? "bad" : d >= warnTh ? "warn" : "ok";
+    const sign = l > w ? "+" : l < w ? "−" : "±";
+    return html`<span class="lv-delta" data-lvl=${lvl}>${sign}${d.toFixed(1)}</span>`;
+  }
+
+  private _weatherVal(weatherState: any, key: string): number | null {
+    const attrs = weatherState?.attributes;
+    if (!attrs) return null;
+    for (const alias of ATTR_ALIASES[key] || [key]) {
+      const v = attrs[alias];
+      if (typeof v === "number" && isFinite(v)) return v;
+    }
+    return null;
+  }
+
+  private _localVal(key: string): number | null {
+    const map: Record<string, string> = (this.card._settings as any)?.weather_sensor_map || {};
+    const id = map[key];
+    if (!id) return null;
+    const st = this.card.hass?.states?.[id];
+    if (!st || st.state === "unknown" || st.state === "unavailable") return null;
+    const v = parseFloat(st.state);
+    return isNaN(v) ? null : v;
+  }
+
+  private _localUnit(sensorId?: string): string {
+    if (!sensorId) return "";
+    return this.card.hass?.states?.[sensorId]?.attributes?.unit_of_measurement || "";
+  }
+
+  // ------------------------------------------------------------- sun card
+
+  private _renderSunCard() {
+    const sun = this.card.hass?.states?.["sun.sun"];
+    if (!sun) return html`<div></div>`;
+    const now = Date.now();
+    const nr = Date.parse(sun.attributes?.next_rising || "");
+    const ns = Date.parse(sun.attributes?.next_setting || "");
+    if (isNaN(nr) || isNaN(ns)) return html`<div></div>`;
+
+    const day = sun.state === "above_horizon";
+    // next_rising/next_setting are the FUTURE events. During the day the
+    // rising already happened, so today's sunrise ≈ next_rising − 24h
+    // (drifts by the day-over-day sunrise shift, ±2 min — fine for an arc).
+    // At night the next event is always a rising, so [nr, ns] is exactly
+    // the coming day's window: show it with the sun parked at the start.
+    let sunrise: number, sunset: number, frac: number;
+    if (day) {
+      sunrise = nr - 86400000;
+      sunset = ns;
+      frac = Math.min(1, Math.max(0, (now - sunrise) / (sunset - sunrise)));
+    } else {
+      sunrise = nr;
+      sunset = ns;
+      frac = 0;
+    }
+
+    const sx = 100 - 80 * Math.cos(Math.PI * frac);
+    const sy = 95 - 80 * Math.sin(Math.PI * frac);
+    const daylight = fmtDur(sunset - sunrise);
+    const countdown = day
+      ? t("live.sun.to_sunset", { v: fmtDur(ns - now) })
+      : t("live.sun.to_sunrise", { v: fmtDur(nr - now) });
+
+    return html`
+      <div class="card">
+        <div class="card__header">
+          <div style="flex:1">
+            <h3 class="card__title">${t("live.sun.title")}</h3>
+            <p class="card__sub">${t("editor.block.sunrise")} ${fmtClock(new Date(sunrise))} · ${t("editor.block.sunset")} ${fmtClock(new Date(sunset))}</p>
+          </div>
+          <span class="chip">${t("live.sun.daylight", { v: daylight })}</span>
+        </div>
+        <svg viewBox="0 0 200 112" style="width:100%;display:block" role="img">
+          <path d="M20,95 A80,80 0 0 1 180,95" fill="none" stroke="var(--border)" stroke-width="2.5" stroke-dasharray="1 6" stroke-linecap="round"/>
+          <line x1="8" y1="95" x2="192" y2="95" stroke="var(--border)" stroke-width="1"/>
+          ${day ? html`
+            <circle cx=${sx} cy=${sy} r="7" fill="var(--weather)" />
+            <circle cx=${sx} cy=${sy} r="11" fill="var(--weather)" opacity="0.25"/>
+          ` : html`
+            <g transform="translate(92,32)" style="color:var(--text-muted)">${icon("moon", 16)}</g>
+          `}
+        </svg>
+        <div class="row" style="justify-content:center;margin-top:2px">
+          <span class="chip chip--weather">${icon(day ? "sun" : "moon", 11)} ${countdown}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // -------------------------------------------------------- hourly strip
+
+  private _renderHourly(forecast: any[], windUnit: string) {
+    const hours = forecast.slice(0, 24);
+    const sel = Math.min(this._selHour, hours.length - 1);
+    const temps = hours.map((w) => (typeof w.temperature === "number" ? w.temperature : null)).filter((v): v is number => v !== null);
+    const tMin = temps.length ? Math.min(...temps) : 0;
+    const tMax = temps.length ? Math.max(...temps) : 1;
+    const cur = hours[sel];
+
+    return html`
+      <div class="card">
+        <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("live.hourly.title")}</h3><p class="card__sub">${t("live.hourly.hint")}</p></div></div>
+        <div class="lv-hours">
+          ${hours.map((w, i) => {
+            const h = new Date(w.datetime || "").getHours?.() ?? 0;
+            const cond = w.condition || "cloud";
+            const wind = typeof w.wind_speed === "number" ? w.wind_speed : null;
+            const sev = severityFor(cond, wind !== null ? toKmh(wind, windUnit) : null);
+            const c = SEVERITY_COLORS[sev];
+            const temp = typeof w.temperature === "number" ? w.temperature : null;
+            const barH = temp !== null && tMax > tMin ? 5 + 13 * ((temp - tMin) / (tMax - tMin)) : 5;
+            const rain = typeof w.precipitation === "number" && w.precipitation > 0 ? w.precipitation : null;
+            return html`
+              <button class="lv-hour" data-sel=${i === sel ? "1" : "0"} @click=${() => { this._selHour = i; }}>
+                <div class="h mono">${String(h).padStart(2, "0")}</div>
+                <div class="ic" style="color:${c}">${weatherIcon(cond, 16)}</div>
+                <div class="tp mono">${temp !== null ? Math.round(temp) + "°" : "—"}</div>
+                <div class="bar" style="height:${barH.toFixed(0)}px;background:${c}"></div>
+                <div class="rn mono">${rain !== null ? fmtNum(rain) : ""}</div>
+              </button>
+            `;
+          })}
+        </div>
+        ${cur ? html`
+          <div class="lv-detail">
+            <span><b>${String(new Date(cur.datetime || "").getHours?.() ?? 0).padStart(2, "0")}:00</b> · ${this._conditionLabel(cur.condition || "")}</span>
+            ${typeof cur.temperature === "number" ? html`<span>${icon("temp", 12)} <b>${fmtNum(cur.temperature)}°</b></span>` : nothing}
+            ${typeof cur.precipitation === "number" ? html`<span>${icon("rain", 12)} <b>${fmtNum(cur.precipitation)} mm</b>${typeof cur.precipitation_probability === "number" ? html` · ${cur.precipitation_probability}% ${t("live.hourly.rain_prob")}` : nothing}</span>` : nothing}
+            ${typeof cur.wind_speed === "number" ? html`<span>${icon("wind", 12)} <b>${Math.round(cur.wind_speed)} ${windUnit}</b></span>` : nothing}
+            ${typeof cur.humidity === "number" ? html`<span>${icon("droplet", 12)} <b>${Math.round(cur.humidity)}%</b></span>` : nothing}
+          </div>
+        ` : nothing}
+      </div>
+    `;
+  }
+
+  // ------------------------------------------------------------- helpers
 
   /** Mirror of the backend's _is_in_date_range: year-agnostic month/day
    * range, wrapping across year-end when start > end. */

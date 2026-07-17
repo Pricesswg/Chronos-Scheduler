@@ -73,6 +73,32 @@ export class ChronosSettingsScreen extends LitElement {
         </div>
 
         <div class="card">
+          <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("settings.live.title")}</h3><p class="card__sub">${t("settings.live.subtitle")}</p></div></div>
+          <div class="device-row" style="border:none;padding:0 0 12px">
+            <div class="device-row__main">
+              <div class="device-row__name">${t("settings.live.map.title")}</div>
+              <div class="device-row__meta" style="font-family:var(--font-sans)">${t("settings.live.map.desc")}</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" .checked=${s.live_map ?? true}
+                @change=${(e: Event) => this._updateSetting("live_map", (e.target as HTMLInputElement).checked)}/>
+              <span class="switch__track"></span>
+              <span class="switch__thumb"></span>
+            </label>
+          </div>
+          ${(s.live_map ?? true) ? html`
+            <div class="field" style="border-top:1px solid var(--border-soft);padding-top:12px">
+              <label class="field__label">${t("settings.live.owm.title")}</label>
+              <input class="input mono" type="text" spellcheck="false" autocomplete="off"
+                .value=${s.owm_api_key || ""}
+                placeholder=${t("settings.live.owm.placeholder")}
+                @change=${(e: Event) => this._updateSetting("owm_api_key", (e.target as HTMLInputElement).value.trim())}/>
+              <span class="field__hint">${t("settings.live.owm.desc")}</span>
+            </div>
+          ` : nothing}
+        </div>
+
+        <div class="card">
           <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("settings.behavior.title")}</h3><p class="card__sub">${t("settings.behavior.subtitle")}</p></div></div>
           <div class="grid-2">
             <div class="field">
@@ -577,7 +603,7 @@ export class ChronosSettingsScreen extends LitElement {
   }
 
   private _compatWarning(attr: any, sensor: any): string {
-    // Confronta unit_of_measurement (se nota) e device_class
+    // Compare unit_of_measurement (when known) and device_class
     const expectedUnit = (attr.unit || "").trim();
     const sensorUnit = (sensor.unit_of_measurement || "").trim();
     const expectedDCs = this._matchingDeviceClasses(attr.key);
@@ -594,7 +620,7 @@ export class ChronosSettingsScreen extends LitElement {
       return "";
     }
 
-    // Per attributi numerici: state deve essere parsabile come number
+    // Numeric attributes: the sensor state must parse as a number
     const v = sensor.state;
     if (v !== undefined && v !== null && v !== "" && isNaN(parseFloat(v))) {
       return t("settings.weather.overrides.warn.not_numeric", { state: String(v) });
