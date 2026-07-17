@@ -48,6 +48,7 @@ export class ChronosWeatherMap extends LitElement {
   private _owm?: L.TileLayer;
   private _ro?: ResizeObserver;
   private _timer?: number;
+  private _refreshTimer?: number;
   /** Frames below this index are observed radar, from it onwards nowcast. */
   private _pastCount = 0;
 
@@ -167,6 +168,10 @@ export class ChronosWeatherMap extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     this._pause();
+    if (this._refreshTimer !== undefined) {
+      clearInterval(this._refreshTimer);
+      this._refreshTimer = undefined;
+    }
     this._ro?.disconnect();
     this._ro = undefined;
     this._map?.remove();
@@ -212,6 +217,10 @@ export class ChronosWeatherMap extends LitElement {
     this._ro = new ResizeObserver(() => this._map?.invalidateSize());
     this._ro.observe(el);
     this._loadRadar();
+    // RainViewer frame hashes rotate every ~10 minutes and expired hashes
+    // serve a light placeholder tile that wrecks the map. Keep the frame
+    // list fresh so a wall-mounted dashboard never degrades.
+    this._refreshTimer = window.setInterval(() => this._loadRadar(), 10 * 60 * 1000);
   }
 
   private async _loadRadar() {
@@ -222,9 +231,14 @@ export class ChronosWeatherMap extends LitElement {
       const nowcast = data?.radar?.nowcast || [];
       const raw = [...past, ...nowcast];
       if (!raw.length || !this._map) {
-        this._radarError = !raw.length;
+        // Keep whatever we already show: an empty frame list from a hiccup
+        // is worse than slightly old frames.
+        this._radarError = !this._frames.length;
         return;
       }
+      const wasPlaying = this._playing;
+      this._pause();
+      this._frames.forEach((f) => f.layer.remove());
       this._pastCount = past.length;
       this._frames = raw.map((f: any) => ({
         time: f.time,
@@ -232,12 +246,19 @@ export class ChronosWeatherMap extends LitElement {
           opacity: 0,
           zIndex: 5,
           maxZoom: 18,
+          // RainViewer's free tile API stops at zoom 7 and answers deeper
+          // requests with a "Zoom Level Not Supported" placeholder image.
+          // Cap the native zoom and let Leaflet upscale: radar data is
+          // km-scale anyway, the upscale is how their own widget works.
+          maxNativeZoom: 7,
         }).addTo(this._map!),
       }));
+      this._radarError = false;
       // Land on the latest observed frame; the user presses play for the loop.
       this._showFrame(Math.max(0, this._pastCount - 1));
+      if (wasPlaying) this._togglePlay();
     } catch {
-      this._radarError = true;
+      this._radarError = !this._frames.length;
     }
   }
 
