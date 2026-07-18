@@ -1,18 +1,18 @@
 {
- "domain": "chronos",
- "name": "Chronos Scheduler",
- "codeowners": [
-  "@Pricesswg"
- ],
- "config_flow": true,
- "dependencies": [
-  "frontend",
-  "http",
-  "websocket_api"
- ],
- "documentation": "https://github.com/Pricesswg/Chronos-Scheduler",
- "iot_class": "local_push",
- "issue_tracker": "https://github.com/Pricesswg/Chronos-Scheduler/issues",
- "requirements": [],
- "version": "1.28.2"
+  "domain": "chronos",
+  "name": "Chronos Scheduler",
+  "codeowners": [
+    "@Pricesswg"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "frontend",
+    "http",
+    "websocket_api"
+  ],
+  "documentation": "https://github.com/Pricesswg/Chronos-Scheduler",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/Pricesswg/Chronos-Scheduler/issues",
+  "requirements": [],
+  "version": "1.28.3"
 }
