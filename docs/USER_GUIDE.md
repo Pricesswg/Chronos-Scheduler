@@ -424,7 +424,7 @@ Tapping a cell opens a detail row with the condition, temperature, rain amount a
 
 ### Weather map
 
-The map is centered on your Home Assistant home zone and shows an animated precipitation radar (RainViewer): past frames plus a short nowcast, with play and scrub controls. The radar and the OpenStreetMap base map are free and need no account.
+The map is centered on your Home Assistant home zone and shows an animated precipitation radar (RainViewer): past frames plus a short nowcast, with play and scrub controls. The radar and the base map (CARTO, OpenStreetMap data) are free and need no account.
 
 The extra overlays (Temperature, Wind, Clouds, Pressure) use OpenWeatherMap tiles and require a personal API key entered under `Settings → Live screen`; see [Live screen](#live-screen) below for the registration steps. Without a key those chips stay disabled, the radar keeps working.
 
@@ -604,7 +604,7 @@ This card controls the Live status screen extras.
 
 **Animated weather background** animates the weather hero with the current condition: sun glow, drifting clouds, fog, randomized rain, storm with lightning, snow. The effects are lightweight CSS behind the text and are disabled automatically when the operating system asks for reduced motion. Turn this off if you prefer a fully static screen.
 
-**Show weather map** turns the interactive map on or off. The map downloads OpenStreetMap tiles and RainViewer radar frames from the internet at view time: turn it off if your installation must stay fully offline. Everything else on the Live status screen keeps working without external requests.
+**Show weather map** turns the interactive map on or off. The map downloads CARTO basemap tiles and RainViewer radar frames from the internet at view time: turn it off if your installation must stay fully offline. Everything else on the Live status screen keeps working without external requests.
 
 **OpenWeatherMap API key** unlocks the extra map overlays: temperature, wind, clouds and pressure. The rain radar never needs it. To get a key:
 

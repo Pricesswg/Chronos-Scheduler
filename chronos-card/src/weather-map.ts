@@ -20,6 +20,18 @@ const OWM_LAYERS = [
   { id: "pressure_new", key: "pressure" },
 ] as const;
 
+/** Base map: CARTO's free basemaps (OpenStreetMap data), the same
+ * provider Home Assistant's own map card uses. Never point a
+ * distributed app at tile.openstreetmap.org: the OSM tile policy
+ * forbids it and their server answers offending clients (WebViews,
+ * app user agents) with "Access blocked" text tiles. CARTO also has a
+ * native dark style, so no CSS invert hack is needed. {r} serves @2x
+ * tiles on retina screens automatically. */
+const CARTO_LIGHT = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
+const CARTO_DARK = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+const BASE_ATTRIBUTION =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a> &middot; <a href="https://www.rainviewer.com/">RainViewer</a>';
+
 /** Interactive weather map for the Live screen: OpenStreetMap base tiles
  * (dark-filtered when the card theme is dark), RainViewer precipitation
  * radar with past + nowcast frames (free, no API key), and optional
@@ -62,10 +74,6 @@ export class ChronosWeatherMap extends LitElement {
         border: 1px solid var(--border);
         overflow: hidden;
         background: var(--bg-sunken);
-      }
-      .osm-dark {
-        filter: brightness(0.62) invert(1) contrast(2.6) hue-rotate(195deg)
-          saturate(0.35) brightness(0.72);
       }
       .toolbar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
       .lchip {
@@ -184,7 +192,7 @@ export class ChronosWeatherMap extends LitElement {
 
   updated(changed: Map<string, unknown>) {
     if (changed.has("dark") && this._base) {
-      this._base.getContainer()?.classList.toggle("osm-dark", this.dark);
+      this._base.setUrl(this.dark ? CARTO_DARK : CARTO_LIGHT);
     }
     if (changed.has("owmKey") && this._owmLayer) {
       // Key added/removed while an overlay is selected: rebuild it.
@@ -203,10 +211,10 @@ export class ChronosWeatherMap extends LitElement {
       zoomControl: true,
     });
     this._map.attributionControl.setPrefix(false);
-    this._base = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    this._base = L.tileLayer(this.dark ? CARTO_DARK : CARTO_LIGHT, {
       maxZoom: 18,
-      className: this.dark ? "osm-dark" : "",
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &middot; <a href="https://www.rainviewer.com/">RainViewer</a>',
+      subdomains: "abcd",
+      attribution: BASE_ATTRIBUTION,
     }).addTo(this._map);
     L.marker([this.lat, this.lon], {
       icon: L.divIcon({ className: "home-dot", iconSize: [14, 14] }),
