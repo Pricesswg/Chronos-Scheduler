@@ -54,6 +54,7 @@ export class ChronosWeatherMap extends LitElement {
   @state() private _radarOn = true;
   @state() private _owmLayer = "";
   @state() private _radarError = false;
+  @state() private _owmError = false;
 
   private _map?: L.Map;
   private _base?: L.TileLayer;
@@ -105,6 +106,10 @@ export class ChronosWeatherMap extends LitElement {
         margin: -2px 0 8px;
       }
       .keynote svg { flex: 0 0 auto; opacity: 0.7; }
+      .keynote--warn { color: var(--warn); }
+      /* OWM overlays are translucent washes designed for light basemaps;
+       * on the dark CARTO base they need a visibility boost. */
+      .owm-boost { filter: saturate(1.5) brightness(1.35) contrast(1.08); }
       .home-dot {
         border-radius: 50%;
         background: var(--accent);
@@ -165,6 +170,7 @@ export class ChronosWeatherMap extends LitElement {
         </span>
       </div>
       ${noKey ? html`<div class="keynote">${icon("info", 12)} ${t("live.map.unlock_hint")}</div>` : nothing}
+      ${this._owmError ? html`<div class="keynote keynote--warn">${icon("info", 12)} ${t("live.map.owm_error")}</div>` : nothing}
       <div id="map"></div>
     `;
   }
@@ -201,8 +207,9 @@ export class ChronosWeatherMap extends LitElement {
     if (changed.has("dark") && this._base) {
       this._base.setUrl(this.dark ? CARTO_DARK : CARTO_LIGHT);
     }
-    if (changed.has("owmKey") && this._owmLayer) {
-      // Key added/removed while an overlay is selected: rebuild it.
+    if ((changed.has("owmKey") || changed.has("dark")) && this._owmLayer) {
+      // Key added/removed or theme flipped while an overlay is selected:
+      // rebuild it (opacity and the boost filter are theme-dependent).
       const cur = this._owmLayer;
       this._owmLayer = "";
       this._setOwm(cur);
@@ -323,6 +330,7 @@ export class ChronosWeatherMap extends LitElement {
       this._owm.remove();
       this._owm = undefined;
     }
+    this._owmError = false;
     if (this._owmLayer === layerId) {
       this._owmLayer = "";
       return;
@@ -332,11 +340,25 @@ export class ChronosWeatherMap extends LitElement {
     this._owm = L.tileLayer(
       `https://tile.openweathermap.org/map/${layerId}/{z}/{x}/{y}.png?appid=${encodeURIComponent(this.owmKey)}`,
       {
-        opacity: 0.65,
+        opacity: this.dark ? 0.85 : 0.7,
         zIndex: 4,
         maxZoom: 18,
+        className: this.dark ? "owm-boost" : "",
         attribution: '&copy; <a href="https://openweathermap.org/">OpenWeatherMap</a>',
       },
     ).addTo(this._map);
+    // A key that is invalid (or created hours ago and not active yet) makes
+    // OWM answer 401 on every tile: without feedback that looks identical
+    // to "the layer shows nothing". Two failures = show the warning; any
+    // successful tile clears it.
+    let errors = 0;
+    this._owm.on("tileerror", () => {
+      errors++;
+      if (errors >= 2) this._owmError = true;
+    });
+    this._owm.on("tileload", () => {
+      errors = 0;
+      this._owmError = false;
+    });
   }
 }

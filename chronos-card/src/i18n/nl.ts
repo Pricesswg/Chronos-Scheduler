@@ -728,4 +728,5 @@ export const NL_STRINGS: Record<string, string> = {
   "settings.live.fx.title": "Geanimeerde weerachtergrond",
   "settings.live.fx.desc": "Het weerpaneel op het Live-scherm beweegt mee met de omstandigheden: zon, wolken, mist, regen, onweer met bliksem, sneeuw. Lichte, puur CSS-effecten; automatisch uitgeschakeld wanneer het systeem om minder beweging vraagt.",
   "live.map.unlock_hint": "Registreer een OpenWeatherMap-API-key en vul deze in bij Instellingen → Live-scherm om temperatuur, wind, bewolking en luchtdruk te ontgrendelen",
+  "live.map.owm_error": "OpenWeatherMap weigert de tegels: key ongeldig of nog niet actief (een nieuwe key duurt enkele uren)",
 };
