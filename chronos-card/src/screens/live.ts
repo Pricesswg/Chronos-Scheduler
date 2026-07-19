@@ -1,4 +1,4 @@
-import { LitElement, html, nothing } from "lit";
+import { LitElement, html, svg, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { chronosStyles } from "../styles";
 import { icon, deviceIcon, weatherIcon } from "../icons";
@@ -484,11 +484,12 @@ export class ChronosLive extends LitElement {
         <svg viewBox="0 0 200 112" style="width:100%;display:block" role="img">
           <path d="M20,95 A80,80 0 0 1 180,95" fill="none" stroke="var(--border)" stroke-width="2.5" stroke-dasharray="1 6" stroke-linecap="round"/>
           <line x1="8" y1="95" x2="192" y2="95" stroke="var(--border)" stroke-width="1"/>
-          ${day ? html`
-            <circle cx=${sx} cy=${sy} r="7" fill="var(--weather)" />
+          ${day ? svg`
             <circle cx=${sx} cy=${sy} r="11" fill="var(--weather)" opacity="0.25"/>
-          ` : html`
-            <g transform="translate(92,32)" style="color:var(--text-muted)">${icon("moon", 16)}</g>
+            <circle cx=${sx} cy=${sy} r="7" fill="var(--weather)"/>
+          ` : svg`
+            <circle cx="100" cy="34" r="11" fill="var(--text-muted)" opacity="0.85"/>
+            <circle cx="105" cy="30" r="9" fill="var(--surface)"/>
           `}
         </svg>
         <div class="row" style="justify-content:center;margin-top:2px">

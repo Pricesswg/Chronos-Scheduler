@@ -426,6 +426,7 @@ const STRINGS: Record<string, Record<BaseLang, string>> = {
   "live.map.layer.clouds": { it: "Nuvole", en: "Clouds", fr: "Nuages", de: "Wolken" },
   "live.map.layer.pressure": { it: "Pressione", en: "Pressure", fr: "Pression", de: "Druck" },
   "live.map.needs_key": { it: "Richiede una API key OpenWeatherMap · Impostazioni → Schermata live", en: "Needs an OpenWeatherMap API key · Settings → Live screen", fr: "Nécessite une clé API OpenWeatherMap · Réglages → Écran en direct", de: "Benötigt einen OpenWeatherMap-API-Schlüssel · Einstellungen → Live-Ansicht" },
+  "live.map.unlock_hint": { it: "Per sbloccare temperatura, vento, nuvole e pressione registra una API key OpenWeatherMap e inseriscila in Impostazioni → Schermata live", en: "To unlock temperature, wind, clouds and pressure, register an OpenWeatherMap API key and paste it in Settings → Live screen", fr: "Pour débloquer température, vent, nuages et pression, créez une clé API OpenWeatherMap et saisissez-la dans Réglages → Écran en direct", de: "Um Temperatur, Wind, Wolken und Druck freizuschalten, einen OpenWeatherMap-API-Schlüssel erstellen und unter Einstellungen → Live-Ansicht eintragen" },
   "live.map.radar_error": { it: "Radar non disponibile", en: "Radar unavailable", fr: "Radar indisponible", de: "Radar nicht verfügbar" },
   "live.map.nowcast": { it: "previsione", en: "forecast", fr: "prévision", de: "Prognose" },
   "live.map.play": { it: "Avvia l'animazione radar", en: "Play the radar animation", fr: "Lancer l'animation radar", de: "Radar-Animation abspielen" },

@@ -99,6 +99,12 @@ export class ChronosWeatherMap extends LitElement {
       .play[disabled] { opacity: 0.45; cursor: not-allowed; }
       input[type="range"] { accent-color: var(--accent); width: 130px; }
       .radar-note { font-size: 11px; color: var(--text-muted); }
+      .keynote {
+        display: flex; align-items: center; gap: 6px;
+        font-size: 11px; color: var(--text-soft);
+        margin: -2px 0 8px;
+      }
+      .keynote svg { flex: 0 0 auto; opacity: 0.7; }
       .home-dot {
         border-radius: 50%;
         background: var(--accent);
@@ -158,6 +164,7 @@ export class ChronosWeatherMap extends LitElement {
             @input=${this._onScrub} />
         </span>
       </div>
+      ${noKey ? html`<div class="keynote">${icon("info", 12)} ${t("live.map.unlock_hint")}</div>` : nothing}
       <div id="map"></div>
     `;
   }

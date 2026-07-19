@@ -727,4 +727,5 @@ export const PL_STRINGS: Record<string, string> = {
   "help.map.body": "Ekran Na żywo zawiera interaktywną mapę pogodową: radar opadów (RainViewer) i mapa bazowa (CARTO, dane OpenStreetMap) są darmowe i nie wymagają rejestracji. Dodatkowe warstwy (temperatura, wiatr, chmury, ciśnienie) korzystają z kafelków OpenWeatherMap i wymagają osobistego klucza API: załóż darmowe konto na openweathermap.org, otwórz stronę \"My API keys\", skopiuj klucz i wklej go w Ustawienia → Ekran na żywo (świeżo utworzony klucz może potrzebować kilku godzin na aktywację). Wszystkie dane mapy są pobierane z internetu podczas wyświetlania: jeśli twoja instalacja musi pozostać offline, wyłącz mapę w tej samej sekcji Ustawień.",
   "settings.live.fx.title": "Animowane tło pogodowe",
   "settings.live.fx.desc": "Panel pogody na ekranie Na żywo animuje się zależnie od warunków: słońce, chmury, mgła, deszcz, burza z błyskawicami, śnieg. Lekkie efekty czysto CSS; wyłączane automatycznie, gdy system prosi o ograniczenie ruchu.",
+  "live.map.unlock_hint": "Aby odblokować temperaturę, wiatr, chmury i ciśnienie, zarejestruj klucz API OpenWeatherMap i wpisz go w Ustawienia → Ekran na żywo",
 };
