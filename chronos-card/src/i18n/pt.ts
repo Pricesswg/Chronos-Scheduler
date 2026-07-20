@@ -729,4 +729,8 @@ export const PT_STRINGS: Record<string, string> = {
   "settings.live.fx.desc": "O painel do tempo do ecrã Ao vivo anima-se conforme as condições: sol, nuvens, nevoeiro, chuva, trovoada com relâmpagos, neve. Efeitos leves só em CSS; desativados automaticamente se o sistema pedir menos movimento.",
   "live.map.unlock_hint": "Para desbloquear temperatura, vento, nuvens e pressão, registe uma API key da OpenWeatherMap e introduza-a em Definições → Ecrã ao vivo",
   "live.map.owm_error": "A OpenWeatherMap está a rejeitar os mosaicos: chave inválida ou ainda não ativa (uma chave nova demora algumas horas)",
+  "settings.nav.title": "Navegação",
+  "settings.nav.top": "Barra superior",
+  "settings.nav.sidebar": "Barra lateral (clássica)",
+  "settings.nav.hint": "A barra superior junta menu, relógio e título numa única fila de ícones e liberta espaço para o conteúdo, sobretudo no telemóvel. A entrada ativa mostra a sua etiqueta.",
 };

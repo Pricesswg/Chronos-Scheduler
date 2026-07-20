@@ -244,6 +244,14 @@ export class ChronosCard extends LitElement {
       if (this._settings.density) this.setAttribute("density", this._settings.density);
       this._applyLanguage();
     }
+    if (changed.has("_screen")) {
+      // Top navigation: navigations that don't come from the bar itself
+      // (open schedule from a list, wizard hand-off) must still bring the
+      // active entry into the scrollable row's view.
+      this.renderRoot
+        .querySelector('.nav-ic[data-active="true"]')
+        ?.scrollIntoView({ inline: "nearest", block: "nearest" });
+    }
   }
 
   private _applyLanguage() {
@@ -730,17 +738,18 @@ export class ChronosCard extends LitElement {
     }
 
     const userTitle = this.config?.title;
+    const topNav = (this._settings?.nav_style ?? "top") !== "sidebar";
 
     return html`
       ${errorBanner}
       ${userTitle ? html`<div class="card-header" style="padding:14px 18px 6px;font-size:18px;font-weight:600;letter-spacing:-0.01em">${userTitle}</div>` : nothing}
-      <div class="app" data-mobile="${this._mobile}" data-drawer="${drawerOpen}">
-        ${this._renderSidebar(sidebarMode)}
-        ${drawerOpen
+      <div class="app ${topNav ? "app--topnav" : ""}" data-mobile="${this._mobile}" data-drawer="${!topNav && drawerOpen}">
+        ${topNav ? nothing : this._renderSidebar(sidebarMode)}
+        ${!topNav && drawerOpen
           ? html`<div class="sidebar-backdrop" @click=${() => { this._drawerOpen = false; }}></div>`
           : nothing}
         <main class="content">
-          ${this._renderTopbar(title, crumbs, nowHour)}
+          ${topNav ? this._renderTopnav(nowHour) : this._renderTopbar(title, crumbs, nowHour)}
           <div class="content__inner">
             ${this._renderScreen(nowHour)}
           </div>
@@ -753,7 +762,9 @@ export class ChronosCard extends LitElement {
     `;
   }
 
-  private _renderSidebar(mode: "full" | "mini" | "drawer") {
+  /** Navigation entries shared by the sidebar and the top bar. Split kept
+   * as main screens vs actions so both layouts can render a separator. */
+  private _navEntries() {
     const nav = [
       { key: "overview" as Screen, label: t("nav.overview"), iconName: "dashboard" },
       { key: "editor" as Screen, label: t("nav.editor"), iconName: "clock" },
@@ -768,6 +779,11 @@ export class ChronosCard extends LitElement {
       { key: "devices" as Screen, label: t("nav.manage_devices"), iconName: "device" },
       { key: "help" as Screen, label: t("nav.help"), iconName: "info" },
     ];
+    return { nav, actions };
+  }
+
+  private _renderSidebar(mode: "full" | "mini" | "drawer") {
+    const { nav, actions } = this._navEntries();
 
     const isMini = mode === "mini";
     const showHamburger = true;  // always visible: mobile toggles drawer, desktop collapses sidebar
@@ -839,6 +855,43 @@ export class ChronosCard extends LitElement {
           <span>${fmtHour(nowHour)}</span>
         </div>
       </div>
+    `;
+  }
+
+  /** Top navigation (nav_style "top"): one bar with brand, clock and the
+   * icon-only entry row. The active entry expands with its label. */
+  private _renderTopnav(nowHour: number) {
+    const { nav, actions } = this._navEntries();
+    const item = (n: { key: Screen; label: string; iconName: string }, accent = false) => html`
+      <button class="nav-ic ${accent ? "nav-ic--accent" : ""}"
+        data-active="${this._screen === n.key}" title="${n.label}"
+        @click=${(e: Event) => {
+          this.navigate(n.key);
+          (e.currentTarget as HTMLElement).scrollIntoView({ behavior: "smooth", inline: "nearest", block: "nearest" });
+        }}>
+        ${icon(n.iconName, 17)}<span class="nav-ic__lbl">${n.label}</span>
+      </button>
+    `;
+    return html`
+      <nav class="topnav">
+        <div class="topnav__brand">
+          <span class="topnav__logo">
+            <img src="/local/chronos-icon.png?v=${CARD_VERSION}" alt=""
+              style="width:100%;height:100%;object-fit:contain;display:block"
+              @error=${(e: Event) => { (e.target as HTMLImageElement).style.display = "none"; (e.target as HTMLElement).parentElement!.textContent = "C"; }}/>
+          </span>
+          <span class="topnav__name">Chronos</span>
+          <span class="topnav__clock"><span class="time-dot"></span>${fmtHour(nowHour)}</span>
+        </div>
+        <div class="nav-scroll">
+          ${nav.map((n) => item(n))}
+          <span class="nav-sep"></span>
+          ${item(actions[0], true)}
+          ${actions.slice(1).map((n) => item(n))}
+          <span class="nav-sep"></span>
+          ${item({ key: "settings" as Screen, label: t("nav.settings"), iconName: "settings" })}
+        </div>
+      </nav>
     `;
   }
 

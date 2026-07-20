@@ -729,4 +729,8 @@ export const NL_STRINGS: Record<string, string> = {
   "settings.live.fx.desc": "Het weerpaneel op het Live-scherm beweegt mee met de omstandigheden: zon, wolken, mist, regen, onweer met bliksem, sneeuw. Lichte, puur CSS-effecten; automatisch uitgeschakeld wanneer het systeem om minder beweging vraagt.",
   "live.map.unlock_hint": "Registreer een OpenWeatherMap-API-key en vul deze in bij Instellingen → Live-scherm om temperatuur, wind, bewolking en luchtdruk te ontgrendelen",
   "live.map.owm_error": "OpenWeatherMap weigert de tegels: key ongeldig of nog niet actief (een nieuwe key duurt enkele uren)",
+  "settings.nav.title": "Navigatie",
+  "settings.nav.top": "Bovenbalk",
+  "settings.nav.sidebar": "Zijbalk (klassiek)",
+  "settings.nav.hint": "De bovenbalk voegt menu, klok en titel samen in één rij iconen en maakt ruimte vrij voor de inhoud, vooral op de telefoon. Het actieve item toont zijn label.",
 };

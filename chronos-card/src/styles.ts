@@ -246,6 +246,66 @@ export const chronosStyles = css`
   }
   .time-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 25%, transparent); }
 
+  /* Top navigation (nav_style "top", the default): ONE bar replaces the
+   * sidebar and the old topbar. Entries are icon-only chips; the active
+   * one expands into a pill with its label, which also takes over the
+   * screen-title role of the old topbar. On narrow screens the row
+   * scrolls horizontally: hidden scrollbar, faded edges as affordance. */
+  .app--topnav { grid-template-columns: 1fr; }
+  .topnav {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 14px;
+    background: color-mix(in srgb, var(--bg) 86%, transparent);
+    backdrop-filter: saturate(1.2) blur(10px);
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .topnav__brand {
+    display: flex; align-items: center; gap: 8px; flex: 0 0 auto;
+    font-weight: 700; font-size: 13.5px; letter-spacing: -0.01em;
+  }
+  .topnav__logo {
+    width: 26px; height: 26px; border-radius: 8px; overflow: hidden;
+    display: grid; place-items: center;
+    background: var(--accent-soft); color: var(--accent);
+    font-weight: 700; font-size: 12px;
+  }
+  .topnav__clock {
+    font-family: var(--font-mono); font-size: 12px; color: var(--text-soft);
+    display: flex; align-items: center; gap: 6px; font-weight: 500;
+  }
+  .nav-scroll {
+    display: flex; align-items: center; gap: 4px;
+    overflow-x: auto; flex: 1 1 auto; min-width: 0;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch;
+    padding: 4px 2px;
+    mask-image: linear-gradient(to right, transparent, black 14px, black calc(100% - 14px), transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 14px, black calc(100% - 14px), transparent);
+  }
+  .nav-scroll::-webkit-scrollbar { display: none; }
+  .nav-sep { flex: 0 0 1px; height: 22px; background: var(--border); margin: 0 5px; }
+  .nav-ic {
+    flex: 0 0 auto;
+    display: inline-flex; align-items: center; gap: 7px;
+    height: 34px; padding: 0 9px;
+    border-radius: var(--r-pill); border: 1px solid transparent;
+    background: transparent; color: var(--text-soft);
+    font-family: inherit; font-size: 12.5px; font-weight: 600;
+    cursor: pointer; white-space: nowrap;
+    transition: background 120ms, color 120ms;
+  }
+  .nav-ic:hover { background: var(--bg-sunken); color: var(--text); }
+  .nav-ic svg { width: 17px; height: 17px; flex: none; }
+  .nav-ic__lbl { display: none; }
+  .nav-ic[data-active="true"] {
+    background: var(--accent-soft); border-color: var(--accent); color: var(--accent-ink);
+  }
+  .nav-ic[data-active="true"] .nav-ic__lbl { display: inline; }
+  .nav-ic--accent { color: var(--accent); }
+  @media (max-width: 560px) {
+    .topnav__name { display: none; }
+  }
+
   .page-title { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 4px; }
   .page-sub { color: var(--text-muted); font-size: 14px; margin: 0 0 22px; }
 

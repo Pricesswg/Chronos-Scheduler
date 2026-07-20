@@ -656,7 +656,16 @@ These notifications are useful for testing and troubleshooting.
 
 ### Appearance
 
-The **Appearance** settings control how dense the Chronos interface is.
+The **Appearance** settings control the navigation layout and how dense the Chronos interface is.
+
+**Navigation** picks where the menu lives:
+
+| Option | Description |
+|---|---|
+| Top bar (default) | Menu, clock and screen title merged into one horizontal row of icons. The active entry expands and shows its label. On narrow screens the row scrolls sideways. Frees the sidebar width for content, especially on phones. |
+| Sidebar (classic) | The original left sidebar with the topbar above the content. |
+
+**Density**:
 
 | Option | Description |
 |---|---|

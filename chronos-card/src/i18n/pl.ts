@@ -729,4 +729,8 @@ export const PL_STRINGS: Record<string, string> = {
   "settings.live.fx.desc": "Panel pogody na ekranie Na żywo animuje się zależnie od warunków: słońce, chmury, mgła, deszcz, burza z błyskawicami, śnieg. Lekkie efekty czysto CSS; wyłączane automatycznie, gdy system prosi o ograniczenie ruchu.",
   "live.map.unlock_hint": "Aby odblokować temperaturę, wiatr, chmury i ciśnienie, zarejestruj klucz API OpenWeatherMap i wpisz go w Ustawienia → Ekran na żywo",
   "live.map.owm_error": "OpenWeatherMap odrzuca kafelki: klucz nieprawidłowy lub jeszcze nieaktywny (nowy klucz potrzebuje kilku godzin)",
+  "settings.nav.title": "Nawigacja",
+  "settings.nav.top": "Pasek górny",
+  "settings.nav.sidebar": "Pasek boczny (klasyczny)",
+  "settings.nav.hint": "Pasek górny łączy menu, zegar i tytuł w jeden rząd ikon i uwalnia miejsce na treść, zwłaszcza na telefonie. Aktywna pozycja pokazuje swoją etykietę.",
 };

@@ -729,4 +729,8 @@ export const ES_STRINGS: Record<string, string> = {
   "settings.live.fx.desc": "El panel del tiempo de la pantalla En vivo se anima según las condiciones: sol, nubes, niebla, lluvia, tormenta con relámpagos, nieve. Efectos ligeros solo CSS; se desactivan automáticamente si el sistema pide reducir el movimiento.",
   "live.map.unlock_hint": "Para desbloquear temperatura, viento, nubes y presión, registra una API key de OpenWeatherMap e introdúcela en Ajustes → Pantalla en vivo",
   "live.map.owm_error": "OpenWeatherMap rechaza las teselas: clave no válida o aún no activa (una clave nueva tarda unas horas)",
+  "settings.nav.title": "Navegación",
+  "settings.nav.top": "Barra superior",
+  "settings.nav.sidebar": "Barra lateral (clásica)",
+  "settings.nav.hint": "La barra superior fusiona menú, reloj y título en una sola fila de iconos y libera espacio para el contenido, sobre todo en el móvil. La entrada activa muestra su etiqueta.",
 };

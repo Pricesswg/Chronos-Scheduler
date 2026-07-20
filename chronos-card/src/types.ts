@@ -222,6 +222,9 @@ export interface Settings {
    * lightning, snow driven by the weather condition). Default true;
    * prefers-reduced-motion disables it regardless. */
   live_fx?: boolean;
+  /** Navigation layout: "top" (default) merges sidebar and topbar into a
+   * single icon bar; "sidebar" keeps the classic left sidebar. */
+  nav_style?: "top" | "sidebar";
 }
 
 export interface ActionValueSpec {

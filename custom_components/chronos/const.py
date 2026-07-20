@@ -1,5 +1,5 @@
 DOMAIN = "chronos"
-VERSION = "1.28.5"
+VERSION = "1.29.0"
 STORAGE_VERSION = 1
 STORAGE_KEY_DEVICES = f"{DOMAIN}.devices"
 STORAGE_KEY_SCHEDULES = f"{DOMAIN}.schedules"
@@ -373,6 +373,10 @@ DEFAULT_SETTINGS = {
     # lightning, snow picked from the weather condition). CSS-only; the
     # card also honors prefers-reduced-motion regardless of this flag.
     "live_fx": True,
+    # Navigation layout: "top" merges the sidebar and the old topbar into
+    # one horizontal icon bar (reclaims space, especially on phones);
+    # "sidebar" keeps the classic left sidebar for those who prefer it.
+    "nav_style": "top",
 }
 
 # Auto-off timer for turn_on blocks: device type → switch-off service

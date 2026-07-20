@@ -182,6 +182,17 @@ export class ChronosSettingsScreen extends LitElement {
         <div class="card">
           <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("settings.appearance.title")}</h3><p class="card__sub">${t("settings.appearance.subtitle")}</p></div></div>
           <div class="field">
+            <label class="field__label">${t("settings.nav.title")}</label>
+            <div class="segmented">
+              ${(["top", "sidebar"] as const).map((v) => html`
+                <button data-active="${(s.nav_style ?? "top") === v}" @click=${() => this._updateSetting("nav_style", v)}>
+                  ${t("settings.nav." + v)}
+                </button>
+              `)}
+            </div>
+            <span class="field__hint">${t("settings.nav.hint")}</span>
+          </div>
+          <div class="field">
             <label class="field__label">${t("settings.density")}</label>
             <div class="segmented">
               ${(["comfortable", "compact"] as const).map((v) => html`
