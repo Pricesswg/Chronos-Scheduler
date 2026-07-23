@@ -4,6 +4,8 @@
 ![hass](https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue.svg)
 ![license](https://img.shields.io/badge/license-MIT-green.svg)
 
+![Chronos Scheduler](docs/images/chronos-cover-source.png)
+
 **Chronos** is an advanced scheduler for Home Assistant. It manages thermostats, lights, blinds, irrigation, switches, fans, water heaters, mowers, vacuums, scenes, automations and alarm panels through daily time slots with **conditional weather rules**.
 
 A single Lovelace card provides:
@@ -38,6 +40,10 @@ A single Lovelace card provides:
 - A dedicated non-interactive status card (`custom:chronos-schedule-card`) recapping one schedule: current/next action, a timeline bar, a toggleable status list, a tri-state activity log, and an optional error "alarm glow"
 
 All persisted by Home Assistant, accessible via WebSocket API, and auto-registered as a custom card.
+
+## Why "Chronos"?
+
+In Greek mythology, Chronos (Χρόνος) is the primordial personification of time itself, the force that orders every day into its hours and seasons. That is what this integration does for your home: it arranges your devices along the day, from a fixed 06:30 to "fifteen minutes before sunset", across weekdays and whole seasons, and keeps them in order for you. The name is a nod to putting time in charge of the house.
 
 ## Documentation
 
