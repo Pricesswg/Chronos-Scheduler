@@ -83,6 +83,8 @@ export class ChronosCard extends LitElement {
   @property({ attribute: false }) config!: ChronosCardConfig;
 
   @state() _screen: Screen = "overview";
+  /** Embed mode: render only `config.view` with no sidebar/top bar. */
+  @state() _embed = false;
   @state() _selectedId = "";
   @state() _deviceDetailId = "";
   @state() _schedules: Schedule[] = [];
@@ -114,7 +116,18 @@ export class ChronosCard extends LitElement {
 
   setConfig(config: ChronosCardConfig) {
     this.config = config || ({} as ChronosCardConfig);
-    if (config?.default_screen && !this._screenInitialised) {
+    // Embed mode: pin the card to a single screen with no chrome. `view`
+    // wins over `default_screen` and locks the screen for the session.
+    if (config?.view) {
+      this._embed = true;
+      if (!this._screenInitialised) {
+        this._screen = config.view;
+        this._screenInitialised = true;
+      }
+    } else {
+      this._embed = false;
+    }
+    if (config?.default_screen && !config?.view && !this._screenInitialised) {
       this._screen = config.default_screen;
       this._screenInitialised = true;
     }
@@ -739,6 +752,27 @@ export class ChronosCard extends LitElement {
 
     const userTitle = this.config?.title;
     const topNav = (this._settings?.nav_style ?? "top") !== "sidebar";
+
+    // Embed mode: a single screen, no sidebar and no top bar, so Chronos
+    // becomes a compact dashboard card. Data loading is unchanged; only the
+    // chrome is stripped.
+    if (this._embed) {
+      return html`
+        ${errorBanner}
+        ${userTitle ? html`<div class="card-header" style="padding:14px 18px 6px;font-size:18px;font-weight:600;letter-spacing:-0.01em">${userTitle}</div>` : nothing}
+        <div class="app app--embed">
+          <main class="content">
+            <div class="content__inner content__inner--embed">
+              ${this._renderScreen(nowHour)}
+            </div>
+          </main>
+          ${this._pendingNav ? this._renderDirtyModal() : nothing}
+          ${this._duplicateSourceId
+            ? html`<chronos-duplicate-modal .card=${this} .sourceId=${this._duplicateSourceId}></chronos-duplicate-modal>`
+            : nothing}
+        </div>
+      `;
+    }
 
     return html`
       ${errorBanner}

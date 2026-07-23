@@ -252,6 +252,11 @@ export const chronosStyles = css`
    * screen-title role of the old topbar. On narrow screens the row
    * scrolls horizontally: hidden scrollbar, faded edges as affordance. */
   .app--topnav { grid-template-columns: 1fr; }
+  /* Embed mode: a single screen, no chrome. Let the content set the height
+   * instead of the app's 600px minimum, and trim the generous screen
+   * padding so the card sits compactly on a normal dashboard. */
+  .app--embed { grid-template-columns: 1fr; min-height: 0; }
+  .content__inner--embed { padding: 16px 18px 20px; }
   .topnav {
     position: sticky; top: 0; z-index: 20;
     display: flex; align-items: center; gap: 10px;

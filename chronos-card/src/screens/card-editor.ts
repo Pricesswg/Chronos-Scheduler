@@ -15,6 +15,14 @@ const SCREEN_OPTIONS: { value: Screen; label: string }[] = [
   { value: "help", label: "Help" },
 ];
 
+// Display-oriented screens that make sense as a standalone embedded card.
+const EMBED_OPTIONS: { value: Screen; label: string }[] = [
+  { value: "live", label: "Live status" },
+  { value: "week", label: "Week view" },
+  { value: "overview", label: "Overview" },
+  { value: "history", label: "History" },
+];
+
 /** Lovelace visual editor for `custom:chronos-card`. Returned by
  * `ChronosCard.getConfigElement()` so the dashboard's "Edit card" dialog
  * shows a GUI form instead of falling back to YAML-only editing.
@@ -77,6 +85,17 @@ export class ChronosCardEditor extends LitElement {
           `)}
         </select>
       </div>
+      <div class="row">
+        <label for="view">Embed single view</label>
+        <select id="view"
+          @change=${(e: Event) => this._emit({ view: ((e.target as HTMLSelectElement).value || undefined) as Screen | undefined })}>
+          <option value="">Full app (default)</option>
+          ${EMBED_OPTIONS.map((o) => html`
+            <option value=${o.value} ?selected=${c.view === o.value}>${o.label}</option>
+          `)}
+        </select>
+      </div>
+      ${c.view ? html`<div class="info">Embedding a single screen: the sidebar and top bar are hidden and only <strong>${EMBED_OPTIONS.find((o) => o.value === c.view)?.label ?? c.view}</strong> is shown. Add several cards to build a custom dashboard.</div>` : ""}
       <div class="row">
         <label for="collapse_sidebar">Collapsed sidebar</label>
         <input id="collapse_sidebar" type="checkbox" .checked=${!!c.collapse_sidebar}

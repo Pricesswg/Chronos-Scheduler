@@ -34,6 +34,7 @@ A single Lovelace card provides:
 - Missed switch-offs are never lost: if a device is offline when its auto-off timer fires or when an irrigation program closes its valves, Chronos switches it off as soon as it reconnects, regardless of the block window (off-late is the safe direction). Always on, survives HA restarts, gives up after 12h with a note in History
 - Help screen with 12 ready-made recipes (thermostat day/night, sunset lights, wind-safe blinds, rain-skip irrigation, heat-scaled fan, summer shading, solar-surplus loads, seasonal pool pump, …), quick start, FAQ and glossary
 - Compact top navigation (default): menu, clock and screen title merged into a single horizontally scrollable icon bar, freeing the sidebar width for content, especially on phones. The classic sidebar remains available under `Settings → Appearance → Navigation`
+- Per-schedule Home Assistant entities (switch + running binary_sensor + next-change sensor) for native dashboards, automations and voice, plus an embeddable single-view card mode (`view: live` / `week` / `overview` / `history`) for placing just one part of Chronos on a normal dashboard
 
 All persisted by Home Assistant, accessible via WebSocket API, and auto-registered as a custom card.
 
@@ -120,13 +121,25 @@ collapse_sidebar: false          # start with sidebar in mini mode
 mobile_threshold: 700            # px below which the drawer layout kicks in
 ```
 
+### Embed a single view
+
+Set `view` to turn the card into a compact single-screen widget with no sidebar and no top bar, so you can place just one part of Chronos on a normal dashboard:
+
+```yaml
+type: custom:chronos-card
+view: live      # only the Live status screen, no app chrome
+```
+
+Best with the display screens: `live`, `week`, `overview`, `history`. Drop several such cards side by side to compose your own Chronos dashboard. A card without `view` renders the full app as before.
+
 ### Available options
 
 | Option              | Type                | Default      | Description                                                                  |
 |---------------------|---------------------|--------------|------------------------------------------------------------------------------|
 | `title`             | string              | —            | Header text shown above the card. Empty / unset hides the header.            |
-| `default_screen`    | string              | `overview`   | Initial screen. One of: `overview`, `editor`, `week`, `weatherRulesList`, `device`, `live`, `wizard`, `devices`, `settings`, `help`. |
-| `collapse_sidebar`  | boolean             | `false`      | Start the sidebar collapsed (mini mode) on desktop.                          |
+| `view`              | string              | —            | Embed a single screen with no chrome: `live`, `week`, `overview`, `history` (any screen works). Unset = the full app. Overrides `default_screen`. |
+| `default_screen`    | string              | `overview`   | Initial screen for the full app. One of: `overview`, `editor`, `week`, `weatherRulesList`, `device`, `live`, `wizard`, `devices`, `settings`, `help`. |
+| `collapse_sidebar`  | boolean             | `false`      | Start the sidebar collapsed (mini mode) on desktop (classic sidebar layout). |
 | `mobile_threshold`  | number              | `700`        | Pixel width below which the card switches to the drawer layout. `0` disables mobile mode. |
 
 All schedule, device and weather-rule data is persisted by the integration via WebSocket API — the card config only controls presentation.

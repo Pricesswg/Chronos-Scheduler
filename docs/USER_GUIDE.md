@@ -819,6 +819,17 @@ Every schedule becomes three entities, grouped under a single **Chronos Schedule
 
 Put these on any dashboard with the native tile or entities cards, use them as automation triggers and conditions, or control them by voice, without embedding the whole Chronos card. The entities are keyed on the schedule's internal id, so renaming a schedule updates the name without breaking automations. Creating or deleting a schedule adds or removes its entities immediately, with no restart. For sun-anchored blocks the next-change time on future days is approximate.
 
+### Embedding a single view on a dashboard
+
+Besides the entities, you can place a single Chronos screen on a normal dashboard as a compact card, with no sidebar or top bar. Add a manual card with:
+
+```yaml
+type: custom:chronos-card
+view: live
+```
+
+`view` accepts `live`, `week`, `overview` and `history` (the display-oriented screens; any screen name works). Drop several such cards to build your own layout, for example the Live status next to the Week view. A card without `view` shows the full Chronos app as usual. The "Edit card" dialog exposes this as the **Embed single view** dropdown.
+
 ### Services
 
 To drive Chronos from automations or scripts:

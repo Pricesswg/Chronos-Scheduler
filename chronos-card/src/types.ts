@@ -269,6 +269,11 @@ export interface ChronosCardConfig {
   title?: string;
   /** Screen the card opens on first render. Defaults to "overview". */
   default_screen?: Screen;
+  /** Embed a single screen with no app chrome (no sidebar, no top bar).
+   * Turns the full Chronos app into a compact dashboard card showing only
+   * this screen. Best with the display screens (live, week, history,
+   * overview). Unset = the full app. */
+  view?: Screen;
   /** Start with the sidebar collapsed (mini mode) on desktop. */
   collapse_sidebar?: boolean;
   /** Force the mobile (drawer) layout below this width in pixels.
