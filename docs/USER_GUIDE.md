@@ -830,6 +830,27 @@ view: live
 
 `view` accepts `live`, `week`, `overview` and `history` (the display-oriented screens; any screen name works). Drop several such cards to build your own layout, for example the Live status next to the Week view. A card without `view` shows the full Chronos app as usual. The "Edit card" dialog exposes this as the **Embed single view** dropdown.
 
+### Schedule status card
+
+For a focused, non-interactive recap of one schedule, add a second card type, `custom:chronos-schedule-card`:
+
+```yaml
+type: custom:chronos-schedule-card
+schedule: a1b2c3d4
+```
+
+Copy the schedule id from the editor's ID chip (or pick the schedule in the card's "Edit card" dialog). The card shows, from top to bottom:
+
+- The schedule name and whether it is active.
+- **Now**: the action running right now and until when.
+- **Next**: the next change.
+- A **timeline bar** in the variant you choose (linear, radial or list).
+- A simple **status list**: active, devices, weather rules, days and period.
+- A **last activity** line: last run and last error, as relative time.
+- An **activity log**: recent state changes and activations in green, retriggers in amber, errors in red.
+
+An optional **alarm glow** pulses a red ring around the card while the most recent activity is an error, and clears itself as soon as the schedule runs successfully again. The card is display-only, so it is safe on a shared or wall dashboard; every section can be turned off in the card editor, and the colors follow your Home Assistant theme.
+
 ### Services
 
 To drive Chronos from automations or scripts:

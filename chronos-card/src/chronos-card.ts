@@ -59,6 +59,10 @@ import "./screens/help";
 import "./screens/history";
 import "./screens/card-editor";
 import "./duplicate-modal";
+// Second card type: the standalone per-schedule status recap card, bundled
+// alongside the main card. Registers `chronos-schedule-card`.
+import "./schedule-card";
+import "./screens/schedule-card-editor";
 
 const TITLE_KEYS: Record<Screen, [string, string]> = {
   overview: ["screen.overview.title", "chronos / overview"],

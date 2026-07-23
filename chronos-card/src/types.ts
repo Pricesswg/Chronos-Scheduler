@@ -289,6 +289,34 @@ export interface ChronosCardConfig {
   panel_offset?: number;
 }
 
+/** Config for `custom:chronos-schedule-card`: a compact, non-interactive
+ * status recap for one schedule. Every `show_*` flag defaults to true
+ * except `show_weather_ribbon`; `alarm_glow` defaults to true. */
+export interface ScheduleCardConfig {
+  type: string;
+  /** Id of the schedule to recap (required to show anything). */
+  schedule?: string;
+  /** Optional header override; defaults to the schedule name. */
+  title?: string;
+  /** Timeline bar variant. Unset = the schedule's own saved variant, else linear. */
+  timeline_variant?: "linear" | "radial" | "list";
+  show_timeline?: boolean;
+  show_weather_ribbon?: boolean;
+  show_now?: boolean;
+  show_next?: boolean;
+  show_status_active?: boolean;
+  show_status_devices?: boolean;
+  show_status_weather?: boolean;
+  show_status_days?: boolean;
+  show_status_period?: boolean;
+  show_last_activity?: boolean;
+  show_log?: boolean;
+  /** Number of activity-log rows to show. Default 6. */
+  log_limit?: number;
+  /** Pulse a red glow while the newest activity is an error. Default true. */
+  alarm_glow?: boolean;
+}
+
 export type Screen =
   | "overview"
   | "editor"

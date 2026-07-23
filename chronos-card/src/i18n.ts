@@ -391,6 +391,26 @@ const STRINGS: Record<string, Record<BaseLang, string>> = {
   "live.condition.windy": { it: "Ventoso", en: "Windy", fr: "Venteux", de: "Windig" },
   "live.not_today": { it: "Non in programma oggi", en: "Not scheduled today", fr: "Pas prévu aujourd'hui", de: "Heute nicht geplant" },
 
+  // Schedule status card (custom:chronos-schedule-card)
+  "scard.no_schedule": { it: "Seleziona una schedulazione nelle impostazioni della card", en: "Select a schedule in the card settings", fr: "Choisissez une planification dans les réglages de la carte", de: "Wähle einen Zeitplan in den Karteneinstellungen" },
+  "scard.not_found": { it: "Schedulazione non trovata", en: "Schedule not found", fr: "Planification introuvable", de: "Zeitplan nicht gefunden" },
+  "scard.now.until": { it: "fino alle {v}", en: "until {v}", fr: "jusqu'à {v}", de: "bis {v}" },
+  "scard.now.idle": { it: "Nessun blocco attivo ora", en: "No block running now", fr: "Aucun bloc actif", de: "Kein Block aktiv" },
+  "scard.next.none": { it: "Nessun cambio in programma oggi", en: "No change scheduled today", fr: "Aucun changement prévu aujourd'hui", de: "Heute keine Änderung geplant" },
+  "scard.k.active": { it: "Stato", en: "State", fr: "État", de: "Status" },
+  "scard.k.devices": { it: "Dispositivi", en: "Devices", fr: "Appareils", de: "Geräte" },
+  "scard.k.weather": { it: "Regole meteo", en: "Weather rules", fr: "Règles météo", de: "Wetterregeln" },
+  "scard.k.days": { it: "Giorni", en: "Days", fr: "Jours", de: "Tage" },
+  "scard.k.period": { it: "Periodo", en: "Period", fr: "Période", de: "Zeitraum" },
+  "scard.period.always": { it: "Tutto l'anno", en: "All year", fr: "Toute l'année", de: "Ganzjährig" },
+  "scard.weather.count": { it: "{n} attive", en: "{n} active", fr: "{n} actives", de: "{n} aktiv" },
+  "scard.last.none": { it: "Nessuna attività registrata", en: "No activity yet", fr: "Aucune activité", de: "Noch keine Aktivität" },
+  "scard.last.run": { it: "ultima esecuzione {v}", en: "last run {v}", fr: "dernière exécution {v}", de: "letzte Ausführung {v}" },
+  "scard.last.error": { it: "ultimo errore {v}", en: "last error {v}", fr: "dernière erreur {v}", de: "letzter Fehler {v}" },
+  "scard.log.title": { it: "Attività", en: "Activity", fr: "Activité", de: "Aktivität" },
+  "scard.log.errors": { it: "errori: {n}", en: "errors: {n}", fr: "erreurs : {n}", de: "Fehler: {n}" },
+  "scard.log.empty": { it: "Nessuna attività ancora", en: "No activity yet", fr: "Aucune activité pour l'instant", de: "Noch keine Aktivität" },
+
   // Live: weather source switcher (weather entity vs local station sensors)
   "live.source.weather": { it: "Entità weather", en: "Weather entity", fr: "Entité météo", de: "Wetter-Entität" },
   "live.source.local": { it: "Stazione locale", en: "Local station", fr: "Station locale", de: "Lokale Station" },

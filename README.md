@@ -35,6 +35,7 @@ A single Lovelace card provides:
 - Help screen with 12 ready-made recipes (thermostat day/night, sunset lights, wind-safe blinds, rain-skip irrigation, heat-scaled fan, summer shading, solar-surplus loads, seasonal pool pump, …), quick start, FAQ and glossary
 - Compact top navigation (default): menu, clock and screen title merged into a single horizontally scrollable icon bar, freeing the sidebar width for content, especially on phones. The classic sidebar remains available under `Settings → Appearance → Navigation`
 - Per-schedule Home Assistant entities (switch + running binary_sensor + next-change sensor) for native dashboards, automations and voice, plus an embeddable single-view card mode (`view: live` / `week` / `overview` / `history`) for placing just one part of Chronos on a normal dashboard
+- A dedicated non-interactive status card (`custom:chronos-schedule-card`) recapping one schedule: current/next action, a timeline bar, a toggleable status list, a tri-state activity log, and an optional error "alarm glow"
 
 All persisted by Home Assistant, accessible via WebSocket API, and auto-registered as a custom card.
 
@@ -143,6 +144,28 @@ Best with the display screens: `live`, `week`, `overview`, `history`. Drop sever
 | `mobile_threshold`  | number              | `700`        | Pixel width below which the card switches to the drawer layout. `0` disables mobile mode. |
 
 All schedule, device and weather-rule data is persisted by the integration via WebSocket API — the card config only controls presentation.
+
+## Schedule status card
+
+A second, non-interactive card type, `custom:chronos-schedule-card`, shows a compact status recap of a single schedule, ideal for pinning to a dashboard:
+
+```yaml
+type: custom:chronos-schedule-card
+schedule: a1b2c3d4        # the schedule id (copy it from the editor's ID chip)
+```
+
+It shows, top to bottom: the schedule name and enabled state, a **Now** line (what it is doing and until when), a **Next** line (next change), a timeline bar in the chosen variant, a simple status list (active, devices, weather rules, days, period), a **last activity** line, and an **activity log** colored by outcome (green for activations, amber for retriggers, red for errors). An optional **alarm glow** pulses a red ring around the card while the newest activity is an error and clears itself on the next successful run.
+
+The card face has no controls; everything is set in the Lovelace "Edit card" dialog. Every section can be toggled off, so you can make it as minimal or as detailed as you want. Colors follow your Home Assistant theme.
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `schedule` | string | — | Schedule id to recap (required). |
+| `title` | string | — | Header override; defaults to the schedule name. |
+| `timeline_variant` | string | schedule default | `linear`, `radial` or `list`. |
+| `log_limit` | number | `6` | Number of activity-log rows. |
+| `alarm_glow` | boolean | `true` | Pulse a red glow while the newest activity is an error. |
+| `show_now`, `show_next`, `show_timeline`, `show_weather_ribbon`, `show_status_active`, `show_status_devices`, `show_status_weather`, `show_status_days`, `show_status_period`, `show_last_activity`, `show_log` | boolean | mostly `true` (`show_weather_ribbon` `false`) | Toggle each section. |
 
 ## Supported domains
 
