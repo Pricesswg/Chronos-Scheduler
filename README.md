@@ -296,7 +296,7 @@ You can support the development of this scheduler by giving a small donation her
 |---------------------------|--------------------------------------------------------------------------|
 | `chronos.reload`          | Reload Chronos configuration from storage                                |
 | `chronos.fire_block`      | Fire the currently active block of a schedule (bypass timing and rules)  |
-| `chronos.schedule_toggle` | Enable or disable a schedule from HA automations/scripts. Target by `schedule_id` or by `name` (case-insensitive, must be unique). Schedules are deliberately not exposed as HA entities; this service is the automation-friendly equivalent of the card's toggle |
+| `chronos.schedule_toggle` | Enable or disable a schedule from HA automations/scripts. Target by `schedule_id` or by `name` (case-insensitive, must be unique). The automation-friendly equivalent of the card's toggle, and of the per-schedule switch entity below |
 
 Example: disable the irrigation schedule when the vacation input_boolean turns on:
 
@@ -313,6 +313,18 @@ automation:
           name: Garden irrigation
           enabled: false
 ```
+
+## Entities
+
+Each schedule is also exposed as three Home Assistant entities, grouped under a single **Chronos Scheduler** device. Put them on any dashboard with native cards (tile, entities, mushroom), use them in automations, or trigger them by voice, without embedding the full Chronos card.
+
+| Entity | Type | What it does |
+|---|---|---|
+| `switch.<schedule>` | switch | Enable/disable the schedule. Same effect as the card's toggle and the `schedule_toggle` service |
+| `binary_sensor.<schedule>_active` | binary_sensor (`running`) | On while a block is running now (schedule enabled, runs today, current time inside a block) |
+| `sensor.<schedule>_next_change` | sensor (`timestamp`) | When the schedule next changes (a block starting or ending). Attributes: `current_action`, `block_start`, `block_end`, `device_count`, `enabled`, `running` |
+
+Entity IDs are keyed on the schedule's internal id, so renaming a schedule updates the friendly name without breaking automations that reference the entity. Creating or deleting a schedule adds or removes its entities live, no restart needed. The `next_change` time is approximate for sun-anchored blocks on future days.
 
 ## Development
 

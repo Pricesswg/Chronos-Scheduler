@@ -805,11 +805,27 @@ Exports stay compatible across versions, so a schedule exported from one Home As
 
 ## Controlling Chronos from Home Assistant
 
-Schedules are deliberately not exposed as Home Assistant entities, to avoid filling your instance with switches. To drive Chronos from automations or scripts, use its services:
+Chronos exposes each schedule as Home Assistant entities and also offers services for automations.
+
+### Entities
+
+Every schedule becomes three entities, grouped under a single **Chronos Scheduler** device:
+
+| Entity | Type | What it does |
+|---|---|---|
+| `switch.<schedule>` | Switch | Enable or disable the schedule, same as the toggle in the card. |
+| `binary_sensor.<schedule>_active` | Binary sensor (running) | On while a block is running right now. |
+| `sensor.<schedule>_next_change` | Sensor (timestamp) | When the schedule next changes, a block starting or ending. Its attributes carry the current action, the running block window, and the device count. |
+
+Put these on any dashboard with the native tile or entities cards, use them as automation triggers and conditions, or control them by voice, without embedding the whole Chronos card. The entities are keyed on the schedule's internal id, so renaming a schedule updates the name without breaking automations. Creating or deleting a schedule adds or removes its entities immediately, with no restart. For sun-anchored blocks the next-change time on future days is approximate.
+
+### Services
+
+To drive Chronos from automations or scripts:
 
 | Service | What it does |
 |---|---|
-| `chronos.schedule_toggle` | Enables or disables a schedule, same as the toggle in the card. Target by `name` (case-insensitive, must be unique among your schedules) or by `schedule_id`. |
+| `chronos.schedule_toggle` | Enables or disables a schedule, same as the switch entity. Target by `name` (case-insensitive, must be unique among your schedules) or by `schedule_id`. |
 | `chronos.fire_block` | Fires the currently active block of a schedule immediately, bypassing timing and weather rules. Useful for testing. |
 | `chronos.reload` | Reloads the Chronos configuration from storage. |
 

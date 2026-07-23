@@ -10,6 +10,7 @@ from typing import Any
 
 from homeassistant.core import Context, CoreState, HomeAssistant
 from homeassistant.exceptions import ServiceNotFound
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import (
     async_track_state_change_event,
     async_track_time_interval,
@@ -24,6 +25,7 @@ from .const import (
     EVENT_COMMAND_ERROR,
     EVENT_RULE_TRIGGERED,
     OFF_RECALL_MAX_AGE_HOURS,
+    SIGNAL_STATE,
 )
 from .store import ChronosStore
 
@@ -478,6 +480,110 @@ class ChronosScheduler:
             await self._store.flush_history()
         except Exception:
             _LOGGER.exception("Chronos: history flush failed")
+
+        # Refresh the entity platforms (switch / binary_sensor / sensor):
+        # block transitions and the "next change" countdown move on every
+        # tick even when no action fires.
+        async_dispatcher_send(self._hass, SIGNAL_STATE)
+
+    def schedule_status(self, sched: dict) -> dict[str, Any]:
+        """Read-only runtime view of a schedule, for the entity platforms.
+
+        Returns whether a block is running right now, the current action and
+        block window, and the next change time (as a local, tz-aware
+        datetime). Pure read: no side effects. Reuses the same block math as
+        the tick (`_effective_blocks`, `_block_at`, `_resolve_block_time`) so
+        the entities never diverge from what the scheduler actually does.
+
+        `next_change` for a future day is approximate when the block is
+        sun-anchored, since sun times are resolved against today.
+        """
+        local_now = dt_util.now()
+        weekday = local_now.weekday()
+        current_hour = local_now.hour + local_now.minute / 60
+        enabled = bool(sched.get("enabled"))
+        days = sched.get("days", [1] * 7)
+        runs_today = (
+            enabled
+            and (weekday >= len(days) or bool(days[weekday]))
+            and self._is_in_date_range(sched, local_now)
+        )
+
+        blocks = self._effective_blocks(sched)
+        block, idx = self._block_at(blocks, current_hour) if runs_today else (None, -1)
+        running = block is not None
+
+        action = None
+        block_start = block_end = None
+        if block is not None:
+            block_start = self._hour_to_dt(local_now, self._resolve_block_time(block, "start"))
+            block_end = self._hour_to_dt(local_now, self._resolve_block_time(block, "end"))
+            act = block.get("action") or {}
+            action = act.get("id") or act.get("service")
+
+        next_change = self._next_change_dt(sched, local_now, current_hour, running, block)
+
+        return {
+            "enabled": enabled,
+            "running": running,
+            "current_action": action,
+            "block_start": block_start,
+            "block_end": block_end,
+            "next_change": next_change,
+            "device_count": len(sched.get("device_ids") or []),
+        }
+
+    @staticmethod
+    def _hour_to_dt(local_now, hour: float):
+        """Convert an hour-of-day float (0..24) to a tz-aware datetime on the
+        same local day. 24.0 (a block ending at midnight) rolls to the next
+        day's 00:00."""
+        if hour >= 24:
+            base = (local_now + timedelta(days=1)).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
+            return base
+        h = int(hour)
+        m = int(round((hour - h) * 60))
+        if m >= 60:
+            h, m = h + 1, 0
+        return local_now.replace(hour=min(h, 23), minute=m, second=0, microsecond=0)
+
+    def _next_change_dt(self, sched: dict, local_now, current_hour: float, running: bool, block):
+        """Next boundary the schedule will cross: the running block's end, else
+        the next block start today, else the earliest start on the next day the
+        schedule runs (scanning up to 7 days ahead). None if never."""
+        if running and block is not None:
+            return self._hour_to_dt(local_now, self._resolve_block_time(block, "end"))
+        blocks = self._effective_blocks(sched)
+        days = sched.get("days", [1] * 7)
+        # Remaining starts today (only if the schedule runs today at all).
+        weekday = local_now.weekday()
+        runs_today = (
+            bool(sched.get("enabled"))
+            and (weekday >= len(days) or bool(days[weekday]))
+            and self._is_in_date_range(sched, local_now)
+        )
+        if runs_today:
+            starts = sorted(
+                self._resolve_block_time(b, "start") for b in blocks
+            )
+            nxt = next((s for s in starts if s > current_hour), None)
+            if nxt is not None:
+                return self._hour_to_dt(local_now, nxt)
+        # Scan forward for the next day this schedule runs.
+        if not sched.get("enabled") or not blocks:
+            return None
+        for ahead in range(1, 8):
+            day = local_now + timedelta(days=ahead)
+            wd = day.weekday()
+            if wd < len(days) and not days[wd]:
+                continue
+            if not self._is_in_date_range(sched, day):
+                continue
+            earliest = min(self._resolve_block_time(b, "start") for b in blocks)
+            return self._hour_to_dt(day, earliest)
+        return None
 
     def _is_in_date_range(self, sched: dict, today_local) -> bool:
         """Return True if today (month/day) is inside the schedule's recurring

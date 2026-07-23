@@ -9,6 +9,7 @@ from homeassistant.components import websocket_api
 from homeassistant.components.frontend import add_extra_js_url
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import (
     area_registry as ar,
@@ -16,11 +17,14 @@ from homeassistant.helpers import (
     device_registry as dr,
     entity_registry as er,
 )
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 
 from .const import (
     ACTIONS_BY_TYPE,
     DOMAIN,
     DOMAIN_TO_TYPE,
+    SIGNAL_SCHEDULES_CHANGED,
+    SIGNAL_STATE,
     SUPPORTED_DOMAINS,
     VERSION,
     WEATHER_ATTRIBUTES,
@@ -32,6 +36,21 @@ _LOGGER = logging.getLogger(__name__)
 
 CARD_URL = f"/{DOMAIN}_static/chronos-card.js"
 _CARD_REGISTERED_FLAG = f"{DOMAIN}_card_registered"
+
+# Entity platforms: each schedule is exposed as a switch (enable/disable),
+# a binary_sensor (a block is running now) and a sensor (next change +
+# status attributes). Additive: the card keeps using the WebSocket API.
+PLATFORMS = [Platform.SWITCH, Platform.BINARY_SENSOR, Platform.SENSOR]
+
+
+def notify_entities(hass: HomeAssistant, *, structural: bool) -> None:
+    """Refresh the entity platforms after a schedule mutation. `structural`
+    means the set of schedules changed (create/save/remove) and the
+    platforms must reconcile their entities; otherwise only existing
+    entities re-read their state (e.g. a toggle)."""
+    async_dispatcher_send(hass, SIGNAL_STATE)
+    if structural:
+        async_dispatcher_send(hass, SIGNAL_SCHEDULES_CHANGED)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -51,6 +70,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _register_websocket_commands(hass)
     _register_services(hass)
     await _register_frontend_card(hass)
+
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     entry.async_on_unload(scheduler.stop)
 
@@ -274,6 +295,7 @@ def _register_services(hass: HomeAssistant) -> None:
                 return
             sched = matches[0]
         await store.async_toggle_schedule(sched["id"], enabled)
+        notify_entities(hass, structural=False)
         _LOGGER.info(
             "Chronos schedule_toggle: %s (%s) -> enabled=%s",
             sched.get("name"), sched["id"], enabled,
@@ -296,11 +318,12 @@ def _register_services(hass: HomeAssistant) -> None:
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     data = hass.data.pop(DOMAIN, {})
     scheduler = data.get("scheduler")
     if scheduler:
         await scheduler.stop()
-    return True
+    return unload_ok
 
 
 def _register_websocket_commands(hass: HomeAssistant) -> None:
@@ -394,6 +417,7 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
     ) -> None:
         store: ChronosStore = hass.data[DOMAIN]["store"]
         sched = await store.async_save_schedule(msg["schedule"])
+        notify_entities(hass, structural=True)
         connection.send_result(msg["id"], sched)
 
     @websocket_api.websocket_command({
@@ -406,6 +430,7 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
     ) -> None:
         store: ChronosStore = hass.data[DOMAIN]["store"]
         await store.async_remove_schedule(msg["schedule_id"])
+        notify_entities(hass, structural=True)
         connection.send_result(msg["id"], {"success": True})
 
     @websocket_api.websocket_command({
@@ -420,6 +445,7 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
         store: ChronosStore = hass.data[DOMAIN]["store"]
         try:
             await store.async_toggle_schedule(msg["schedule_id"], msg["enabled"])
+            notify_entities(hass, structural=False)
             connection.send_result(msg["id"], {"success": True})
         except ValueError as err:
             connection.send_error(msg["id"], "not_found", str(err))

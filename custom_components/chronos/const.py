@@ -1,5 +1,5 @@
 DOMAIN = "chronos"
-VERSION = "1.29.0"
+VERSION = "1.30.0"
 STORAGE_VERSION = 1
 STORAGE_KEY_DEVICES = f"{DOMAIN}.devices"
 STORAGE_KEY_SCHEDULES = f"{DOMAIN}.schedules"
@@ -400,3 +400,11 @@ OFF_RECALL_MAX_AGE_HOURS = 12
 EVENT_BLOCK_EXECUTED = f"{DOMAIN}_block_executed"
 EVENT_RULE_TRIGGERED = f"{DOMAIN}_rule_triggered"
 EVENT_COMMAND_ERROR = f"{DOMAIN}_command_error"
+
+# Dispatcher signals for the entity platforms (switch / binary_sensor /
+# sensor). SIGNAL_STATE tells existing entities to re-read their state
+# (fired every scheduler tick and on toggle). SIGNAL_SCHEDULES_CHANGED
+# tells the platforms to reconcile their entity set (fired when a schedule
+# is created, saved or removed).
+SIGNAL_STATE = f"{DOMAIN}_state_updated"
+SIGNAL_SCHEDULES_CHANGED = f"{DOMAIN}_schedules_changed"
