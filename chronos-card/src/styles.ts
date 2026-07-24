@@ -272,7 +272,10 @@ export const chronosStyles = css`
   .topnav__logo {
     width: 26px; height: 26px; border-radius: 8px; overflow: hidden;
     display: grid; place-items: center;
-    background: var(--accent-soft); color: var(--accent);
+    /* No plate behind the mark: the brand icon is a self-contained round
+     * medallion, an accent square behind it would fight its shape. The
+     * background only shows for the "C" text fallback. */
+    background: transparent; color: var(--accent);
     font-weight: 700; font-size: 12px;
   }
   .topnav__clock {
