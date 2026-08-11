@@ -377,6 +377,13 @@ DEFAULT_SETTINGS = {
     # one horizontal icon bar (reclaims space, especially on phones);
     # "sidebar" keeps the classic left sidebar for those who prefer it.
     "nav_style": "top",
+    # Safety net against an accidental tap on a switch: when true the card
+    # asks for confirmation before turning a schedule (or a weather rule)
+    # OFF. Turning one back ON is never confirmed. Default on: silencing a
+    # schedule by mistake is the kind of error you notice days later.
+    # Frontend-only guard: the switch entities and the schedule_toggle
+    # service bypass it by design, so automations keep working unattended.
+    "confirm_disable": True,
 }
 
 # Auto-off timer for turn_on blocks: device type → switch-off service

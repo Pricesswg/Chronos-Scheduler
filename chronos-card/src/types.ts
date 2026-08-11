@@ -225,6 +225,11 @@ export interface Settings {
   /** Navigation layout: "top" (default) merges sidebar and topbar into a
    * single icon bar; "sidebar" keeps the classic left sidebar. */
   nav_style?: "top" | "sidebar";
+  /** Ask for confirmation before switching a schedule or a weather rule
+   * OFF from the card. Switching one back ON is never confirmed. Default
+   * true. Card-side only: the switch entities and the schedule_toggle
+   * service are deliberately not gated. */
+  confirm_disable?: boolean;
 }
 
 export interface ActionValueSpec {

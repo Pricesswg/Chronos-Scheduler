@@ -159,7 +159,10 @@ export class ChronosWeatherRulesList extends LitElement {
         <div style="flex:1"></div>
         <label class="switch" @click=${(e: Event) => e.stopPropagation()}>
           <input type="checkbox" .checked=${r.active}
-            @change=${(e: Event) => this.card.toggleRuleActive(r.id!, (e.target as HTMLInputElement).checked)}/>
+            @change=${(e: Event) => {
+              const el = e.target as HTMLInputElement;
+              this.card.toggleRuleActive(r.id!, el.checked, el);
+            }}/>
           <span class="switch__track"></span>
           <span class="switch__thumb"></span>
         </label>

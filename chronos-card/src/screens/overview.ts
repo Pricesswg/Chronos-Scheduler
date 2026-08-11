@@ -81,7 +81,8 @@ export class ChronosOverview extends LitElement {
                   </div>
                   <label class="switch" @click=${(e: Event) => e.stopPropagation()}>
                     <input type="checkbox" .checked=${s.enabled} @change=${(e: Event) => {
-                      this.card.doToggleSchedule(s.id, (e.target as HTMLInputElement).checked);
+                      const el = e.target as HTMLInputElement;
+                      this.card.doToggleSchedule(s.id, el.checked, el);
                     }}/>
                     <span class="switch__track"></span>
                     <span class="switch__thumb"></span>

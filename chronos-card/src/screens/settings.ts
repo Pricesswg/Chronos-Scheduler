@@ -180,6 +180,22 @@ export class ChronosSettingsScreen extends LitElement {
         </div>
 
         <div class="card">
+          <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("settings.safety.title")}</h3><p class="card__sub">${t("settings.safety.subtitle")}</p></div></div>
+          <div class="device-row" style="border-radius:0;padding:8px 0">
+            <div class="device-row__main">
+              <div class="device-row__name">${t("settings.safety.confirm_disable.title")}</div>
+              <div class="device-row__meta" style="font-family:var(--font-sans)">${t("settings.safety.confirm_disable.desc")}</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" .checked=${(s as any).confirm_disable ?? true}
+                @change=${(e: Event) => this._updateSetting("confirm_disable", (e.target as HTMLInputElement).checked)}/>
+              <span class="switch__track"></span>
+              <span class="switch__thumb"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="card">
           <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("settings.appearance.title")}</h3><p class="card__sub">${t("settings.appearance.subtitle")}</p></div></div>
           <div class="field">
             <label class="field__label">${t("settings.nav.title")}</label>

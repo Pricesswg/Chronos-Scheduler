@@ -654,6 +654,20 @@ These notifications are useful for testing and troubleshooting.
 
 ---
 
+### Safety
+
+The **Safety** settings guard the actions that switch something off.
+
+**Ask before disabling** (on by default) puts a confirmation dialog in front of every switch-off made from the card: turning a schedule off in the Overview or in the schedule editor header, and turning a weather rule off in the editor or in the Weather rules list. The dialog names what you are about to disable and offers Confirm and Cancel; cancelling leaves the switch exactly where it was, and nothing is written.
+
+Turning something back **on** is never confirmed, so the guard never gets in the way of resuming a schedule.
+
+The confirmation is a card-side guard only. Disabling a schedule from its `switch.<schedule>` entity, from the `chronos.schedule_toggle` service or by voice goes through untouched, so unattended automations keep working exactly as before.
+
+Turn the setting off if you find the dialog repetitive; the switches then behave as they did before.
+
+---
+
 ### Appearance
 
 The **Appearance** settings control the navigation layout and how dense the Chronos interface is.
@@ -813,7 +827,7 @@ Every schedule becomes three entities, grouped under a single **Chronos Schedule
 
 | Entity | Type | What it does |
 |---|---|---|
-| `switch.<schedule>` | Switch | Enable or disable the schedule, same as the toggle in the card. |
+| `switch.<schedule>` | Switch | Enable or disable the schedule, same as the toggle in the card. Not covered by the `Settings → Safety` confirmation, which only guards the card. |
 | `binary_sensor.<schedule>_active` | Binary sensor (running) | On while a block is running right now. |
 | `sensor.<schedule>_next_change` | Sensor (timestamp) | When the schedule next changes, a block starting or ending. Its attributes carry the current action, the running block window, and the device count. |
 

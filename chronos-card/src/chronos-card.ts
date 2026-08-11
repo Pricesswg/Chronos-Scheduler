@@ -115,6 +115,9 @@ export class ChronosCard extends LitElement {
   @state() _editingRuleId = "";
   /** Schedule id whose duplicate modal is open. "" = closed. */
   @state() _duplicateSourceId = "";
+  /** Switch-off waiting for the user's confirmation, when the
+   * `confirm_disable` safety setting is on. null = no modal. */
+  @state() _pendingDisable: { kind: "schedule" | "rule"; id: string; label: string } | null = null;
 
   private _resizeObserver?: ResizeObserver;
 
@@ -444,8 +447,18 @@ export class ChronosCard extends LitElement {
     }
   }
 
-  /** Toggle a rule's active flag. Global: affects every target schedule. */
-  async toggleRuleActive(ruleId: string, active: boolean) {
+  /** Toggle a rule's active flag. Global: affects every target schedule.
+   * `srcEl` is the checkbox that triggered it, needed only so a cancelled
+   * confirmation can put it back. */
+  async toggleRuleActive(ruleId: string, active: boolean, srcEl?: HTMLInputElement) {
+    const rule = this._rules.find((r) => r.id === ruleId);
+    if (!rule) return;
+    const label = [rule.if, rule.then].filter(Boolean).join(" → ");
+    if (this._askDisableConfirm("rule", ruleId, active, label, srcEl)) return;
+    await this._applyRuleActive(ruleId, active);
+  }
+
+  private async _applyRuleActive(ruleId: string, active: boolean) {
     const rule = this._rules.find((r) => r.id === ruleId);
     if (!rule) return;
     await this.doSaveRule({ ...rule, active });
@@ -560,7 +573,15 @@ export class ChronosCard extends LitElement {
     );
   }
 
-  async doToggleSchedule(id: string, enabled: boolean) {
+  /** Enable/disable a schedule from the card. `srcEl` is the checkbox that
+   * triggered it, needed only so a cancelled confirmation can put it back. */
+  async doToggleSchedule(id: string, enabled: boolean, srcEl?: HTMLInputElement) {
+    const label = this._schedules.find((s) => s.id === id)?.name || "";
+    if (this._askDisableConfirm("schedule", id, enabled, label, srcEl)) return;
+    await this._applyToggleSchedule(id, enabled);
+  }
+
+  private async _applyToggleSchedule(id: string, enabled: boolean) {
     try {
       await wsToggleSchedule(this.hass, id, enabled);
       this._schedules = this._schedules.map((s) => (s.id === id ? { ...s, enabled } : s));
@@ -569,6 +590,40 @@ export class ChronosCard extends LitElement {
       console.error("Chronos: toggleSchedule failed", e);
       await this._reloadAfterError();
     }
+  }
+
+  /** Safety gate shared by the two "switch something off" paths. Returns
+   * true when the caller must stop and wait for the modal. The checkbox the
+   * user just flipped is reverted straight away, so the switch keeps showing
+   * what is actually stored until the answer comes back: Lit dirty-checks
+   * `.checked` against the value it last committed, which has not changed,
+   * so a cancel alone would leave the switch visually off.
+   *
+   * Turning something back ON is never gated, and neither is anything
+   * outside the card: the per-schedule switch entities and the
+   * chronos.schedule_toggle service stay usable by unattended automations. */
+  private _askDisableConfirm(
+    kind: "schedule" | "rule",
+    id: string,
+    enabled: boolean,
+    label: string,
+    srcEl?: HTMLInputElement
+  ): boolean {
+    if (enabled) return false;
+    if (!(this._settings?.confirm_disable ?? true)) return false;
+    if (srcEl) srcEl.checked = true;
+    this._pendingDisable = { kind, id, label };
+    return true;
+  }
+
+  /** Run the switch-off the user just confirmed, going straight to the
+   * apply helpers so the gate cannot fire a second time. */
+  private async _confirmPendingDisable() {
+    const pending = this._pendingDisable;
+    if (!pending) return;
+    this._pendingDisable = null;
+    if (pending.kind === "schedule") await this._applyToggleSchedule(pending.id, false);
+    else await this._applyRuleActive(pending.id, false);
   }
 
   async doAddDevice(entity_id: string, alias?: string) {
@@ -771,6 +826,7 @@ export class ChronosCard extends LitElement {
             </div>
           </main>
           ${this._pendingNav ? this._renderDirtyModal() : nothing}
+          ${this._pendingDisable ? this._renderDisableModal() : nothing}
           ${this._duplicateSourceId
             ? html`<chronos-duplicate-modal .card=${this} .sourceId=${this._duplicateSourceId}></chronos-duplicate-modal>`
             : nothing}
@@ -793,6 +849,7 @@ export class ChronosCard extends LitElement {
           </div>
         </main>
         ${this._pendingNav ? this._renderDirtyModal() : nothing}
+        ${this._pendingDisable ? this._renderDisableModal() : nothing}
         ${this._duplicateSourceId
           ? html`<chronos-duplicate-modal .card=${this} .sourceId=${this._duplicateSourceId}></chronos-duplicate-modal>`
           : nothing}
@@ -962,6 +1019,35 @@ export class ChronosCard extends LitElement {
       default:
         return html`<chronos-overview .card=${this} .nowHour=${nowHour}></chronos-overview>`;
     }
+  }
+
+  /** Confirmation asked before a schedule or a weather rule is switched off,
+   * when Settings > Safety > "confirm before disabling" is on. Cancel and
+   * click-outside are the same thing: nothing was changed yet. */
+  private _renderDisableModal() {
+    const pending = this._pendingDisable!;
+    const dismiss = () => { this._pendingDisable = null; };
+    return html`
+      <div class="modal-overlay" @click=${dismiss}>
+        <div class="card" style="width:min(440px,100%);padding:22px" @click=${(e: Event) => e.stopPropagation()}>
+          <h3 style="margin:0 0 8px">${t("modal.disable.title")}</h3>
+          <p class="text-sm" style="margin:0 0 8px;color:var(--text-soft)">
+            ${t(pending.kind === "schedule" ? "modal.disable.body" : "modal.disable.body_rule")}
+            ${pending.label
+              ? html`<strong style="display:block;margin-top:4px">${pending.label}</strong>`
+              : nothing}
+          </p>
+          <p class="text-xs text-mute" style="margin:0 0 16px">${t("modal.disable.hint")}</p>
+          <div class="row" style="justify-content:flex-end;gap:8px">
+            <button class="btn" @click=${dismiss}>${t("common.cancel")}</button>
+            <button class="btn btn--primary" style="background:var(--warn)"
+              @click=${() => this._confirmPendingDisable()}>
+              ${icon("check", 12)} ${t("common.confirm")}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   private _renderDirtyModal() {
