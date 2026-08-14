@@ -783,4 +783,8 @@ export const PL_STRINGS: Record<string, string> = {
   "editor.compare.with": "Porównaj z: {name}",
   "editor.compare.hint": "Pokazuje inny harmonogram pod paskiem (w kole w widoku radialnym), aby je porównać. Nakładające się fragmenty mają czerwoną obwódkę.",
   "scard.open_chronos": "Otwórz w Chronos",
+  "tl.run.extended": "Przy regule na maksimum działa do {until}",
+  "editor.irrigation.overlap.title": "Programy nawadniania, które mogą się nakładać",
+  "editor.irrigation.overlap.item": "{a} nakłada się na {name} ({b}){note}",
+  "editor.irrigation.overlap.when_scaled": " · przy regule skalowania na maksimum",
 };

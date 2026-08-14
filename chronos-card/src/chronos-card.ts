@@ -43,7 +43,7 @@ import {
   reorderRules as wsReorderRules,
   updateSettings as wsUpdateSettings,
 } from "./ws";
-import { fmtHour, computeRepeat, setSnapMinutes, setHassRef } from "./utils";
+import { fmtHour, computeRepeat, setSnapMinutes, setHassRef, resolveBlockTime } from "./utils";
 
 import "./screens/overview";
 import "./screens/editor";
@@ -414,6 +414,79 @@ export class ChronosCard extends LitElement {
       }
     }
     return [...out];
+  }
+
+  /** Minutes a block's action runs for as configured: the sum of the legs
+   * on a sequential irrigation program, the plain action value otherwise.
+   * 0 when the action has no duration (a light, a thermostat setpoint). */
+  private _blockRunMinutes(sched: Schedule, b: any): number {
+    if (sched.device_type !== "irrigation") return 0;
+    const a = b?.action || {};
+    if (a.mode === "sequential" && Array.isArray(a.sequence)) {
+      return a.sequence.reduce((tot: number, s: any) => tot + (Number(s?.minutes) || 0), 0);
+    }
+    const v = Number(a.value);
+    return isFinite(v) && v > 0 ? v : 0;
+  }
+
+  /** Worst-case run span of each irrigation block: how far the watering can
+   * stretch once a scale-value rule is at its maximum. This is design-time
+   * information (the highest the rule can go), which is what tells you
+   * whether two zones can end up running together on a hot day. */
+  runSpansForSchedule(sched: Schedule): { idx: number; endH: number; scaled: boolean }[] {
+    if (sched.device_type !== "irrigation") return [];
+    const rules = this.rulesForSchedule(sched.id).filter(
+      (r) => r.active && r.effect === "scale_value"
+    );
+    const out: { idx: number; endH: number; scaled: boolean }[] = [];
+    (sched.blocks || []).forEach((b, idx) => {
+      const base = this._blockRunMinutes(sched, b);
+      if (!base) return;
+      let worst = base;
+      for (const r of rules) {
+        const bi = r.block_index;
+        if (bi !== null && bi !== undefined && bi !== idx) continue;
+        worst = Math.max(worst, r.scale_out_min ?? 0, r.scale_out_max ?? 0);
+      }
+      const start = resolveBlockTime(b, "start");
+      out.push({ idx, endH: start + worst / 60, scaled: worst > base });
+    });
+    return out;
+  }
+
+  /** Irrigation programs that can end up watering at the same time once
+   * their scale rules max out. Two programs on the same water line must not
+   * overlap (pressure), and a rule that stretches one of them can create an
+   * overlap that isn't visible in the configured times. Returns a readable
+   * pair description per clash. */
+  irrigationOverlapWarnings(sched: Schedule): string[] {
+    if (sched.device_type !== "irrigation" || !sched.enabled) return [];
+    const spanOf = (s: Schedule) =>
+      this.runSpansForSchedule(s).map((sp) => ({
+        from: resolveBlockTime(s.blocks[sp.idx], "start"),
+        to: sp.endH,
+        scaled: sp.scaled,
+      }));
+    const mine = spanOf(sched);
+    if (!mine.length) return [];
+    const dayOverlap = (a: number[] = [], b: number[] = []) => a.some((v, i) => v && b[i]);
+    const out: string[] = [];
+    for (const other of this._schedules) {
+      if (other.id === sched.id || other.device_type !== "irrigation" || !other.enabled) continue;
+      if (!dayOverlap(sched.days || [], other.days || [])) continue;
+      for (const m of mine) {
+        for (const o of spanOf(other)) {
+          if (m.to <= o.from || m.from >= o.to) continue;
+          out.push(t("editor.irrigation.overlap.item", {
+            name: other.name,
+            a: `${fmtHour(m.from)}-${fmtHour(Math.min(24, m.to))}`,
+            b: `${fmtHour(o.from)}-${fmtHour(Math.min(24, o.to))}`,
+            note: m.scaled || o.scaled ? t("editor.irrigation.overlap.when_scaled") : "",
+          }));
+        }
+      }
+    }
+    return [...new Set(out)];
   }
 
   rulesForSchedule(scheduleId: string): WeatherRule[] {

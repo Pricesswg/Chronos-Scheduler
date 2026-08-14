@@ -414,6 +414,16 @@ On a **sequential program** the output is read as the **total** program length: 
 
 For an inverse relation (more rain, less water) set the output at MIN higher than the output at MAX. The mapping is linear between the two ends, whichever way round they are.
 
+### Seeing the scaled duration on the bar
+
+When a Scale value rule can stretch an irrigation block, the timeline shows both: the block stays **solid** at the duration you configured, and a **hatched tail** continues to where the watering can reach with the rule at its maximum. So "30 minutes, up to 120 when it is hot" is readable on the bar instead of hiding inside the rule. Blocks with no scaling rule look exactly as before.
+
+### Overlap warning between irrigation programs
+
+Two programs on the same water line should not water at the same time, and a scale rule can create an overlap that is invisible in the configured times: each program still starts when you set it, but one of them now runs much longer.
+
+The editor checks this for you. When two enabled irrigation schedules share days and their worst-case runs (durations pushed to the rule's maximum) overlap, a warning appears above the timeline naming the other schedule and the two time ranges. It is a design-time check: nothing is blocked, it just tells you that on the hottest day the two zones would collide.
+
 ### Comparing two schedules
 
 In the editor, the dropdown next to the Linear / Radial / List switch overlays **another schedule** on the timeline: under the bar in the linear view, as an inner ring in the radial one. Blocks of the compared schedule that overlap the one you are editing are outlined in red.

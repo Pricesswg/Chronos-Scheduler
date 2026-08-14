@@ -28,6 +28,23 @@ export class ChronosEditor extends LitElement {
    * none. View-only and not persisted: it is a reading aid, not config. */
   @state() private _compareId = "";
 
+  /** Two irrigation programs that can end up watering together once their
+   * scale rules max out: same water line, so it is worth flagging at design
+   * time rather than discovering it on the first hot day. */
+  private _renderOverlapWarning(schedule: any) {
+    const warnings = this.card.irrigationOverlapWarnings(schedule);
+    if (!warnings.length) return nothing;
+    return html`
+      <div class="text-xs" style="display:flex;gap:8px;align-items:flex-start;margin-top:8px;padding:8px 10px;border-radius:var(--r-md);background:color-mix(in srgb, var(--warn) 12%, transparent);color:var(--warn)">
+        ${icon("info", 12)}
+        <div>
+          <div class="fw-600">${t("editor.irrigation.overlap.title")}</div>
+          ${warnings.map((w) => html`<div style="margin-top:2px">${w}</div>`)}
+        </div>
+      </div>
+    `;
+  }
+
   /** The schedule currently overlaid for comparison, if it still exists. */
   private _compareSchedule() {
     if (!this._compareId) return null;
@@ -133,6 +150,7 @@ export class ChronosEditor extends LitElement {
                 <div style="flex:1;min-width:0">
                   <h3 class="card__title">${t("wizard.step.time")}</h3>
                   <p class="card__sub">${t("editor.add_block_hint")}</p>
+                  ${this._renderOverlapWarning(schedule)}
                 </div>
                 <div class="row" style="gap:8px;flex-wrap:wrap">
                   ${this._renderComparePicker(schedule)}
@@ -158,6 +176,7 @@ export class ChronosEditor extends LitElement {
                 .referenceBlocks=${this._compareSchedule()?.blocks || []}
                 .referenceDeviceType=${this._compareSchedule()?.device_type || "thermostat"}
                 .referenceLabel=${this._compareSchedule()?.name || ""}
+                .runSpans=${this.card.runSpansForSchedule(schedule)}
                 @block-select=${(e: CustomEvent) => { this._selectedBlockIdx = e.detail.index; }}
                 @blocks-changed=${(e: CustomEvent) => { this.card.updateBlocksLocal(schedule.id, e.detail.blocks); }}
               ></chronos-timeline>

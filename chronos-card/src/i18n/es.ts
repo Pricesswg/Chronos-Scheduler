@@ -783,4 +783,8 @@ export const ES_STRINGS: Record<string, string> = {
   "editor.compare.with": "Comparar con: {name}",
   "editor.compare.hint": "Muestra otra programación bajo la barra (dentro del círculo en la vista radial) para compararlas. Los solapamientos se bordean en rojo.",
   "scard.open_chronos": "Abrir en Chronos",
+  "tl.run.extended": "Con la regla al máximo llega hasta las {until}",
+  "editor.irrigation.overlap.title": "Programas de riego que pueden solaparse",
+  "editor.irrigation.overlap.item": "{a} se solapa con {name} ({b}){note}",
+  "editor.irrigation.overlap.when_scaled": " · con la regla de escala al máximo",
 };

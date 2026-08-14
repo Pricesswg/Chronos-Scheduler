@@ -783,4 +783,8 @@ export const NL_STRINGS: Record<string, string> = {
   "editor.compare.with": "Vergelijk met: {name}",
   "editor.compare.hint": "Toont een ander schema onder de balk (in de cirkel bij de radiale weergave) om ze te vergelijken. Overlappingen krijgen een rode rand.",
   "scard.open_chronos": "Openen in Chronos",
+  "tl.run.extended": "Met de regel op het maximum loopt het tot {until}",
+  "editor.irrigation.overlap.title": "Irrigatieprogramma's die kunnen overlappen",
+  "editor.irrigation.overlap.item": "{a} overlapt {name} ({b}){note}",
+  "editor.irrigation.overlap.when_scaled": " · met de schaalregel op het maximum",
 };

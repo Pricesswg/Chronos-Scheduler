@@ -783,4 +783,8 @@ export const PT_STRINGS: Record<string, string> = {
   "editor.compare.with": "Comparar com: {name}",
   "editor.compare.hint": "Mostra outro agendamento sob a barra (dentro do círculo na vista radial) para os comparar. As sobreposições são contornadas a vermelho.",
   "scard.open_chronos": "Abrir no Chronos",
+  "tl.run.extended": "Com a regra no máximo vai até às {until}",
+  "editor.irrigation.overlap.title": "Programas de rega que se podem sobrepor",
+  "editor.irrigation.overlap.item": "{a} sobrepõe-se a {name} ({b}){note}",
+  "editor.irrigation.overlap.when_scaled": " · com a regra de escala no máximo",
 };

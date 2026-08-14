@@ -96,6 +96,13 @@ export class ChronosTimeline extends LitElement {
   @property({ type: String }) referenceDeviceType: DeviceType = "thermostat";
   @property({ type: String }) referenceLabel = "";
 
+  /** How far each block's action can actually run once a scale rule pushes
+   * it to its maximum: `endH` is the worst-case end hour. Drawn as a hatched
+   * band continuing past the solid configured block, so "watering set to 30
+   * minutes, up to 120 when it's hot" is visible on the bar instead of
+   * hiding in the rule. Only entries longer than the block are drawn. */
+  @property({ type: Array }) runSpans: { idx: number; endH: number }[] = [];
+
   @state() private _drag: {
     /** Index of the dragged block INSIDE the snapshot (stable for the whole
      * drag). Live indexes in this.blocks are useless mid-drag: the parent
@@ -246,10 +253,31 @@ export class ChronosTimeline extends LitElement {
           </div>
           `;
         })}
+        ${this._renderRunSpans(pct)}
         ${this._renderLinearGhost(pct)}
         ${this.now !== null ? html`<div class="tl-now" style="left:${pct(this.now)}%"></div>` : nothing}
       </div>
       ${this._renderReferenceStrip(pct)}
+    `;
+  }
+
+  /** The hatched tail past a block: how far its action can run when a scale
+   * rule is at its maximum. Drawn only where it actually extends beyond the
+   * configured block, so an unscaled schedule looks exactly as before. */
+  private _renderRunSpans(pct: (h: number) => number) {
+    if (!this.runSpans.length) return nothing;
+    return html`
+      ${this.runSpans.map((span) => {
+        const b = this.blocks[span.idx];
+        if (!b) return nothing;
+        const be = resolveBlockTime(b, "end");
+        const end = Math.min(24, span.endH);
+        if (end <= be + 1 / 60) return nothing;
+        return html`
+          <div class="tl-run" style="left:${pct(be)}%;width:${pct(end - be)}%"
+            title="${t("tl.run.extended", { until: fmtHour(end) })}"></div>
+        `;
+      })}
     `;
   }
 

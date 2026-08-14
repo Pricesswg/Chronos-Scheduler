@@ -481,6 +481,24 @@ export const chronosStyles = css`
   /* Mini keeps only the glow: a dot on a 12px-tall bar is just noise. */
   .timeline--mini .tl-block[data-ruled="1"]::after { display: none; }
 
+  /* Worst-case run tail: the stretch a block's action can reach when a
+   * scale rule maxes out (irrigation watering longer on a hot day). Hatched
+   * and semi-transparent so the solid part stays "what you configured" and
+   * this reads as "and up to here". */
+  .tl-run {
+    position: absolute; top: 6px; bottom: 22px;
+    border-radius: 0 6px 6px 0; pointer-events: none;
+    border: 1.5px dashed color-mix(in srgb, var(--text) 45%, transparent);
+    border-left: none;
+    background: repeating-linear-gradient(
+      45deg,
+      color-mix(in srgb, var(--text) 16%, transparent) 0 4px,
+      transparent 4px 9px
+    );
+  }
+  .timeline--compact .tl-run { top: 3px; bottom: 3px; }
+  .timeline--mini .tl-run { top: 0; bottom: 0; border-radius: 0; }
+
   /* Reference overlay: a second schedule shown under the linear bar for
    * comparison. Muted and never interactive; stretches that overlap the
    * schedule being shown get a red outline, which is what you look for
