@@ -24,6 +24,32 @@ export class ChronosEditor extends LitElement {
 
   @state() private _selectedBlockIdx = 0;
   @state() private _selectedRuleIdx: number = -1;
+  /** Id of a second schedule drawn on the timeline for comparison, "" =
+   * none. View-only and not persisted: it is a reading aid, not config. */
+  @state() private _compareId = "";
+
+  /** The schedule currently overlaid for comparison, if it still exists. */
+  private _compareSchedule() {
+    if (!this._compareId) return null;
+    return this.card._schedules.find((s) => s.id === this._compareId) || null;
+  }
+
+  /** Picker for the comparison overlay: every other schedule, so two
+   * irrigation zones (or heating vs ventilation) can be read against each
+   * other without leaving the editor. */
+  private _renderComparePicker(schedule: any) {
+    const others = this.card._schedules.filter((s) => s.id !== schedule.id);
+    if (!others.length) return nothing;
+    return html`
+      <select class="select" style="max-width:200px" title="${t("editor.compare.hint")}"
+        @change=${(e: Event) => { this._compareId = (e.target as HTMLSelectElement).value; }}>
+        <option value="" ?selected=${!this._compareId}>${t("editor.compare.none")}</option>
+        ${others.map((s) => html`
+          <option value="${s.id}" ?selected=${this._compareId === s.id}>${t("editor.compare.with", { name: s.name })}</option>
+        `)}
+      </select>
+    `;
+  }
   @state() private _confirmDelete = false;
   /** Transient check-mark feedback after copying the schedule id chip. */
   @state() private _idCopied = false;
@@ -108,12 +134,15 @@ export class ChronosEditor extends LitElement {
                   <h3 class="card__title">${t("wizard.step.time")}</h3>
                   <p class="card__sub">${t("editor.add_block_hint")}</p>
                 </div>
-                <div class="segmented">
-                  ${(["linear", "radial", "list"] as const).map((v) => html`
-                    <button data-active="${timelineVariant === v}" @click=${() => this.card.setTimelineVariant(schedule.id, v)}>
-                      ${t("timeline." + v)}
-                    </button>
-                  `)}
+                <div class="row" style="gap:8px;flex-wrap:wrap">
+                  ${this._renderComparePicker(schedule)}
+                  <div class="segmented">
+                    ${(["linear", "radial", "list"] as const).map((v) => html`
+                      <button data-active="${timelineVariant === v}" @click=${() => this.card.setTimelineVariant(schedule.id, v)}>
+                        ${t("timeline." + v)}
+                      </button>
+                    `)}
+                  </div>
                 </div>
               </div>
               <chronos-timeline
@@ -126,6 +155,9 @@ export class ChronosEditor extends LitElement {
                 .forecast=${this.card._forecast}
                 .previewRule=${this._selectedRuleIdx >= 0 ? schedRules[this._selectedRuleIdx] || null : null}
                 .ruleBlocks=${this.card.ruledBlockIndices(schedule.id, schedule.blocks.length)}
+                .referenceBlocks=${this._compareSchedule()?.blocks || []}
+                .referenceDeviceType=${this._compareSchedule()?.device_type || "thermostat"}
+                .referenceLabel=${this._compareSchedule()?.name || ""}
                 @block-select=${(e: CustomEvent) => { this._selectedBlockIdx = e.detail.index; }}
                 @blocks-changed=${(e: CustomEvent) => { this.card.updateBlocksLocal(schedule.id, e.detail.blocks); }}
               ></chronos-timeline>

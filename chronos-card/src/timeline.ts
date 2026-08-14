@@ -87,6 +87,15 @@ export class ChronosTimeline extends LitElement {
    * change what happens. */
   @property({ type: Array }) ruleBlocks: number[] = [];
 
+  /** Reference overlay: another schedule drawn alongside this one, read
+   * only, to compare the two (two irrigation zones that should not water at
+   * the same time, heating vs ventilation, …). Linear draws it as a thin
+   * strip under the bar, radial as an inner ring. Reference blocks that
+   * overlap this schedule's own blocks are flagged. */
+  @property({ type: Array }) referenceBlocks: Block[] = [];
+  @property({ type: String }) referenceDeviceType: DeviceType = "thermostat";
+  @property({ type: String }) referenceLabel = "";
+
   @state() private _drag: {
     /** Index of the dragged block INSIDE the snapshot (stable for the whole
      * drag). Live indexes in this.blocks are useless mid-drag: the parent
@@ -240,6 +249,41 @@ export class ChronosTimeline extends LitElement {
         ${this._renderLinearGhost(pct)}
         ${this.now !== null ? html`<div class="tl-now" style="left:${pct(this.now)}%"></div>` : nothing}
       </div>
+      ${this._renderReferenceStrip(pct)}
+    `;
+  }
+
+  /** True when [s, e) overlaps any block of the schedule being shown. Used
+   * to flag a reference schedule that runs at the same time as this one. */
+  private _overlapsOwn(s: number, e: number): boolean {
+    return this.blocks.some((b) => {
+      const bs = resolveBlockTime(b, "start");
+      const be = resolveBlockTime(b, "end");
+      return !(e <= bs || s >= be);
+    });
+  }
+
+  /** The reference schedule under the linear bar: same hour axis, muted,
+   * never interactive. Overlapping stretches are outlined in red, which is
+   * the whole point when comparing two irrigation zones. */
+  private _renderReferenceStrip(pct: (h: number) => number) {
+    if (!this.referenceBlocks.length) return nothing;
+    return html`
+      <div class="tl-ref">
+        ${this.referenceLabel
+          ? html`<span class="tl-ref__label truncate" title="${this.referenceLabel}">${this.referenceLabel}</span>`
+          : nothing}
+        <div class="tl-ref__track">
+          ${this.referenceBlocks.map((b) => {
+            const rs = resolveBlockTime(b, "start");
+            const re = resolveBlockTime(b, "end");
+            const clash = this._overlapsOwn(rs, re);
+            return html`<div class="tl-ref__block" data-clash="${clash ? "1" : "0"}"
+              style="left:${pct(rs)}%;width:${pct(re - rs)}%;background:${actionColor(this.referenceDeviceType, b.action)}"
+              title="${fmtHour(rs)} → ${fmtHour(re)} · ${actionLabel(this.referenceDeviceType, b.action)}${clash ? ` · ${t("tl.ref.clash")}` : ""}"></div>`;
+          })}
+        </div>
+      </div>
     `;
   }
 
@@ -342,6 +386,21 @@ export class ChronosTimeline extends LitElement {
     return svg`
       <svg class="radial" viewBox="0 0 ${size} ${size}" style="touch-action:none">
         <circle cx="${cx}" cy="${cy}" r="${(rOuter + rInner) / 2}" fill="none" stroke="var(--border-soft)" stroke-width="${rOuter - rInner}"/>
+        ${this.referenceBlocks.length ? svg`
+          <circle cx="${cx}" cy="${cy}" r="${(rInner - 6 + rInner - 26) / 2}" fill="none"
+            stroke="var(--border-soft)" stroke-width="20" opacity="0.6"/>
+          ${this.referenceBlocks.map((b) => {
+            const rs = resolveBlockTime(b, "start");
+            const re = resolveBlockTime(b, "end");
+            const clash = this._overlapsOwn(rs, re);
+            return svg`
+              <path d="${arc(rs, re, rInner - 6, rInner - 26)}"
+                fill="${actionColor(this.referenceDeviceType, b.action)}" opacity="0.85"
+                stroke="${clash ? "var(--danger)" : "none"}" stroke-width="${clash ? 2 : 0}"
+                pointer-events="none"/>
+            `;
+          })}
+        ` : svg``}
         ${this.blocks.map((b, i) => {
           const rs = resolveBlockTime(b, "start");
           const re = resolveBlockTime(b, "end");

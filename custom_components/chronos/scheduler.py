@@ -675,7 +675,23 @@ class ChronosScheduler:
         Trigger effects (skip, force_action) are NOT applied here — they fire
         as side effects in _evaluate_triggers.
         """
-        blocks = [dict(b) for b in sched.get("blocks", []) or []]
+        # Deep enough copy to be safe to mutate. A plain dict(b) shares the
+        # SAME action dict (and its sequence rows) with the stored schedule,
+        # so a value-writing effect would edit the user's own configuration
+        # in place: the editor would show the scaled value as if the user
+        # had typed it, and any later save would make it permanent. Copy the
+        # action and its sequence rows too.
+        blocks = []
+        for b in sched.get("blocks", []) or []:
+            nb = dict(b)
+            action = b.get("action")
+            if isinstance(action, dict):
+                na = dict(action)
+                seq = na.get("sequence")
+                if isinstance(seq, list):
+                    na["sequence"] = [dict(x) if isinstance(x, dict) else x for x in seq]
+                nb["action"] = na
+            blocks.append(nb)
         rules = self._rules_for(sched.get("id", ""))
         for rule in rules:
             if not rule.get("active"):
@@ -758,7 +774,7 @@ class ChronosScheduler:
             self._apply_duration_change(blocks, idx, delta_h, direction)
 
         elif effect == "replace_value":
-            block.setdefault("action", {})["value"] = rule.get("action_value")
+            self._write_block_value(block, rule.get("action_value"))
 
         elif effect == "scale_duration":
             new_minutes = self._compute_scale(rule)
@@ -775,7 +791,62 @@ class ChronosScheduler:
             new_value = self._compute_scale(rule)
             if new_value is None:
                 return
-            block.setdefault("action", {})["value"] = round(new_value, 2)
+            self._write_block_value(block, round(new_value, 2))
+
+    @staticmethod
+    def _write_block_value(block: dict, new_value) -> None:
+        """Write a rule-computed value onto a block's action.
+
+        Normally that is just action.value. Sequential irrigation is the
+        exception: its minutes live one per valve in action.sequence, and
+        action.value is never read, so a scale/replace rule used to be
+        silently ignored on those programs. There the value is taken as the
+        TOTAL program length (the same total the editor shows) and the legs
+        are scaled by a common factor, so the proportions the user set
+        between zones are preserved. Every leg keeps at least one minute:
+        scaling a program down must not silently drop a zone.
+        """
+        action = block.setdefault("action", {})
+        sequence = action.get("sequence")
+        is_sequential = (
+            action.get("mode") == "sequential"
+            and isinstance(sequence, list)
+            and sequence
+        )
+        if not is_sequential:
+            action["value"] = new_value
+            return
+
+        try:
+            target_total = float(new_value)
+        except (TypeError, ValueError):
+            return
+        if target_total <= 0:
+            return
+
+        legs = []
+        for item in sequence:
+            if not isinstance(item, dict):
+                continue
+            try:
+                legs.append((item, max(0.0, float(item.get("minutes") or 0))))
+            except (TypeError, ValueError):
+                continue
+        if not legs:
+            return
+
+        current_total = sum(m for _, m in legs)
+        if current_total > 0:
+            factor = target_total / current_total
+            for item, mins in legs:
+                item["minutes"] = max(1.0, round(mins * factor, 1))
+        else:
+            # No usable proportions to keep: split the total evenly.
+            share = max(1.0, round(target_total / len(legs), 1))
+            for item, _ in legs:
+                item["minutes"] = share
+        # Keep value in sync for anything that reads it (history, UI hints).
+        action["value"] = new_value
 
     def _apply_duration_change(self, blocks: list, idx: int, delta_h: float, direction: str) -> None:
         """Add delta_h to block[idx] duration, adjusting the adjacent block.

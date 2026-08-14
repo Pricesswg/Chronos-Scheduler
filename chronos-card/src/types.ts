@@ -342,6 +342,17 @@ export interface ScheduleCardConfig {
   log_limit?: number;
   /** Pulse a red glow while the newest activity is an error. Default true. */
   alarm_glow?: boolean;
+  /** Header (name + enabled pill). Turn it off, leave only the timeline on,
+   * and the card becomes a bare schedule bar for a dashboard. Default true. */
+  show_header?: boolean;
+  /** Id of a second schedule drawn under the bar for comparison (two
+   * irrigation zones, …). Overlapping stretches are outlined in red. */
+  compare_with?: string;
+  /** Show a small button that opens Chronos. The card itself stays
+   * read-only; this is just a way back to the full app. Default false. */
+  show_link?: boolean;
+  /** Dashboard path the link button opens. Default "/chronos". */
+  link_path?: string;
 }
 
 export type Screen =

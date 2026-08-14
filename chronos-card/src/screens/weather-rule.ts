@@ -485,9 +485,19 @@ export class ChronosWeatherRule extends LitElement {
   }
 
   private _renderEffectCard() {
+    // On irrigation, scale/shift duration moves the block's time window and
+    // leaves the watering minutes untouched: the single most confusing
+    // combination in the builder, so it is called out where it is chosen.
+    const isIrrigation = this._contextSchedule()?.device_type === "irrigation";
+    const warnDuration = isIrrigation && this._effect === "scale_duration";
     return html`
       <div class="card">
         <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("wr.effect_params.title")}</h3><p class="card__sub">${t("wr.effect." + this._effect + ".desc")}</p></div></div>
+        ${warnDuration ? html`
+          <div class="text-xs" style="display:flex;gap:8px;align-items:flex-start;padding:8px 10px;margin-bottom:10px;border-radius:var(--r-md);background:color-mix(in srgb, var(--warn) 12%, transparent);color:var(--warn)">
+            ${icon("info", 12)}<span>${t("wr.warn.duration_on_irrigation")}</span>
+          </div>
+        ` : nothing}
         ${this._renderEffectParams(getActionsForType(this._contextSchedule()?.device_type || "thermostat"))}
       </div>
     `;
@@ -581,6 +591,7 @@ export class ChronosWeatherRule extends LitElement {
                 @input=${(e: InputEvent) => { const x = parseInt((e.target as HTMLInputElement).value, 10); if (!isNaN(x)) this._scaleOutMax = x; }}/>
             </div>
           </div>
+          <span class="field__hint">${t("wr.scale.map_hint")}</span>
           ${this._renderDirection()}
         </div>
       `;
@@ -603,6 +614,7 @@ export class ChronosWeatherRule extends LitElement {
                 @input=${(e: InputEvent) => { const x = parseFloat((e.target as HTMLInputElement).value); if (!isNaN(x)) this._scaleOutMax = x; }}/>
             </div>
           </div>
+          <span class="field__hint">${t("wr.scale.map_hint")}</span>
         </div>
       `;
     }

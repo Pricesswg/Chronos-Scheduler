@@ -13,6 +13,8 @@ A single Lovelace card provides:
 - Schedule overview with live KPIs
 - Linear / radial / list timeline editor with drag-and-drop and 5/15/30/60-minute snap; the chosen view is remembered per schedule, and blocks can't overlap (dragging over a neighbour trims it to the new limit)
 - IF/THEN weather rules (temperature, rain, wind, UV, lux, sun position, …) to skip, shift, force, or change duration of the active block
+- Scale value now works on sequential irrigation too: the computed value is taken as the TOTAL program length and the per-valve minutes are scaled by a common factor, so "water longer when it's hot" finally works zone by zone while keeping the proportions you set
+- Compare two schedules on the timeline: pick another schedule and it is drawn under the linear bar (inside the circle on the radial view). Stretches that overlap the schedule you are editing are outlined in red, which is what you want when two irrigation zones must not run together
 - "Hold on threshold" rule effect: a proper twilight switch, on under 20 lx and off over 40 lx, driving BOTH transitions, with a deadband and a confirmation delay so a passing cloud can't make the light flicker. Blocks a rule points at are marked on the timeline with an amber glow and a corner dot
 - Rules are independent objects (v1.17+): one rule can drive several schedules at once, and each schedule can combine several rules
 - 7-day week view with per-schedule filtering; disabled schedules stay visible, dimmed, so the weekly plan shows what is paused too
@@ -162,6 +164,24 @@ type: custom:chronos-schedule-card
 schedule: a1b2c3d4        # the schedule id (copy it from the editor's ID chip)
 ```
 
+A minimal, bar-only card for a dashboard (useful to lay several irrigation zones side by side) is the same card with everything switched off except the timeline:
+
+```yaml
+type: custom:chronos-schedule-card
+schedule: a1b2c3d4
+compare_with: e5f6g7h8   # optional: draw a second zone under the bar
+show_header: false
+show_now: false
+show_next: false
+show_status_active: false
+show_status_devices: false
+show_status_weather: false
+show_status_days: false
+show_status_period: false
+show_last_activity: false
+show_log: false
+```
+
 It shows, top to bottom: the schedule name and enabled state, a **Now** line (what it is doing and until when), a **Next** line (next change), a timeline bar in the chosen variant, a simple status list (active, devices, weather rules, days, period), a **last activity** line, and an **activity log** colored by outcome (green for activations, amber for retriggers, red for errors). An optional **alarm glow** pulses a red ring around the card while the newest activity is an error and clears itself on the next successful run.
 
 The card face has no controls; everything is set in the Lovelace "Edit card" dialog. Every section can be toggled off, so you can make it as minimal or as detailed as you want. Colors follow your Home Assistant theme.
@@ -173,6 +193,10 @@ The card face has no controls; everything is set in the Lovelace "Edit card" dia
 | `timeline_variant` | string | schedule default | `linear`, `radial` or `list`. |
 | `log_limit` | number | `6` | Number of activity-log rows. |
 | `alarm_glow` | boolean | `true` | Pulse a red glow while the newest activity is an error. |
+| `show_header` | boolean | `true` | Name and state pill. Turn it off, leave only the timeline on, and the card is a bare schedule bar. |
+| `compare_with` | string | — | Id of a second schedule drawn under the bar for comparison; overlaps are outlined in red. |
+| `show_link` | boolean | `false` | Small button that opens Chronos. The card stays read-only. |
+| `link_path` | string | `/chronos` | Dashboard path the link button opens. |
 | `show_now`, `show_next`, `show_timeline`, `show_weather_ribbon`, `show_status_active`, `show_status_devices`, `show_status_weather`, `show_status_days`, `show_status_period`, `show_last_activity`, `show_log` | boolean | mostly `true` (`show_weather_ribbon` `false`) | Toggle each section. |
 
 ## Supported domains

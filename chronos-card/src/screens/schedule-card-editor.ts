@@ -24,6 +24,8 @@ const TOGGLES: [keyof ScheduleCardConfig, string][] = [
   ["show_last_activity", "Last activity line"],
   ["show_log", "Activity log"],
   ["alarm_glow", "Alarm glow on errors"],
+  ["show_header", "Header (name + state)"],
+  ["show_link", "Button linking to Chronos"],
 ];
 
 /** Lovelace visual editor for `custom:chronos-schedule-card`. Same
@@ -73,7 +75,8 @@ export class ChronosScheduleCardEditor extends LitElement {
 
   private _bool(key: keyof ScheduleCardConfig): boolean {
     const v = this._config[key] as boolean | undefined;
-    return v === undefined ? key !== "show_weather_ribbon" : v;
+    // Everything defaults on except the weather ribbon and the link button.
+    return v === undefined ? key !== "show_weather_ribbon" && key !== "show_link" : v;
   }
 
   render() {
@@ -100,6 +103,20 @@ export class ChronosScheduleCardEditor extends LitElement {
           ${VARIANTS.map((v) => html`
             <option value=${v.value} ?selected=${(c.timeline_variant || "") === v.value}>${v.label}</option>`)}
         </select>
+      </div>
+      <div class="row">
+        <label for="compare">Compare with</label>
+        <select id="compare"
+          @change=${(e: Event) => this._emit({ compare_with: (e.target as HTMLSelectElement).value || undefined })}>
+          <option value="">None</option>
+          ${this._schedules.filter((s) => s.id !== c.schedule).map((s) => html`
+            <option value=${s.id} ?selected=${c.compare_with === s.id}>${s.name || s.id}</option>`)}
+        </select>
+      </div>
+      <div class="row">
+        <label for="link_path">Link target</label>
+        <input id="link_path" type="text" .value=${c.link_path || ""} placeholder="/chronos"
+          @input=${(e: Event) => this._emit({ link_path: (e.target as HTMLInputElement).value })}/>
       </div>
       <div class="row">
         <label for="log_limit">Log rows</label>

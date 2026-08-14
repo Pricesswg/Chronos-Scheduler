@@ -480,6 +480,23 @@ export const chronosStyles = css`
   }
   /* Mini keeps only the glow: a dot on a 12px-tall bar is just noise. */
   .timeline--mini .tl-block[data-ruled="1"]::after { display: none; }
+
+  /* Reference overlay: a second schedule shown under the linear bar for
+   * comparison. Muted and never interactive; stretches that overlap the
+   * schedule being shown get a red outline, which is what you look for
+   * when two irrigation zones must not run together. */
+  .tl-ref { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .tl-ref__label {
+    flex: 0 0 auto; max-width: 120px; font-size: 10.5px; color: var(--text-muted);
+    font-weight: 600; letter-spacing: 0.02em;
+  }
+  .tl-ref__track {
+    position: relative; flex: 1; height: 14px; min-width: 0;
+    background: var(--bg-sunken); border-radius: 4px;
+    border: 1px solid var(--border-soft); overflow: hidden;
+  }
+  .tl-ref__block { position: absolute; top: 0; bottom: 0; border-radius: 3px; opacity: 0.85; }
+  .tl-ref__block[data-clash="1"] { outline: 1.5px solid var(--danger); outline-offset: -1.5px; }
   .timeline--compact .tl-block { top: 3px; bottom: 3px; font-size: 10.5px; padding: 0 6px; }
   .timeline--mini .tl-block { top: 0; bottom: 0; border-radius: 0; font-size: 0; border-width: 1px; }
 

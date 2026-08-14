@@ -397,6 +397,31 @@ That is a twilight switch: the light comes on when it gets dark and goes off whe
 
 Outdoor lux is rarely published by weather integrations, so `Illuminance` normally comes from your own sensor: map it under `Settings → Language and weather source → sensor overrides`, or pick the sensor directly in the rule's value list.
 
+### Scaling irrigation with the temperature
+
+To water longer when it is hot, use **Scale value** (not Scale duration, which moves the block's time window and leaves the watering minutes alone):
+
+```text
+Variable:                    Current temperature
+Variable MIN / MAX:          25 °C / 35 °C
+Output at variable MIN:      30 min
+Output at variable MAX:      120 min
+```
+
+At 25 °C or below it waters 30 minutes, at 35 °C or above 120, in between it interpolates. Values past the ends are clamped, so a hotter day never shortens the watering.
+
+On a **sequential program** the output is read as the **total** program length: the per-valve minutes are scaled by a common factor, so a 15 + 5 minute program scaled to 60 becomes 45 + 15 and keeps the proportion between the zones. Each leg keeps at least one minute, and your stored configuration is never modified: the scaling lives only in what runs today.
+
+For an inverse relation (more rain, less water) set the output at MIN higher than the output at MAX. The mapping is linear between the two ends, whichever way round they are.
+
+### Comparing two schedules
+
+In the editor, the dropdown next to the Linear / Radial / List switch overlays **another schedule** on the timeline: under the bar in the linear view, as an inner ring in the radial one. Blocks of the compared schedule that overlap the one you are editing are outlined in red.
+
+It is meant for exactly the irrigation case: put zone 2 under zone 1 and you can see at a glance whether they would water at the same time. The overlay is a reading aid only, it changes nothing and is not saved.
+
+The same comparison is available on the dashboard card with the `compare_with` option.
+
 ### Where rules show on the timeline
 
 A block an active weather rule points at is marked on the timeline: an amber glow around the block plus a small amber dot in its corner (a cloud icon in the List view). So you can see at a glance which parts of the day the weather can change, without opening the rules.

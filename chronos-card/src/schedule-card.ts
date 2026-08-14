@@ -31,6 +31,8 @@ export class ChronosScheduleCard extends LitElement {
   @property({ attribute: false }) config: ScheduleCardConfig = { type: "custom:chronos-schedule-card" };
 
   @state() private _schedule: Schedule | null = null;
+  /** Every schedule, kept only so `compare_with` can resolve its blocks. */
+  @state() private _schedules: Schedule[] = [];
   @state() private _devices: ChronosDevice[] = [];
   @state() private _rules: WeatherRule[] = [];
   @state() private _history: HistoryEntry[] = [];
@@ -154,7 +156,8 @@ export class ChronosScheduleCard extends LitElement {
       setColorSettings(settings);
       setActionsMap(actions);
       this._applyLang();
-      this._schedule = (schedules || []).find((s) => s.id === this.config.schedule) || null;
+      this._schedules = schedules || [];
+      this._schedule = this._schedules.find((s) => s.id === this.config.schedule) || null;
       if (flag(this.config.show_weather_ribbon, false)) {
         this._forecast = await fetchForecast(this.hass).catch(() => []);
       }
@@ -209,6 +212,13 @@ export class ChronosScheduleCard extends LitElement {
 
   /** Blocks an active rule points at, for the timeline's amber marker. A
    * null block_index means the rule covers every block. */
+  /** The schedule overlaid for comparison, when `compare_with` is set. */
+  private _compareSchedule(): Schedule | null {
+    const id = this.config.compare_with;
+    if (!id || id === this.config.schedule) return null;
+    return this._schedules.find((s) => s.id === id) || null;
+  }
+
   private _ruledBlocks(s: Schedule): number[] {
     const out = new Set<number>();
     for (const r of this._rulesForSchedule(s.id)) {
@@ -271,13 +281,19 @@ export class ChronosScheduleCard extends LitElement {
     const alarm = flag(c.alarm_glow, true) && this._history[0]?.outcome === "error";
 
     return this._wrap(alarm, html`
-      <div class="scard__head">
-        <span class="chip ${s.enabled ? "chip--on" : ""}">
-          ${s.enabled ? html`<span class="chip__dot"></span>` : nothing}
-          ${s.enabled ? t("schedule.active") : t("common.disabled")}
-        </span>
-        <span class="scard__name">${c.title || s.name}</span>
-      </div>
+      ${flag(c.show_header) ? html`
+        <div class="scard__head">
+          <span class="chip ${s.enabled ? "chip--on" : ""}">
+            ${s.enabled ? html`<span class="chip__dot"></span>` : nothing}
+            ${s.enabled ? t("schedule.active") : t("common.disabled")}
+          </span>
+          <span class="scard__name">${c.title || s.name}</span>
+          ${flag(c.show_link, false) ? html`
+            <a class="btn btn--icon btn--ghost btn--sm" href="${c.link_path || "/chronos"}"
+              title="${t("scard.open_chronos")}" style="text-decoration:none">${icon("chevron-right", 14)}</a>
+          ` : nothing}
+        </div>
+      ` : nothing}
 
       ${flag(c.show_now) ? html`
         <div class="scard__line">${icon("power", 14)}
@@ -297,6 +313,9 @@ export class ChronosScheduleCard extends LitElement {
           <chronos-timeline variant=${variant} .deviceType=${s.device_type} .blocks=${s.blocks}
             .interactive=${false} height="compact" .showWeather=${flag(c.show_weather_ribbon, false)}
             .ruleBlocks=${this._ruledBlocks(s)}
+            .referenceBlocks=${this._compareSchedule()?.blocks || []}
+            .referenceDeviceType=${this._compareSchedule()?.device_type || "thermostat"}
+            .referenceLabel=${this._compareSchedule()?.name || ""}
             .forecast=${this._forecast} .now=${runsToday ? nowHour : null}></chronos-timeline>
         </div>` : nothing}
 
