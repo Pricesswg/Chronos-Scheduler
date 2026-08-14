@@ -1,5 +1,5 @@
 DOMAIN = "chronos"
-VERSION = "1.32.1"
+VERSION = "1.33.0"
 STORAGE_VERSION = 1
 STORAGE_KEY_DEVICES = f"{DOMAIN}.devices"
 STORAGE_KEY_SCHEDULES = f"{DOMAIN}.schedules"
@@ -267,6 +267,11 @@ WEATHER_ATTRIBUTES = [
     {"key": "pressure", "label": "Atmospheric pressure", "unit": "hPa", "icon": "cloud", "type": "number"},
     {"key": "uv_index", "label": "UV index", "unit": "", "icon": "sun", "type": "number"},
     {"key": "solar_radiation", "label": "Solar irradiance", "unit": "W/m²", "icon": "sun", "type": "number"},
+    # Outdoor brightness in lux. Weather integrations rarely expose it, so
+    # in practice this is mapped to a local sensor via the sensor overrides
+    # (Settings > Weather). It is the natural variable for twilight-switch
+    # rules: keep a light on while it is dark outside.
+    {"key": "illuminance", "label": "Illuminance", "unit": "lx", "icon": "sun", "type": "number"},
     {"key": "rain_rate", "label": "Rain rate", "unit": "mm/h", "icon": "rain", "type": "number"},
     {
         "key": "rain_state",

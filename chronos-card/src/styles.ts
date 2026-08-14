@@ -464,6 +464,22 @@ export const chronosStyles = css`
   }
   .tl-block:hover { filter: brightness(1.05); box-shadow: 0 2px 8px rgba(0,0,0,0.18); }
   .tl-block[data-selected="true"] { outline: 2px solid var(--accent); outline-offset: 2px; z-index: 2; }
+  /* A block an active weather rule points at: amber glow AND a dot in the
+   * corner. Both on purpose: the glow reads at a glance on a wide block,
+   * the dot is what survives when the block is only a few pixels wide.
+   * Selection already uses outline, so the glow can own box-shadow. */
+  .tl-block[data-ruled="1"] {
+    box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--weather) 70%, transparent),
+                0 0 10px 1px color-mix(in srgb, var(--weather) 55%, transparent);
+  }
+  .tl-block[data-ruled="1"]::after {
+    content: ""; position: absolute; top: 3px; right: 4px;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--weather); box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.35);
+    pointer-events: none;
+  }
+  /* Mini keeps only the glow: a dot on a 12px-tall bar is just noise. */
+  .timeline--mini .tl-block[data-ruled="1"]::after { display: none; }
   .timeline--compact .tl-block { top: 3px; bottom: 3px; font-size: 10.5px; padding: 0 6px; }
   .timeline--mini .tl-block { top: 0; bottom: 0; border-radius: 0; font-size: 0; border-width: 1px; }
 

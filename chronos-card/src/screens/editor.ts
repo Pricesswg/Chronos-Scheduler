@@ -125,6 +125,7 @@ export class ChronosEditor extends LitElement {
                 .interactive=${true}
                 .forecast=${this.card._forecast}
                 .previewRule=${this._selectedRuleIdx >= 0 ? schedRules[this._selectedRuleIdx] || null : null}
+                .ruleBlocks=${this.card.ruledBlockIndices(schedule.id, schedule.blocks.length)}
                 @block-select=${(e: CustomEvent) => { this._selectedBlockIdx = e.detail.index; }}
                 @blocks-changed=${(e: CustomEvent) => { this.card.updateBlocksLocal(schedule.id, e.detail.blocks); }}
               ></chronos-timeline>

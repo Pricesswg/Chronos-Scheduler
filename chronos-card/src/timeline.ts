@@ -5,6 +5,7 @@ import { actionColor, actionLabel, getActionDef } from "./actions";
 import { fmtHour, clamp, snapToGrid, resolveBlockTime, DAY_END_HOUR } from "./utils";
 import { defaultAction } from "./actions";
 import { actionDefLabel, t } from "./i18n";
+import { icon } from "./icons";
 import type { Block, DeviceType, WeatherRule } from "./types";
 
 /** The dragged block wins over its neighbours: covered parts are carved
@@ -81,6 +82,10 @@ export class ChronosTimeline extends LitElement {
    * rule's effect on its target block (for shift / extend / shrink /
    * scale_duration). For non-geometric effects no ghost is drawn. */
   @property({ attribute: false }) previewRule: WeatherRule | null = null;
+  /** Indices of the blocks an active weather rule points at. Marked with an
+   * amber glow plus a corner dot so the timeline shows where the weather can
+   * change what happens. */
+  @property({ type: Array }) ruleBlocks: number[] = [];
 
   @state() private _drag: {
     /** Index of the dragged block INSIDE the snapshot (stable for the whole
@@ -220,6 +225,7 @@ export class ChronosTimeline extends LitElement {
           <div
             class="tl-block"
             data-selected="${this.selectedIdx === i}"
+            data-ruled="${this._isRuled(i) ? "1" : "0"}"
             style="left:${pct(rs)}%;width:${pct(re - rs)}%;background:${actionColor(this.deviceType, b.action)}"
             @pointerdown=${(e: PointerEvent) => this._onBlockDown(e, i, "move")}
             @click=${(e: MouseEvent) => { e.stopPropagation(); this._fireSelect(i); }}
@@ -339,12 +345,17 @@ export class ChronosTimeline extends LitElement {
         ${this.blocks.map((b, i) => {
           const rs = resolveBlockTime(b, "start");
           const re = resolveBlockTime(b, "end");
+          const ruled = this._isRuled(i);
           return svg`
+          ${ruled ? svg`
+            <path d="${arc(rs, re, rOuter + 3, rInner - 3)}" fill="var(--weather)"
+              opacity="0.28" pointer-events="none"/>
+          ` : svg``}
           <path
             d="${arc(rs, re, rOuter, rInner)}"
             fill="${actionColor(this.deviceType, b.action)}"
-            stroke="${this.selectedIdx === i ? "var(--accent)" : "var(--block-edge)"}"
-            stroke-width="${this.selectedIdx === i ? 3 : 1.5}"
+            stroke="${this.selectedIdx === i ? "var(--accent)" : ruled ? "var(--weather)" : "var(--block-edge)"}"
+            stroke-width="${this.selectedIdx === i ? 3 : ruled ? 2 : 1.5}"
             stroke-linejoin="round"
             style="cursor:${this.interactive ? "grab" : "pointer"}"
             @pointerdown=${(e: PointerEvent) => this._onRadialHandleDown(e, i, "move")}
@@ -419,6 +430,10 @@ export class ChronosTimeline extends LitElement {
             <div class="tl-list__mode">
               <span class="tl-list__mode-dot" style="background:${actionColor(this.deviceType, b.action)}"></span>
               <strong>${actionLabel(this.deviceType, b.action)}</strong>
+              ${this._isRuled(i) ? html`
+                <span style="display:inline-flex;align-items:center;color:var(--weather-ink)"
+                  title="${t("tl.ruled")}">${icon("cloud", 12)}</span>
+              ` : nothing}
             </div>
             ${previewLabel ? html`
               <span class="chip" style="background:var(--accent-soft);color:var(--accent-ink);font-weight:600">
@@ -619,6 +634,11 @@ export class ChronosTimeline extends LitElement {
     if (conflict) return;
     const newBlocks = [...this.blocks, { start, end, action: defaultAction(this.deviceType) }];
     this._fireBlocksChanged(newBlocks);
+  }
+
+  /** True when an active weather rule points at this block. */
+  private _isRuled(idx: number): boolean {
+    return this.ruleBlocks.includes(idx);
   }
 
   private _fireSelect(idx: number) {

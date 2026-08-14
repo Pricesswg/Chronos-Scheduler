@@ -97,7 +97,12 @@ export type RuleEffect =
   | "force_action"
   | "replace_value"
   | "scale_duration"
-  | "scale_value";
+  | "scale_value"
+  /** Keep a device in one state while a measured value stays past a
+   * threshold, and apply a release action once it comes back (twilight
+   * switch: lights on under 20 lx, off over 40 lx). Unlike force_action it
+   * drives both transitions. */
+  | "hold";
 
 export type DurationDirection = "forward" | "backward";
 
@@ -144,6 +149,23 @@ export interface WeatherRule {
   scale_var_max?: number;
   scale_out_min?: number;
   scale_out_max?: number;
+
+  /** For "hold": the measured variable (weather attribute key or an HA
+   * entity_id read directly, e.g. sensor.outdoor_lux). */
+  hold_var?: string;
+  /** Threshold that engages the hold, and the one that releases it. Their
+   * order sets the direction: hold_on below hold_off engages under hold_on
+   * (dark), hold_on above hold_off engages over hold_on (hot). The gap
+   * between them is the deadband that prevents flapping. */
+  hold_on?: number;
+  hold_off?: number;
+  /** Minutes the new state must persist before it is applied. 0 = at once. */
+  hold_dwell_min?: number;
+  /** Action applied while engaged, and the one applied on release. */
+  hold_action_id?: string;
+  hold_action_value?: number | string;
+  hold_release_action_id?: string;
+  hold_release_action_value?: number | string;
 }
 
 export interface DateRange {

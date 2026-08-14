@@ -97,6 +97,7 @@ export class ChronosOverview extends LitElement {
                   .interactive=${false}
                   height="compact"
                   .showWeather=${false}
+                  .ruleBlocks=${this.card.ruledBlockIndices(s.id, s.blocks.length)}
                 ></chronos-timeline>
 
                 <div class="sched-card__footer">

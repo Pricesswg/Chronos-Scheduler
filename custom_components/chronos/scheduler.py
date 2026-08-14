@@ -61,6 +61,28 @@ def _parse_expression(expr: str) -> tuple[str, str, str] | None:
 _AND_SPLIT = re.compile(r"\s+AND\s+", re.IGNORECASE)
 
 
+def _hold_candidate(value: float, on_th: float, off_th: float) -> bool | None:
+    """Decide what a "hold on threshold" rule wants, given the measurement.
+
+    True = engage, False = release, None = inside the deadband, so whatever
+    the rule is doing now must be left alone (this is what stops a value
+    hovering on the threshold from switching a light on and off endlessly).
+
+    The direction is implied by the two thresholds instead of a separate
+    field: on_th below off_th reads as "engage under on_th, release over
+    off_th" (lights while it is dark), on_th above off_th as "engage over
+    on_th, release under off_th" (a fan while it is hot). Both thresholds
+    are inclusive so a value sitting exactly on one still acts.
+    """
+    if on_th < off_th:
+        if value <= on_th:
+            return True
+        return False if value >= off_th else None
+    if value >= on_th:
+        return True
+    return False if value <= off_th else None
+
+
 def _split_and(expr: str) -> list[str]:
     """Split a compound IF expression on ' AND ' (case-insensitive). The
     delimiter requires whitespace on both sides so it cannot accidentally
@@ -178,6 +200,12 @@ class ChronosScheduler:
         # Per-rule edge-trigger state: key = f"{schedule_id}:{rule_idx}"
         # value = {"last_eval": bool, "last_fire": datetime|None}
         self._rule_state: dict[str, dict] = {}
+        # "Hold on threshold" rules: key = f"{schedule_id}:{rule_id}", value =
+        # {"engaged": bool|None, "pending": bool|None, "pending_since": dt}.
+        # engaged None = never evaluated in the current block, so the first
+        # evaluation commits without waiting for the dwell time. Dropped when
+        # the block window closes, so each entry re-applies from scratch.
+        self._hold_state: dict[str, dict] = {}
         # Running sequential-irrigation programs: key = f"{sched_id}:{blk}".
         # Tracked so stop() can cancel them and a re-trigger doesn't start
         # a second concurrent run of the same block.
@@ -464,6 +492,9 @@ class ChronosScheduler:
                     await self._apply_block(sched, current_block, current_idx)
 
             await self._evaluate_triggers(sched, local_now, effective_blocks, current_idx)
+            # After the triggers, so a hold rule has the last word on the
+            # device state when both act on the same block.
+            await self._evaluate_holds(sched, local_now, effective_blocks, current_idx)
 
         # Offline-recall safety net: the state listener is the primary
         # trigger, but a missed event (subscription race) must not leave
@@ -885,6 +916,110 @@ class ChronosScheduler:
             self._store.append_history(_make_history_entry(
                 sched, kind="rule", action_id=rule.get("action_id", ""),
                 entity_id=None, value=rule.get("action_value"),
+                rule_id=rule.get("id"),
+            ))
+
+    async def _evaluate_holds(
+        self, sched: dict, local_now, effective_blocks: list, current_idx: int,
+    ) -> None:
+        """Evaluate "hold on threshold" rules: keep a device in one state
+        while a measured value stays past a threshold, and apply the release
+        action once it comes back. The twilight-switch case: lights on while
+        outdoor lux is below 20, off once it climbs over 40.
+
+        Unlike force_action (a one-shot on the condition's rising edge) this
+        drives BOTH transitions, so the device also comes back on its own.
+
+        Two guards against flapping around the threshold:
+          * a deadband, from the two thresholds (`hold_on` / `hold_off`);
+          * a dwell time (`hold_dwell_min`): the new state must persist that
+            long before it is committed.
+
+        The trigger direction is implied by the thresholds: hold_on below
+        hold_off means "engage under hold_on" (lux), hold_on above hold_off
+        means "engage over hold_on" (a fan on heat). Only acts inside an
+        active block, so the block window still says WHEN the rule may act.
+        Nothing is re-asserted on every tick: a device switched by hand is
+        left alone until the value crosses a threshold again.
+        """
+        sched_id = str(sched.get("id", ""))
+        sched_name = sched.get("name", "")
+        for idx, rule in enumerate(self._rules_for(sched_id)):
+            if not rule.get("active") or rule.get("effect") != "hold":
+                continue
+            key = f"{sched_id}:{rule.get('id', idx)}"
+            target_idx = rule.get("block_index")
+            block_ok = current_idx >= 0 and (
+                not isinstance(target_idx, int) or target_idx == current_idx
+            )
+            if not block_ok:
+                # Outside the window the rule owns: forget the state so
+                # re-entering the block re-applies from scratch. No command
+                # is sent — closing the window is the block's own job.
+                self._hold_state.pop(key, None)
+                continue
+
+            var = str(rule.get("hold_var") or "")
+            raw = self._read_attribute(var) if var else None
+            try:
+                value = float(raw)
+                on_th = float(rule.get("hold_on"))
+                off_th = float(rule.get("hold_off"))
+            except (TypeError, ValueError):
+                _LOGGER.debug(
+                    "Chronos: HOLD skipped schedule=%s var=%s unreadable (raw=%r)",
+                    sched_name, var, raw,
+                )
+                continue
+
+            candidate = _hold_candidate(value, on_th, off_th)
+
+            state = self._hold_state.setdefault(
+                key, {"engaged": None, "pending": None, "pending_since": None}
+            )
+            if candidate is None or candidate == state["engaged"]:
+                # Inside the deadband, or already where we want to be.
+                state["pending"] = None
+                state["pending_since"] = None
+                continue
+
+            try:
+                dwell = max(0.0, float(rule.get("hold_dwell_min") or 0))
+            except (TypeError, ValueError):
+                dwell = 0.0
+            # The first evaluation of a block commits at once, so entering a
+            # block after dark switches on immediately instead of waiting.
+            if dwell > 0 and state["engaged"] is not None:
+                if state["pending"] != candidate:
+                    state["pending"] = candidate
+                    state["pending_since"] = local_now
+                    continue
+                since = state["pending_since"]
+                if since is not None and (local_now - since).total_seconds() < dwell * 60:
+                    continue
+
+            action_id = rule.get("hold_action_id") if candidate else rule.get("hold_release_action_id")
+            action_value = rule.get("hold_action_value") if candidate else rule.get("hold_release_action_value")
+            if not action_id:
+                _LOGGER.debug(
+                    "Chronos: HOLD schedule=%s has no %s action configured",
+                    sched_name, "engage" if candidate else "release",
+                )
+                state["engaged"] = candidate
+                continue
+
+            state["engaged"] = candidate
+            state["pending"] = None
+            state["pending_since"] = None
+            _LOGGER.info(
+                "Chronos: HOLD schedule=%s %s (%s=%s vs on=%s off=%s) → action=%s val=%s",
+                sched_name, "ENGAGE" if candidate else "RELEASE",
+                var, value, on_th, off_th, action_id, action_value,
+            )
+            await self._execute_trigger(sched, {"action_id": action_id, "value": action_value})
+            self._store.append_history(_make_history_entry(
+                sched, kind="rule", action_id=action_id,
+                entity_id=None, value=action_value,
                 rule_id=rule.get("id"),
             ))
 

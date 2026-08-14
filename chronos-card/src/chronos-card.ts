@@ -399,6 +399,23 @@ export class ChronosCard extends LitElement {
   /** Global rules projected onto one schedule: one entry per (rule, target)
    * pair with the target's block_index inlined, in the legacy shape the
    * screens already understand. */
+  /** Indices of the blocks an active weather rule points at, for the
+   * timeline's amber marker. A rule with a null block_index targets every
+   * block of the schedule, so it marks them all. */
+  ruledBlockIndices(scheduleId: string, blockCount: number): number[] {
+    const out = new Set<number>();
+    for (const r of this.rulesForSchedule(scheduleId)) {
+      if (!r.active) continue;
+      const bi = r.block_index;
+      if (bi === null || bi === undefined) {
+        for (let i = 0; i < blockCount; i++) out.add(i);
+      } else if (bi >= 0 && bi < blockCount) {
+        out.add(bi);
+      }
+    }
+    return [...out];
+  }
+
   rulesForSchedule(scheduleId: string): WeatherRule[] {
     const out: WeatherRule[] = [];
     for (const r of this._rules) {

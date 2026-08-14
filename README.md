@@ -12,7 +12,8 @@ A single Lovelace card provides:
 
 - Schedule overview with live KPIs
 - Linear / radial / list timeline editor with drag-and-drop and 5/15/30/60-minute snap; the chosen view is remembered per schedule, and blocks can't overlap (dragging over a neighbour trims it to the new limit)
-- IF/THEN weather rules (temperature, rain, wind, UV, sun position, …) to skip, shift, force, or change duration of the active block
+- IF/THEN weather rules (temperature, rain, wind, UV, lux, sun position, …) to skip, shift, force, or change duration of the active block
+- "Hold on threshold" rule effect: a proper twilight switch, on under 20 lx and off over 40 lx, driving BOTH transitions, with a deadband and a confirmation delay so a passing cloud can't make the light flicker. Blocks a rule points at are marked on the timeline with an amber glow and a corner dot
 - Rules are independent objects (v1.17+): one rule can drive several schedules at once, and each schedule can combine several rules
 - 7-day week view with per-schedule filtering; disabled schedules stay visible, dimmed, so the weekly plan shows what is paused too
 - Live status with weather and device readings; the 24h forecast strip is color-coded by severity (green / yellow / orange / red, wind-aware) and shows per-hour wind speed
@@ -202,13 +203,13 @@ Since v1.17 rules live in their own store, decoupled from schedules: a rule has 
 Each rule has:
 
 - **IF** condition: one or more comparisons combined with **AND**. Each comparison is `<key> <op> <threshold>`, where the key can be:
-    - a weather attribute (`temperature`, `feels_like`, `humidity`, `dew_point`, `wind_speed`, `wind_gust`, `wind_bearing`, `pressure`, `uv_index`, `solar_radiation`, `rain_rate`, `rain_state`, `condition`)
+    - a weather attribute (`temperature`, `feels_like`, `humidity`, `dew_point`, `wind_speed`, `wind_gust`, `wind_bearing`, `pressure`, `uv_index`, `solar_radiation`, `illuminance` (lux), `rain_rate`, `rain_state`, `condition`)
     - a sun attribute (`sun.elevation`, `sun.minutes_until_sunrise`, `sun.minutes_until_sunset`, `sun.state`)
     - a forecast attribute (`forecast.temp_max_today`, `forecast.rain_6h`, `forecast.condition_6h`, …)
     - any HA entity_id whose state is read directly: `sensor.*`, `binary_sensor.*`, `number.*`, `input_number.*` (introduced in v1.10 — useful for off-grid setups, battery SOC, PV forecast aggregators, instantaneous power, etc.)
 
 Each weather attribute can be sourced from the configured weather entity OR overridden per-attribute in Settings → Weather source → sensor overrides. Useful when you have a local weather station (Ecowitt, WeatherFlow, Davis) with sensors more accurate than the cloud weather provider — point each attribute at its corresponding `sensor.*` entity.
-- **THEN** action: skip the block, shift the start time, force a specific action, or change duration
+- **THEN** action: skip the block, shift the start time, force a specific action, change duration, or **hold on threshold** (see below)
 - **Fire mode** (when the THEN is "force"):
     - `every` — fires on every false→true transition (use only when desired oscillation is acceptable)
     - `once_per_day` — at most once per calendar day, re-arms at midnight
@@ -216,6 +217,18 @@ Each weather attribute can be sourced from the configured weather entity OR over
     - `once_per_nighttime` — at most once between sunset and sunrise, re-arms at next sunset
 
 Rules can be attached to schedules with time blocks (the rule modifies block behaviour) or to schedules with no time blocks at all (pure weather-/sensor-triggered automation).
+
+### Hold on threshold
+
+`force_action` fires once, on the rising edge of its condition, which is right for "close the awning when the wind picks up" and wrong for "keep the light on while it is dark": nothing switches it back. The **hold on threshold** effect drives both directions. Pick the value to follow, an engage threshold with its action, a release threshold with its action:
+
+```text
+Illuminance   engage <= 20 lx -> Turn on     release >= 40 lx -> Turn off
+```
+
+The order of the thresholds sets the direction (engage below release watches for a drop, engage above release watches for a rise, e.g. a fan over 26 °C off under 24 °C). The gap between them is a deadband, and the confirmation delay makes the new state persist N minutes before acting, so a value hovering on the threshold cannot switch the device on and off endlessly. The block window still decides when the rule may act, and a device switched by hand is left alone until the value crosses a threshold again.
+
+Outdoor lux is rarely published by weather integrations, so `illuminance` normally comes from your own sensor: map it in the sensor overrides, or pick the sensor directly in the rule.
 
 ### Compound conditions (AND)
 

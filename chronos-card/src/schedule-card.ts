@@ -207,6 +207,22 @@ export class ChronosScheduleCard extends LitElement {
     return starts.length ? starts[0] : null;
   }
 
+  /** Blocks an active rule points at, for the timeline's amber marker. A
+   * null block_index means the rule covers every block. */
+  private _ruledBlocks(s: Schedule): number[] {
+    const out = new Set<number>();
+    for (const r of this._rulesForSchedule(s.id)) {
+      if (!r.active) continue;
+      const bi = r.block_index;
+      if (bi === null || bi === undefined) {
+        s.blocks.forEach((_, i) => out.add(i));
+      } else if (bi >= 0 && bi < s.blocks.length) {
+        out.add(bi);
+      }
+    }
+    return [...out];
+  }
+
   private _rulesForSchedule(id: string): WeatherRule[] {
     const out: WeatherRule[] = [];
     for (const r of this._rules) {
@@ -280,6 +296,7 @@ export class ChronosScheduleCard extends LitElement {
         <div style="margin-top:12px">
           <chronos-timeline variant=${variant} .deviceType=${s.device_type} .blocks=${s.blocks}
             .interactive=${false} height="compact" .showWeather=${flag(c.show_weather_ribbon, false)}
+            .ruleBlocks=${this._ruledBlocks(s)}
             .forecast=${this._forecast} .now=${runsToday ? nowHour : null}></chronos-timeline>
         </div>` : nothing}
 

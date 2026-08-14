@@ -18,11 +18,14 @@ const EFFECTS: { key: RuleEffect; needsIf: boolean; needsBlock: boolean }[] = [
   { key: "replace_value", needsIf: true, needsBlock: true },
   { key: "scale_duration", needsIf: false, needsBlock: true },
   { key: "scale_value", needsIf: false, needsBlock: true },
+  // hold carries its own condition in the two thresholds, so it doesn't use
+  // the IF clause builder at all.
+  { key: "hold", needsIf: false, needsBlock: true },
 ];
 
 /** Effects whose parameters depend on the device type (action ids, value
  * specs). Multi-schedule targets must share the device type for these. */
-const VALUE_EFFECTS: RuleEffect[] = ["force_action", "replace_value", "scale_value"];
+const VALUE_EFFECTS: RuleEffect[] = ["force_action", "replace_value", "scale_value", "hold"];
 
 @customElement("chronos-weather-rule")
 export class ChronosWeatherRule extends LitElement {
@@ -62,6 +65,17 @@ export class ChronosWeatherRule extends LitElement {
   @state() private _actionId = "";
   @state() private _actionValue: number | string | null = null;
   @state() private _fireMode: "every" | "once_per_day" | "once_per_daytime" | "once_per_nighttime" = "once_per_daytime";
+
+  // Hold on threshold (twilight switch). The two thresholds carry both the
+  // condition and its direction: on below off = engage when the value drops.
+  @state() private _holdVar = "illuminance";
+  @state() private _holdOn = 20;
+  @state() private _holdOff = 40;
+  @state() private _holdDwell = 2;
+  @state() private _holdActionId = "";
+  @state() private _holdActionValue: number | string | null = null;
+  @state() private _holdReleaseActionId = "";
+  @state() private _holdReleaseActionValue: number | string | null = null;
 
   // Scale
   @state() private _scaleVar = "temperature";
@@ -131,7 +145,13 @@ export class ChronosWeatherRule extends LitElement {
           </div>
         </div>
 
-        ${effectMeta.needsIf ? this._renderIfSection(weatherAttrs) : this._renderScaleVarSection(weatherAttrs)}
+        ${effectMeta.needsIf
+          ? this._renderIfSection(weatherAttrs)
+          : this._effect === "hold"
+            // hold carries its condition in its own thresholds: it needs
+            // neither the IF clause builder nor the scale input range.
+            ? this._renderEffectCard()
+            : this._renderScaleVarSection(weatherAttrs)}
 
         <div class="builder-actions">
           <span class="text-xs text-mute" style="margin-right:auto">${this.card._editingRuleId ? t("wr.heading.edit") : t("wr.heading")}</span>
@@ -586,7 +606,101 @@ export class ChronosWeatherRule extends LitElement {
         </div>
       `;
     }
+    if (e === "hold") return this._renderHoldParams(typeActions);
     return nothing;
+  }
+
+  /** Parameters of the "hold on threshold" effect: which value to watch, the
+   * engage/release thresholds (whose order sets the direction), how long a
+   * change must persist, and the two actions. A live sentence spells the
+   * behaviour out so the implied direction is never a guess. */
+  private _renderHoldParams(typeActions: any[]) {
+    const weatherAttrs = this.card._weatherAttributes || [];
+    const varDef = weatherAttrs.find((v: any) => v.key === this._holdVar);
+    const sensor = this._numericSensors().find((s: any) => s.entity_id === this._holdVar);
+    const unit = varDef?.unit || sensor?.unit_of_measurement || "";
+    const dt = this._contextSchedule()?.device_type || "thermostat";
+    const engageDef = typeActions.find((a) => a.id === this._holdActionId);
+    const releaseDef = typeActions.find((a) => a.id === this._holdReleaseActionId);
+    const label = (id: string) => {
+      const a = typeActions.find((x) => x.id === id);
+      return a ? actionDefLabel(dt, a.id, a.label) : "—";
+    };
+    const actionSelect = (current: string, onPick: (v: string) => void) => html`
+      <select class="select" @change=${(ev: Event) => onPick((ev.target as HTMLSelectElement).value)}>
+        <option value="" ?selected=${!current}>—</option>
+        ${typeActions.map((a) => html`
+          <option value="${a.id}" ?selected=${current === a.id}>${actionDefLabel(dt, a.id, a.label)}</option>
+        `)}
+      </select>
+    `;
+    return html`
+      <div class="col" style="gap:10px">
+        <div class="field">
+          <label class="field__label">${t("wr.hold.var")}</label>
+          <select class="select mono" @change=${(ev: Event) => { this._holdVar = (ev.target as HTMLSelectElement).value; }}>
+            <optgroup label="${t("wr.hold.var.weather")}">
+              ${weatherAttrs.filter((v: any) => v.type === "number").map((v: any) => html`
+                <option value="${v.key}" ?selected=${this._holdVar === v.key}>${attrLabel(v.key, v.label)}${v.unit ? ` (${v.unit})` : ""}</option>
+              `)}
+            </optgroup>
+            <optgroup label="${t("wr.hold.var.sensors")}">
+              ${this._numericSensors().map((s: any) => html`
+                <option value="${s.entity_id}" ?selected=${this._holdVar === s.entity_id}>${s.friendly_name || s.entity_id}${s.unit_of_measurement ? ` (${s.unit_of_measurement})` : ""}</option>
+              `)}
+            </optgroup>
+          </select>
+          <span class="field__hint">${t("wr.hold.var.hint")}</span>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label class="field__label">${t("wr.hold.on")} ${unit ? html`<span class="text-mute">(${unit})</span>` : nothing}</label>
+            <input type="number" class="input mono" step="any" .value=${String(this._holdOn)}
+              @input=${(ev: InputEvent) => { const x = parseFloat((ev.target as HTMLInputElement).value); if (!isNaN(x)) this._holdOn = x; }}/>
+          </div>
+          <div class="field">
+            <label class="field__label">${t("wr.hold.off")} ${unit ? html`<span class="text-mute">(${unit})</span>` : nothing}</label>
+            <input type="number" class="input mono" step="any" .value=${String(this._holdOff)}
+              @input=${(ev: InputEvent) => { const x = parseFloat((ev.target as HTMLInputElement).value); if (!isNaN(x)) this._holdOff = x; }}/>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label class="field__label">${t("wr.hold.action")}</label>
+            ${actionSelect(this._holdActionId, (v) => {
+              this._holdActionId = v;
+              this._holdActionValue = typeActions.find((a) => a.id === v)?.value?.default ?? null;
+            })}
+            ${engageDef?.value ? this._renderValueField(engageDef, this._holdActionValue, (v) => { this._holdActionValue = v; }) : nothing}
+          </div>
+          <div class="field">
+            <label class="field__label">${t("wr.hold.release_action")}</label>
+            ${actionSelect(this._holdReleaseActionId, (v) => {
+              this._holdReleaseActionId = v;
+              this._holdReleaseActionValue = typeActions.find((a) => a.id === v)?.value?.default ?? null;
+            })}
+            ${releaseDef?.value ? this._renderValueField(releaseDef, this._holdReleaseActionValue, (v) => { this._holdReleaseActionValue = v; }) : nothing}
+          </div>
+        </div>
+        <div class="field">
+          <label class="field__label">${t("wr.hold.dwell")} (${t("common.min")})</label>
+          <input type="number" class="input mono" step="1" min="0" .value=${String(this._holdDwell)}
+            @input=${(ev: InputEvent) => { const x = parseInt((ev.target as HTMLInputElement).value, 10); if (!isNaN(x) && x >= 0) this._holdDwell = x; }}/>
+          <span class="field__hint">${t("wr.hold.dwell.hint")}</span>
+        </div>
+        <div class="card card--ghost" style="padding:10px 12px">
+          <div class="text-xs text-mute" style="margin-bottom:4px">${t("wr.hold.preview")}</div>
+          <div class="text-sm">
+            ${t(this._holdOn < this._holdOff ? "wr.hold.preview.below" : "wr.hold.preview.above", {
+              on: `${this._holdOn}${unit ? ` ${unit}` : ""}`,
+              off: `${this._holdOff}${unit ? ` ${unit}` : ""}`,
+              a: label(this._holdActionId),
+              b: label(this._holdReleaseActionId),
+            })}
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   private _renderDirection() {
@@ -681,6 +795,11 @@ export class ChronosWeatherRule extends LitElement {
     if (e === "replace_value") return `${t("wr.effect.replace_value")} = ${this._actionValue}`;
     if (e === "scale_duration") return `${this._scaleOutMin}-${this._scaleOutMax} ${t("common.min")} ← ${this._scaleVar} ${this._scaleVarMin}-${this._scaleVarMax}`;
     if (e === "scale_value") return `${this._scaleOutMin}-${this._scaleOutMax} ← ${this._scaleVar} ${this._scaleVarMin}-${this._scaleVarMax}`;
+    if (e === "hold") {
+      const arrow = this._holdOn < this._holdOff ? "≤" : "≥";
+      const back = this._holdOn < this._holdOff ? "≥" : "≤";
+      return `${this._holdVar} ${arrow} ${this._holdOn} → ${this._holdActionId || "—"} · ${back} ${this._holdOff} → ${this._holdReleaseActionId || "—"}`;
+    }
     return "";
   }
 
@@ -724,6 +843,16 @@ export class ChronosWeatherRule extends LitElement {
       if (this._actionValue !== null) rule.action_value = this._actionValue;
       rule.fire_mode = this._fireMode;
     }
+    if (this._effect === "hold") {
+      rule.hold_var = this._holdVar;
+      rule.hold_on = this._holdOn;
+      rule.hold_off = this._holdOff;
+      rule.hold_dwell_min = this._holdDwell;
+      rule.hold_action_id = this._holdActionId;
+      if (this._holdActionValue !== null) rule.hold_action_value = this._holdActionValue;
+      rule.hold_release_action_id = this._holdReleaseActionId;
+      if (this._holdReleaseActionValue !== null) rule.hold_release_action_value = this._holdReleaseActionValue;
+    }
     if (this._effect === "scale_duration" || this._effect === "scale_value") {
       rule.scale_var = this._scaleVar;
       rule.scale_var_min = this._scaleVarMin;
@@ -766,6 +895,14 @@ export class ChronosWeatherRule extends LitElement {
       this._scaleVarMax = 35;
       this._scaleOutMin = 30;
       this._scaleOutMax = 120;
+      this._holdVar = "illuminance";
+      this._holdOn = 20;
+      this._holdOff = 40;
+      this._holdDwell = 2;
+      this._holdActionId = "";
+      this._holdActionValue = null;
+      this._holdReleaseActionId = "";
+      this._holdReleaseActionValue = null;
       return;
     }
 
@@ -794,6 +931,14 @@ export class ChronosWeatherRule extends LitElement {
     if (r.scale_var_max !== undefined) this._scaleVarMax = r.scale_var_max;
     if (r.scale_out_min !== undefined) this._scaleOutMin = r.scale_out_min;
     if (r.scale_out_max !== undefined) this._scaleOutMax = r.scale_out_max;
+    if (r.hold_var) this._holdVar = r.hold_var;
+    if (r.hold_on !== undefined) this._holdOn = r.hold_on;
+    if (r.hold_off !== undefined) this._holdOff = r.hold_off;
+    if (r.hold_dwell_min !== undefined) this._holdDwell = r.hold_dwell_min;
+    if (r.hold_action_id) this._holdActionId = r.hold_action_id;
+    this._holdActionValue = r.hold_action_value !== undefined ? r.hold_action_value : null;
+    if (r.hold_release_action_id) this._holdReleaseActionId = r.hold_release_action_id;
+    this._holdReleaseActionValue = r.hold_release_action_value !== undefined ? r.hold_release_action_value : null;
   }
 
   /** Parse an `if` string written by `_buildIfText` (or hand-rolled in YAML) and

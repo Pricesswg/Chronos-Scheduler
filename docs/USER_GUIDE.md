@@ -368,10 +368,38 @@ Reading any sensor directly is useful for off grid setups, battery state of char
 | Replace value | The block action value is replaced |
 | Scale duration | The block duration is interpolated from a weather variable over a range |
 | Scale value | The action value is interpolated from a weather variable over a range |
+| Hold on threshold | Switches on and off by itself following a measured value, both directions. See below |
 
 Continuous effects (shift, extend, shrink, replace value, scale duration, scale value) are recomputed every minute from live weather. The stored schedule is never changed; the effect is applied on the fly.
 
-Effects that use device specific actions (force action, replace value, scale value) require every linked schedule to share the same device type.
+Effects that use device specific actions (force action, replace value, scale value, hold on threshold) require every linked schedule to share the same device type.
+
+### Hold on threshold (twilight switch)
+
+Force action fires **once**, on the rising edge of its condition: good for "close the awning when the wind picks up", useless for "keep the light on while it is dark", because nothing ever switches it back.
+
+**Hold on threshold** drives both transitions. You pick the value to follow, two thresholds, and the two actions:
+
+```text
+Value to follow:      Illuminance (lux)
+Engage threshold:     20 lx   → Turn on
+Release threshold:    40 lx   → Turn off
+Confirmation delay:   2 min
+```
+
+That is a twilight switch: the light comes on when it gets dark and goes off when it gets light again, on its own.
+
+- **The order of the thresholds sets the direction.** Engage below release (20 → 40) means "act when the value drops", the lux case. Engage above release (26 → 24) means "act when the value rises": a fan on while it is hot, for example.
+- **The gap between the thresholds is a deadband.** Between 20 and 40 lx nothing changes, so a value hovering on the threshold cannot switch the light on and off endlessly.
+- **The confirmation delay** is a second guard: the new state must persist that many minutes before Chronos acts, so a passing cloud is ignored. Set it to 0 to act immediately.
+- **The block window still decides when the rule may act.** Outside the block Chronos does nothing, so "only in the evening, and only when dark" is the block plus the rule together. Entering a block applies the current state at once, without waiting for the delay.
+- A device you switched by hand is left alone until the value crosses a threshold again: Chronos does not re-assert the state on every tick.
+
+Outdoor lux is rarely published by weather integrations, so `Illuminance` normally comes from your own sensor: map it under `Settings → Language and weather source → sensor overrides`, or pick the sensor directly in the rule's value list.
+
+### Where rules show on the timeline
+
+A block an active weather rule points at is marked on the timeline: an amber glow around the block plus a small amber dot in its corner (a cloud icon in the List view). So you can see at a glance which parts of the day the weather can change, without opening the rules.
 
 ### Fire modes
 
