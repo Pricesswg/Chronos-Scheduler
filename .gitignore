@@ -9,6 +9,7 @@ node_modules/
 # Editor
 .vscode/
 .idea/
+.claude/
 *.swp
 
 # Python
@@ -19,6 +20,3 @@ venv/
 
 # Old build location (now lives in custom_components/chronos/www/)
 /dist/
-
-# Local dev tooling config (Claude Code launch profiles etc.)
-.claude/
