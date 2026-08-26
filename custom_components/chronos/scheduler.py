@@ -158,6 +158,55 @@ def _jitter_minutes(sched_id: str, block_idx: int, day_iso: str, jitter_min: flo
     return round((frac * 2 - 1) * jitter_min, 1)
 
 
+def _presence_plan(
+    seed: str,
+    start_h: float,
+    end_h: float,
+    cycles: int,
+    min_min: float,
+    max_min: float,
+    device_count: int,
+) -> list[dict]:
+    """Today's presence-simulation plan for one block: when to switch on,
+    for how long, and on which of the block's devices.
+
+    Built from a hash of the seed (schedule, block, date), never from a
+    random generator, for the same reason as the jitter: every tick of the
+    day must rebuild the identical plan, and a restart at 19:00 must resume
+    the evening exactly where it was. Nothing is stored anywhere.
+
+    The window is cut into as many equal slots as there are cycles and one
+    activation is placed inside each slot, so activations can never overlap
+    and are spread over the whole window instead of clumping. The user owns
+    the ceiling (how many, how long); the spread is ours.
+    """
+    window_min = (end_h - start_h) * 60
+    if window_min <= 0 or cycles <= 0:
+        return []
+    lo = max(1.0, min(min_min, max_min))
+    hi = max(lo, max(min_min, max_min))
+    # Never promise more activations than the window can hold.
+    cycles = max(1, min(int(cycles), 12, int(window_min // lo) or 1))
+    slot = window_min / cycles
+
+    plan: list[dict] = []
+    for i in range(cycles):
+        digest = hashlib.sha256(f"{seed}:{i}".encode()).digest()
+        r_dur = int.from_bytes(digest[0:4], "big") / 2 ** 32
+        r_pos = int.from_bytes(digest[4:8], "big") / 2 ** 32
+        r_dev = int.from_bytes(digest[8:12], "big") / 2 ** 32
+
+        duration = min(lo + r_dur * (hi - lo), slot)
+        offset = r_pos * max(0.0, slot - duration)
+        begin = start_h + (i * slot + offset) / 60
+        plan.append({
+            "start": round(begin, 4),
+            "end": round(min(end_h, begin + duration / 60), 4),
+            "device": int(r_dev * device_count) if device_count > 0 else 0,
+        })
+    return plan
+
+
 def _split_and(expr: str) -> list[str]:
     """Split a compound IF expression on ' AND ' (case-insensitive). The
     delimiter requires whitespace on both sides so it cannot accidentally
@@ -281,6 +330,12 @@ class ChronosScheduler:
         # evaluation commits without waiting for the dwell time. Dropped when
         # the block window closes, so each entry re-applies from scratch.
         self._hold_state: dict[str, dict] = {}
+        # Presence simulation: key = f"{schedule_id}:{block_idx}", value =
+        # {"cycle": int|None, "entity": str|None} = which activation of
+        # today's plan is running and on which entity. Rebuilt from the plan
+        # on every tick, so a restart resumes the evening as if nothing
+        # happened; nothing is persisted.
+        self._presence_state: dict[str, dict] = {}
         # Running sequential-irrigation programs: key = f"{sched_id}:{blk}".
         # Tracked so stop() can cancel them and a re-trigger doesn't start
         # a second concurrent run of the same block.
@@ -576,6 +631,7 @@ class ChronosScheduler:
             # After the triggers, so a hold rule has the last word on the
             # device state when both act on the same block.
             await self._evaluate_holds(sched, local_now, effective_blocks, current_idx)
+            await self._evaluate_presence(sched, local_now, current_block, current_idx)
 
         # Offline-recall safety net: the state listener is the primary
         # trigger, but a missed event (subscription race) must not leave
@@ -1122,6 +1178,122 @@ class ChronosScheduler:
         if isinstance(block.get("device_ids"), list) and block["device_ids"]:
             synthetic["device_ids"] = list(block["device_ids"])
         await self._dispatch_action(sched, synthetic)
+
+    async def _evaluate_presence(
+        self, sched: dict, local_now, current_block: dict | None, current_idx: int,
+    ) -> None:
+        """Presence simulation: inside the block's window, switch devices on
+        and off at times drawn for today, instead of holding one state for
+        the whole window.
+
+        The user owns the ceiling (how many activations, how long each may
+        last) and the action; which minute and which device is ours, because
+        that is the part that has to look unplanned. Today's plan is derived
+        from a hash, so every tick rebuilds the same one and a restart in the
+        middle of the evening picks it straight back up.
+        """
+        sched_id = str(sched.get("id", ""))
+        action = (current_block or {}).get("action") or {}
+        active_presence = action.get("mode") == "presence"
+
+        # Close any activation left running when the window (or the mode) is
+        # gone. Without this the last device of the evening would stay on.
+        for key in list(self._presence_state):
+            if key.startswith(f"{sched_id}:") and (
+                not active_presence or key != f"{sched_id}:{current_idx}"
+            ):
+                await self._presence_switch_off(sched, key)
+
+        if not active_presence:
+            return
+
+        entities = self._presence_entities(sched, current_block)
+        if not entities:
+            return
+
+        try:
+            cycles = int(action.get("presence_cycles") or 3)
+            dur_min = float(action.get("presence_min_min") or 20)
+            dur_max = float(action.get("presence_max_min") or 90)
+        except (TypeError, ValueError):
+            return
+
+        block_start = self._resolve_block_time(current_block, "start")
+        block_end = self._resolve_block_time(current_block, "end")
+        plan = _presence_plan(
+            f"{sched_id}:{current_idx}:{local_now.date().isoformat()}",
+            block_start, block_end, cycles, dur_min, dur_max, len(entities),
+        )
+        if not plan:
+            return
+
+        now_h = local_now.hour + local_now.minute / 60
+        cycle_idx = next(
+            (i for i, c in enumerate(plan) if c["start"] <= now_h < c["end"]),
+            None,
+        )
+
+        key = f"{sched_id}:{current_idx}"
+        state = self._presence_state.setdefault(key, {"cycle": None, "entity": None})
+        if state["cycle"] == cycle_idx:
+            return
+
+        # Leaving an activation: switch its device off before the next one.
+        if state["entity"]:
+            await self._presence_switch_off(sched, key, keep_state=True)
+
+        state["cycle"] = cycle_idx
+        state["entity"] = None
+        if cycle_idx is None:
+            return
+
+        entity_id = entities[min(plan[cycle_idx]["device"], len(entities) - 1)]
+        state["entity"] = entity_id
+        _LOGGER.info(
+            "Chronos: PRESENCE schedule=%s cycle %d/%d on %s until %.2f",
+            sched.get("name", "?"), cycle_idx + 1, len(plan), entity_id,
+            plan[cycle_idx]["end"],
+        )
+        # Reuse the normal dispatcher on a single device: History, extras and
+        # offline handling all behave as they do for a regular block. The
+        # mode is dropped so the presence guard doesn't skip this one.
+        on_action = {k: v for k, v in action.items() if k not in ("mode", "presence_cycles", "presence_min_min", "presence_max_min")}
+        await self._dispatch_action(
+            sched, {"start": 0, "end": 0, "action": on_action, "device_ids": [
+                d for d in (sched.get("device_ids") or [])
+                if (self._store.get_device(d) or {}).get("entity_id") == entity_id
+            ]},
+        )
+
+    def _presence_entities(self, sched: dict, block: dict | None) -> list[str]:
+        """Entity ids the presence simulation may pick from: the block's own
+        device subset when it has one, the schedule's devices otherwise."""
+        sched_ids = sched.get("device_ids", []) or []
+        subset = (block or {}).get("device_ids")
+        ids = [d for d in subset if d in set(sched_ids)] if isinstance(subset, list) and subset else list(sched_ids)
+        out = []
+        for device_id in ids:
+            device = self._store.get_device(device_id)
+            if device and device.get("entity_id"):
+                out.append(device["entity_id"])
+        return out
+
+    async def _presence_switch_off(self, sched: dict, key: str, keep_state: bool = False) -> None:
+        """Switch off whatever the presence simulation last turned on."""
+        state = self._presence_state.get(key)
+        entity_id = (state or {}).get("entity")
+        if entity_id:
+            off_def = next(
+                (a for a in ACTIONS_BY_TYPE.get(sched.get("device_type", ""), [])
+                 if a.get("kind") == "off"),
+                None,
+            )
+            if off_def and off_def.get("service"):
+                await self._off_or_arm(sched, entity_id, off_def["service"], off_def["id"])
+        if keep_state and state is not None:
+            state["entity"] = None
+        else:
+            self._presence_state.pop(key, None)
 
     async def _evaluate_triggers(self, sched: dict, local_now, effective_blocks: list, current_idx: int) -> None:
         """Evaluate all active force_action rules on this schedule. Fire on
@@ -2210,6 +2382,14 @@ class ChronosScheduler:
                 "Chronos: NO action def for device_type=%s action_id=%s schedule=%s",
                 device_type, action_id, sched_name,
             )
+            return
+
+        # Presence simulation owns its devices: the block must NOT fire its
+        # action across every device when the window opens, or the whole
+        # house would light up at 18:00 and the simulation would be pointless.
+        # _evaluate_presence sends the same action per device at its own
+        # times (and strips the mode, so those dispatches land here normally).
+        if action.get("mode") == "presence":
             return
 
         # A new block dispatch supersedes any on-demand scene watcher this

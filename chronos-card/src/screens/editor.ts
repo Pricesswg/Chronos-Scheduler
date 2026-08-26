@@ -28,6 +28,78 @@ export class ChronosEditor extends LitElement {
    * none. View-only and not persisted: it is a reading aid, not config. */
   @state() private _compareId = "";
 
+  /** Presence simulation: the block stops being "one state for the whole
+   * window" and becomes several activations at times drawn for the day. The
+   * user caps how many and how long; the minutes and the device are ours. */
+  private _renderBlockPresence(schedule: any, block: Block, typeActions: any[]) {
+    // Needs something to switch off again, so only device types with an off.
+    if (!typeActions.some((a) => a.kind === "off")) return nothing;
+    const on = block.action?.mode === "presence";
+    const num = (v: any, d: number) => (v === undefined || v === null || v === "" ? d : v);
+    return html`
+      <div class="field">
+        <div class="row" style="gap:10px;align-items:center">
+          <label class="switch">
+            <input type="checkbox" .checked=${on}
+              @change=${(e: Event) => this._setBlockPresence(schedule.id, (e.target as HTMLInputElement).checked)}/>
+            <span class="switch__track"></span>
+            <span class="switch__thumb"></span>
+          </label>
+          <span class="text-sm fw-600">${t("editor.presence.label")}</span>
+        </div>
+        <span class="field__hint" style="display:block;margin-top:4px">${t("editor.presence.hint")}</span>
+        ${on ? html`
+          <div class="row" style="gap:10px;margin-top:10px;flex-wrap:wrap;align-items:flex-end">
+            <div class="field" style="margin:0">
+              <label class="field__label">${t("editor.presence.cycles")}</label>
+              <input class="input mono" type="number" min="1" max="12" step="1" style="width:90px"
+                .value=${String(num(block.action?.presence_cycles, 3))}
+                @change=${(e: Event) => this._setPresenceField(schedule.id, "presence_cycles", parseInt((e.target as HTMLInputElement).value, 10), 1, 12)}/>
+            </div>
+            <div class="field" style="margin:0">
+              <label class="field__label">${t("editor.presence.min")} <span class="text-mute">(min)</span></label>
+              <input class="input mono" type="number" min="1" max="600" step="5" style="width:100px"
+                .value=${String(num(block.action?.presence_min_min, 20))}
+                @change=${(e: Event) => this._setPresenceField(schedule.id, "presence_min_min", parseFloat((e.target as HTMLInputElement).value), 1, 600)}/>
+            </div>
+            <div class="field" style="margin:0">
+              <label class="field__label">${t("editor.presence.max")} <span class="text-mute">(min)</span></label>
+              <input class="input mono" type="number" min="1" max="600" step="5" style="width:100px"
+                .value=${String(num(block.action?.presence_max_min, 90))}
+                @change=${(e: Event) => this._setPresenceField(schedule.id, "presence_max_min", parseFloat((e.target as HTMLInputElement).value), 1, 600)}/>
+            </div>
+          </div>
+          <span class="field__hint" style="display:block;margin-top:6px">${t("editor.presence.devices_hint")}</span>
+        ` : nothing}
+      </div>
+    `;
+  }
+
+  private _setBlockPresence(schedId: string, on: boolean) {
+    this._patchBlock(schedId, (b) => {
+      if (on) {
+        b.action.mode = "presence";
+        if (b.action.presence_cycles === undefined) b.action.presence_cycles = 3;
+        if (b.action.presence_min_min === undefined) b.action.presence_min_min = 20;
+        if (b.action.presence_max_min === undefined) b.action.presence_max_min = 90;
+        // Presence drives both edges itself, so the end-edge flag would only
+        // fight it.
+        delete b.action.trigger;
+        delete b.action.end_action;
+      } else {
+        delete b.action.mode;
+        delete b.action.presence_cycles;
+        delete b.action.presence_min_min;
+        delete b.action.presence_max_min;
+      }
+    });
+  }
+
+  private _setPresenceField(schedId: string, key: string, value: number, lo: number, hi: number) {
+    if (isNaN(value)) return;
+    this._patchBlock(schedId, (b) => { b.action[key] = Math.max(lo, Math.min(hi, value)); });
+  }
+
   /** Does the block act only when it starts, or on both edges? Off by
    * default, so nothing changes for existing blocks; the end action is a
    * free choice (pre-filled with the device's off, which is what most
@@ -513,7 +585,8 @@ export class ChronosEditor extends LitElement {
                       </div>
                     </div>
                   ` : nothing}
-                  ${this._renderBlockTrigger(schedule, block, availableActions)}
+                  ${this._renderBlockPresence(schedule, block, availableActions)}
+                  ${block.action?.mode === "presence" ? nothing : this._renderBlockTrigger(schedule, block, availableActions)}
                   ${this._renderBlockJitter(schedule, block)}
                   ${currentActionDef?.extras?.length ? this._renderExtras(schedule.id, block, currentActionDef) : nothing}
                   ${this._renderBlockDeviceSubset(schedule, block)}

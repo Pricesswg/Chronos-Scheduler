@@ -47,7 +47,15 @@ export interface BlockAction {
    * would switch its lights on); apply it only when a member entity is
    * turned on during the block window, or immediately for members already
    * on. Unset = the classic behaviour (activate at block start). */
-  mode?: "global" | "sequential" | "on_demand";
+  mode?: "global" | "sequential" | "on_demand" | "presence";
+  /** Presence simulation ("presence" mode): instead of holding one state
+   * for the whole window, switch devices on and off at times drawn for
+   * today. The user sets the ceiling (how many activations, how long each
+   * may last) and the action; Chronos picks the minutes and which of the
+   * block's devices, because that is the part that must look unplanned. */
+  presence_cycles?: number;
+  presence_min_min?: number;
+  presence_max_min?: number;
   /** Which edges of the block act. Unset or "start" = the historical
    * behaviour, the action fires when the block begins and nothing happens
    * when it ends. "both" also sends `end_action` when the block finishes

@@ -278,6 +278,25 @@ const RECIPES: Recipe[] = [
     ],
   },
   {
+    // Discussion #17 asked for random times; what it was really after was a
+    // house that does not look empty. The recipe ships the whole evening so
+    // the feature is discoverable: it lives inside the block panel otherwise.
+    id: "presence_simulation",
+    device_type: "light",
+    default_name_key: "recipe.presence_simulation.preset_name",
+    days: [1, 1, 1, 1, 1, 1, 1],
+    blocks: [
+      {
+        start: 18.5, end: 23.5,
+        action: {
+          id: "turn_on", value: 70, mode: "presence",
+          presence_cycles: 4, presence_min_min: 20, presence_max_min: 90,
+        },
+      },
+    ],
+    weather_rules: [],
+  },
+  {
     // Sergio's question in #19: run only when the PV battery is full enough.
     id: "solar_surplus_boiler",
     device_type: "boiler",

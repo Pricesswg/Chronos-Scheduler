@@ -432,6 +432,25 @@ A block with a **random shift** of N minutes moves every day by a random amount 
 
 It is meant for presence simulation: lights that come on at 19:07 one evening and 18:52 the next look lived-in in a way a fixed time does not. On the timeline the block shows a hatched band on each side, the area it can land in; the exact time of the day is decided by the scheduler.
 
+### Presence simulation
+
+A random shift moves a block; **presence simulation** replaces it with a whole evening. Turn it on in the block's panel and the block stops being one long state: inside its window it switches on and off several times, at times that are different every day.
+
+You set three numbers:
+
+| Field | What it does |
+|---|---|
+| Activations at most | The upper bound on how many times the block turns on. Chronos may use fewer if the window is too short to fit them apart |
+| Shortest / Longest | The range each activation lasts, drawn independently every time |
+
+Everything else is decided by the scheduler, because it is the part that has to look unplanned: the exact minutes, and which of the block's devices each activation uses. Select two or three lights in different rooms and the evening moves around the house instead of blinking the same lamp.
+
+The plan is drawn once per day from the schedule, the block and the date, so it is fixed for the whole day but different tomorrow. Nothing is stored: after a restart Chronos rebuilds the same plan and picks the evening back up where it was, re-asserting the activation that should be running. At the end of the window the device is always left off.
+
+The action stays yours, the one configured on the block, so this is not limited to lights: anything with an off action can be driven this way. Blocks in presence mode ignore the end-of-block switch, since ending off is already part of the plan.
+
+The Help screen has a ready-made recipe, "Evening presence simulation".
+
 ### Scaling irrigation with the temperature
 
 To water longer when it is hot, use **Scale value** (not Scale duration, which moves the block's time window and leaves the watering minutes alone):
