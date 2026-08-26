@@ -499,6 +499,21 @@ export const chronosStyles = css`
   .timeline--compact .tl-run { top: 3px; bottom: 3px; }
   .timeline--mini .tl-run { top: 0; bottom: 0; border-radius: 0; }
 
+  /* Where a block with a random shift can land. Fainter than the run tail:
+   * this is "it could start anywhere in here", not "it will run this long". */
+  .tl-jit {
+    position: absolute; top: 6px; bottom: 22px; border-radius: 4px;
+    pointer-events: none; opacity: 0.75;
+    border: 1px dashed color-mix(in srgb, var(--text) 28%, transparent);
+    background: repeating-linear-gradient(
+      -45deg,
+      color-mix(in srgb, var(--text) 10%, transparent) 0 3px,
+      transparent 3px 8px
+    );
+  }
+  .timeline--compact .tl-jit { top: 3px; bottom: 3px; }
+  .timeline--mini .tl-jit { display: none; }
+
   /* Reference overlay: a second schedule shown under the linear bar for
    * comparison. Muted and never interactive; stretches that overlap the
    * schedule being shown get a red outline, which is what you look for

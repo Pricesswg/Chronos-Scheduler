@@ -1,7 +1,7 @@
 import { LitElement, html, svg, nothing, PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { chronosStyles } from "./styles";
-import { actionColor, actionLabel, getActionDef } from "./actions";
+import { actionColor, actionLabel, getActionDef, getActionsForType } from "./actions";
 import { fmtHour, clamp, snapToGrid, resolveBlockTime, DAY_END_HOUR } from "./utils";
 import { defaultAction } from "./actions";
 import { actionDefLabel, t } from "./i18n";
@@ -102,6 +102,10 @@ export class ChronosTimeline extends LitElement {
    * minutes, up to 120 when it's hot" is visible on the bar instead of
    * hiding in the rule. Only entries longer than the block are drawn. */
   @property({ type: Array }) runSpans: { idx: number; endH: number }[] = [];
+
+  /** What a block created here should do, from Settings. "both" stamps the
+   * end action on birth; existing blocks are never touched. */
+  @property({ type: String }) defaultTrigger: "start" | "both" = "start";
 
   @state() private _drag: {
     /** Index of the dragged block INSIDE the snapshot (stable for the whole
@@ -253,11 +257,35 @@ export class ChronosTimeline extends LitElement {
           </div>
           `;
         })}
+        ${this._renderJitterZones(pct)}
         ${this._renderRunSpans(pct)}
         ${this._renderLinearGhost(pct)}
         ${this.now !== null ? html`<div class="tl-now" style="left:${pct(this.now)}%"></div>` : nothing}
       </div>
       ${this._renderReferenceStrip(pct)}
+    `;
+  }
+
+  /** Where a block with a random shift can land: a hatched zone on each side,
+   * as wide as the shift. The exact time is drawn once per day by the
+   * scheduler, so showing the range is the honest thing to draw here rather
+   * than a number the card would have to guess. */
+  private _renderJitterZones(pct: (h: number) => number) {
+    return html`
+      ${this.blocks.map((b) => {
+        const j = Number(b.jitter_min) || 0;
+        if (j <= 0) return nothing;
+        const h = j / 60;
+        const rs = resolveBlockTime(b, "start");
+        const re = resolveBlockTime(b, "end");
+        const left = Math.max(0, rs - h);
+        const right = Math.min(24, re + h);
+        const tip = t("tl.jitter.zone", { min: String(j) });
+        return html`
+          ${rs > left ? html`<div class="tl-jit" style="left:${pct(left)}%;width:${pct(rs - left)}%" title="${tip}"></div>` : nothing}
+          ${right > re ? html`<div class="tl-jit" style="left:${pct(re)}%;width:${pct(right - re)}%" title="${tip}"></div>` : nothing}
+        `;
+      })}
     `;
   }
 
@@ -719,7 +747,15 @@ export class ChronosTimeline extends LitElement {
       return !(end <= bs || start >= be);
     });
     if (conflict) return;
-    const newBlocks = [...this.blocks, { start, end, action: defaultAction(this.deviceType) }];
+    const action: any = defaultAction(this.deviceType);
+    if (this.defaultTrigger === "both") {
+      const off = getActionsForType(this.deviceType).find((a) => a.kind === "off");
+      if (off) {
+        action.trigger = "both";
+        action.end_action = { id: off.id };
+      }
+    }
+    const newBlocks = [...this.blocks, { start, end, action }];
     this._fireBlocksChanged(newBlocks);
   }
 

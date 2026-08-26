@@ -397,6 +397,41 @@ That is a twilight switch: the light comes on when it gets dark and goes off whe
 
 Outdoor lux is rarely published by weather integrations, so `Illuminance` normally comes from your own sensor: map it under `Settings → Language and weather source → sensor overrides`, or pick the sensor directly in the rule's value list.
 
+### What a block does when it ends
+
+By default a time block sends its command **when it starts** and nothing when it finishes. That is why a "turn on" block leaves the device on until some other block touches it: it is doing exactly what it was asked to.
+
+In the block panel, **Act at the end of the block too** changes that. When the block finishes, and no other block takes over at that same moment, Chronos sends a second action that you choose right there. It is pre-filled with the device's off, which is what most people want, but any action of that device type works: a thermostat can drop to a night setpoint, a fan can go to minimum, a blind can close.
+
+- Off by default, per block: updating Chronos never changes what your existing blocks do.
+- `Settings → Time blocks` sets what **newly created** blocks do, so if you always want both edges you set it once. Existing blocks are never touched by that setting.
+- If another block starts exactly when this one ends, the end action is skipped: the next block's own action already defines the state, and sending an off in between would only make the device blink.
+- An offline device gets the same treatment as the auto-off timer: the switch-off is retried when it comes back, with the truth recorded in History.
+
+### Electricity prices
+
+Chronos does not talk to any energy market: it reads the price sensor from an integration you already have (Nordpool, ENTSO-e, Tibber and similar). Pick it under `Settings → Language and weather source → Electricity price entity`.
+
+That adds three variables to the rule builder, chosen because no price integration publishes them:
+
+| Variable | Meaning |
+|---|---|
+| `price.now` | The current price |
+| `price.rank_today` | Where the current hour sits among today's hours, 1 being the cheapest |
+| `price.vs_average_pct` | The current price as a percentage of today's average, 100 being average |
+
+`price.rank_today` is the useful one: **"run during the four cheapest hours of the day" is simply `price.rank_today <= 4`**, evaluated by the ordinary rule engine. `price.vs_average_pct` exists because rule thresholds are fixed numbers, and on a market whose level moves daily "cheaper than usual" cannot be written as an absolute price.
+
+Everything the integration already provides (average, minimum, maximum, whether the price is low) stays where it is: point a rule at those attributes directly if you need them.
+
+The Help screen has a ready-made recipe, "Water heater in the cheapest hours".
+
+### Random shift
+
+A block with a **random shift** of N minutes moves every day by a random amount up to N, earlier or later, keeping its length. The amount is drawn once per day and then stays fixed, so the block does not wander while it is running.
+
+It is meant for presence simulation: lights that come on at 19:07 one evening and 18:52 the next look lived-in in a way a fixed time does not. On the timeline the block shows a hatched band on each side, the area it can land in; the exact time of the day is decided by the scheduler.
+
 ### Scaling irrigation with the temperature
 
 To water longer when it is hot, use **Scale value** (not Scale duration, which moves the block's time window and leaves the watering minutes alone):

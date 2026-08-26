@@ -1,5 +1,5 @@
 DOMAIN = "chronos"
-VERSION = "1.35.0"
+VERSION = "1.36.0"
 STORAGE_VERSION = 1
 STORAGE_KEY_DEVICES = f"{DOMAIN}.devices"
 STORAGE_KEY_SCHEDULES = f"{DOMAIN}.schedules"
@@ -273,6 +273,14 @@ WEATHER_ATTRIBUTES = [
     # rules: keep a light on while it is dark outside.
     {"key": "illuminance", "label": "Illuminance", "unit": "lx", "icon": "sun", "type": "number"},
     {"key": "rain_rate", "label": "Rain rate", "unit": "mm/h", "icon": "rain", "type": "number"},
+    # Electricity price variables, computed from the configured price entity.
+    # Deliberately only what price integrations do NOT already expose: they
+    # publish average/min/max/low_price themselves, but never the position of
+    # the current hour in the day, which is what "run in the cheapest hours"
+    # needs. See _read_attribute in scheduler.py.
+    {"key": "price.now", "label": "Electricity price now", "unit": "", "icon": "bolt", "type": "number"},
+    {"key": "price.rank_today", "label": "Price rank today (1 = cheapest hour)", "unit": "", "icon": "bolt", "type": "number"},
+    {"key": "price.vs_average_pct", "label": "Price vs today average", "unit": "%", "icon": "bolt", "type": "number"},
     {
         "key": "rain_state",
         "label": "Rain state",
@@ -378,6 +386,14 @@ DEFAULT_SETTINGS = {
     # lightning, snow picked from the weather condition). CSS-only; the
     # card also honors prefers-reduced-motion regardless of this flag.
     "live_fx": True,
+    # Entity holding electricity prices (Nordpool, ENTSO-e, Tibber, ...).
+    # Only used to compute the price.* rule variables; empty = no price rules.
+    "price_entity": "",
+    # What a NEWLY created block does: "start" fires only when the block
+    # begins (the historical behaviour), "both" also sends an end action when
+    # it finishes. Applied at creation time only, never retroactively, so
+    # updating Chronos cannot change what existing blocks do.
+    "default_block_trigger": "start",
     # Navigation layout: "top" merges the sidebar and the old topbar into
     # one horizontal icon bar (reclaims space, especially on phones);
     # "sidebar" keeps the classic left sidebar for those who prefer it.

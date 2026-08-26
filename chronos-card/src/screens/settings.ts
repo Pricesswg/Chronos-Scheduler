@@ -69,6 +69,34 @@ export class ChronosSettingsScreen extends LitElement {
             </div>
 
             ${this._renderSensorOverrides()}
+
+            <div class="field" style="border-top:1px solid var(--border-soft);padding-top:12px">
+              <label class="field__label">${t("settings.price.entity")}</label>
+              <select class="select mono"
+                @change=${(e: Event) => this._updateSetting("price_entity", (e.target as HTMLSelectElement).value)}>
+                <option value="" ?selected=${!s.price_entity}>${t("common.none")}</option>
+                ${(this.card._sensorEntities || []).map((sen: any) => html`
+                  <option value="${sen.entity_id}" ?selected=${s.price_entity === sen.entity_id}>${sen.friendly_name || sen.entity_id}</option>
+                `)}
+              </select>
+              <span class="field__hint">${t("settings.price.entity.hint")}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("settings.blocks.title")}</h3><p class="card__sub">${t("settings.blocks.subtitle")}</p></div></div>
+          <div class="field">
+            <label class="field__label">${t("settings.blocks.trigger")}</label>
+            <div class="segmented">
+              ${(["start", "both"] as const).map((v) => html`
+                <button data-active="${(s.default_block_trigger ?? "start") === v}"
+                  @click=${() => this._updateSetting("default_block_trigger", v)}>
+                  ${t("settings.blocks.trigger." + v)}
+                </button>
+              `)}
+            </div>
+            <span class="field__hint">${t("settings.blocks.trigger.hint")}</span>
           </div>
         </div>
 

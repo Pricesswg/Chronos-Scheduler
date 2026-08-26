@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import logging
 import operator
@@ -81,6 +82,80 @@ def _hold_candidate(value: float, on_th: float, off_th: float) -> bool | None:
     if value >= on_th:
         return True
     return False if value <= off_th else None
+
+
+def _parse_price_series(attrs: dict) -> list[float] | None:
+    """Today's hourly electricity prices, read from a price sensor.
+
+    Every integration publishes them differently, so the known shapes are
+    tried in order:
+      * ``raw_today``    = [{"start": .., "end": .., "value": 0.12}, ..]  Nordpool
+      * ``prices_today`` = [{"time": .., "price": 0.12}, ..]              ENTSO-e
+      * ``today``        = [0.12, 0.15, ..]                               Nordpool
+
+    Returns None when nothing usable is found. That is deliberate: a rule
+    whose variable reads None evaluates to false, so a sensor that is not a
+    price sensor (or has not published tomorrow's data yet) can never make a
+    rule fire by accident.
+    """
+    if not isinstance(attrs, dict):
+        return None
+
+    def _numbers(rows, *keys) -> list[float]:
+        out: list[float] = []
+        for row in rows:
+            if isinstance(row, dict):
+                val = next((row[k] for k in keys if k in row), None)
+            else:
+                val = row
+            try:
+                num = float(val)
+            except (TypeError, ValueError):
+                continue
+            out.append(num)
+        return out
+
+    for key in ("raw_today", "prices_today", "today"):
+        rows = attrs.get(key)
+        if isinstance(rows, list) and rows:
+            series = _numbers(rows, "value", "price")
+            # A partial series would rank the wrong hour, so require enough
+            # of the day to be present before trusting it.
+            if len(series) >= 20:
+                return series
+    return None
+
+
+def _price_rank(series: list[float], hour: int) -> int | None:
+    """Position of `hour` among today's prices, 1 = cheapest hour of the day.
+
+    This is the piece no price integration publishes, and the one that makes
+    "run during the four cheapest hours" expressible as `price.rank_today <= 4`
+    with the ordinary rule engine.
+    """
+    if not series or hour < 0 or hour >= len(series):
+        return None
+    mine = series[hour]
+    # Ties share the better rank, so two hours at the same price both count.
+    return sum(1 for v in series if v < mine) + 1
+
+
+def _jitter_minutes(sched_id: str, block_idx: int, day_iso: str, jitter_min: float) -> float:
+    """Random-looking but STABLE offset for a block, in minutes.
+
+    Derived from a hash of (schedule, block, day), never from a random
+    generator: the offset must be identical for every tick of the same day,
+    otherwise the block would jump around and re-fire continuously. It
+    changes on its own at midnight, and needs nothing stored anywhere.
+
+    Result is in [-jitter_min, +jitter_min]; both edges get the same shift,
+    so the block moves without changing length.
+    """
+    if jitter_min <= 0:
+        return 0.0
+    digest = hashlib.sha256(f"{sched_id}:{block_idx}:{day_iso}".encode()).digest()
+    frac = int.from_bytes(digest[:4], "big") / 2 ** 32
+    return round((frac * 2 - 1) * jitter_min, 1)
 
 
 def _split_and(expr: str) -> list[str]:
@@ -481,6 +556,12 @@ class ChronosScheduler:
 
             if current_block != previous_block:
                 self._last_executed[prev_key] = current_block
+                if current_block is None and previous_block is not None:
+                    # The block just ended and nothing took over. Blocks that
+                    # asked to act on both edges send their end action here;
+                    # this is the case that used to do nothing at all, which
+                    # is why a "turn on" block appeared to never switch off.
+                    await self._apply_block_end(sched, previous_block)
                 if current_block is not None:
                     _LOGGER.info(
                         "Chronos: TRANSITION schedule=%s hour=%.2f → block #%d resolved=%.2f-%.2f action=%s",
@@ -692,6 +773,34 @@ class ChronosScheduler:
                     na["sequence"] = [dict(x) if isinstance(x, dict) else x for x in seq]
                 nb["action"] = na
             blocks.append(nb)
+
+        # Random shift: a block with jitter_min moves by a per-day amount, the
+        # same for both edges so its length is untouched. Applied here, before
+        # the rules, so everything downstream (which block is active, dispatch,
+        # the timeline's run spans) already sees today's real times.
+        sched_id_str = str(sched.get("id", ""))
+        day_iso = dt_util.now().date().isoformat()
+        for idx, nb in enumerate(blocks):
+            try:
+                jitter = float(nb.get("jitter_min") or 0)
+            except (TypeError, ValueError):
+                continue
+            if jitter <= 0:
+                continue
+            offset = _jitter_minutes(sched_id_str, idx, day_iso, jitter)
+            if not offset:
+                continue
+            for edge in ("start", "end"):
+                if nb.get(f"{edge}_anchor"):
+                    # Anchored edge: shift the offset, the anchor still wins.
+                    nb[f"{edge}_offset"] = (nb.get(f"{edge}_offset") or 0) + offset
+                else:
+                    try:
+                        base = float(nb.get(edge, 0))
+                    except (TypeError, ValueError):
+                        continue
+                    nb[edge] = max(0.0, min(24.0, base + offset / 60))
+
         rules = self._rules_for(sched.get("id", ""))
         for rule in rules:
             if not rule.get("active"):
@@ -932,6 +1041,87 @@ class ChronosScheduler:
             return float(v)
         except (TypeError, ValueError):
             return 0.0
+
+    async def _apply_block_end(self, sched: dict, block: dict) -> None:
+        """Send a block's end action, when the block asked to act on both of
+        its edges and nothing took over.
+
+        Until this existed a "turn on" block only ever sent the turn-on: the
+        device stayed on until some other block touched it, which is what
+        discussion #11 and issue #21 both ran into. The end action is NOT
+        hardcoded to an off: the sensible end state depends on the device, so
+        the block carries whichever action the user picked.
+
+        Not fired when another block starts at the same moment — that block's
+        own action defines the state, and an extra off in between would just
+        make the device flicker. Also not fired right after a restart, since
+        the previous block is unknown then: acting on a guess would be worse
+        than waiting for the next real transition.
+        """
+        action = block.get("action") or {}
+        if action.get("trigger") != "both":
+            return
+        end_action = action.get("end_action") or {}
+        action_id = end_action.get("id")
+        if not action_id:
+            return
+        device_type = sched.get("device_type", "")
+        action_def = _get_action_def(device_type, action_id)
+        if not action_def:
+            _LOGGER.warning(
+                "Chronos: END-OF-BLOCK schedule=%s has no action def for %s.%s",
+                sched.get("name", "?"), device_type, action_id,
+            )
+            return
+
+        _LOGGER.info(
+            "Chronos: END-OF-BLOCK schedule=%s → action=%s val=%s",
+            sched.get("name", "?"), action_id, end_action.get("value"),
+        )
+
+        # An off-type end action goes through the same per-entity path as the
+        # auto-off timer, so a device that is offline right now gets its
+        # off-recall armed (and a truthful History entry) instead of a bare
+        # failure. Everything else is a normal dispatch.
+        if action_def.get("kind") == "off" and action_def.get("service"):
+            sched_ids = sched.get("device_ids", []) or []
+            subset = block.get("device_ids")
+            if isinstance(subset, list) and subset:
+                allowed = set(sched_ids)
+                device_ids = [d for d in subset if d in allowed]
+            else:
+                device_ids = list(sched_ids)
+            sent = False
+            for device_id in device_ids:
+                device = self._store.get_device(device_id)
+                if not device:
+                    continue
+                if await self._off_or_arm(
+                    sched, device["entity_id"], action_def["service"], action_id
+                ):
+                    sent = True
+                    self._store.append_history(_make_history_entry(
+                        sched, kind="block", action_id=action_id,
+                        entity_id=device["entity_id"], value=end_action.get("value"),
+                    ))
+            if not sent:
+                _LOGGER.debug(
+                    "Chronos: END-OF-BLOCK schedule=%s reached no device",
+                    sched.get("name", "?"),
+                )
+            return
+
+        # Reuse the dispatcher with a synthetic block, the same way triggers
+        # do. The device subset is carried over so the end action lands on
+        # exactly the devices the block itself acted on.
+        synthetic = {
+            "start": 0,
+            "end": 0,
+            "action": dict(end_action),
+        }
+        if isinstance(block.get("device_ids"), list) and block["device_ids"]:
+            synthetic["device_ids"] = list(block["device_ids"])
+        await self._dispatch_action(sched, synthetic)
 
     async def _evaluate_triggers(self, sched: dict, local_now, effective_blocks: list, current_idx: int) -> None:
         """Evaluate all active force_action rules on this schedule. Fire on
@@ -2629,6 +2819,10 @@ class ChronosScheduler:
         if key.startswith("sun."):
             return self._read_sun_attribute(key.split(".", 1)[1])
 
+        # Electricity price attributes come from the configured price entity.
+        if key.startswith("price."):
+            return self._read_price_attribute(key.split(".", 1)[1])
+
         weather_entity = self._store.settings.get("weather_entity", "")
         if not weather_entity:
             return None
@@ -2638,6 +2832,52 @@ class ChronosScheduler:
         if key == "condition":
             return weather_state.state
         return weather_state.attributes.get(key)
+
+    def _read_price_attribute(self, sub: str) -> Any:
+        """Electricity price variables, from the entity set in Settings.
+
+        Only the three things price integrations do NOT publish themselves:
+        they already expose average/min/max/low_price, so recomputing those
+        here would be duplicated logic. What is missing everywhere is the
+        current hour's position in the day (`rank_today`), and a measure of
+        cheapness that survives a market whose level moves daily
+        (`vs_average_pct`), because rule thresholds are constants.
+        """
+        entity_id = self._store.settings.get("price_entity", "")
+        if not entity_id:
+            return None
+        state = self._hass.states.get(entity_id)
+        if state is None:
+            return None
+        attrs = state.attributes or {}
+
+        def _now_price() -> float | None:
+            raw = attrs.get("current_price")
+            if raw is None:
+                raw = state.state
+            try:
+                return float(raw)
+            except (TypeError, ValueError):
+                return None
+
+        if sub == "now":
+            return _now_price()
+
+        series = _parse_price_series(attrs)
+        if not series:
+            return None
+
+        if sub == "rank_today":
+            return _price_rank(series, dt_util.now().hour)
+
+        if sub == "vs_average_pct":
+            avg = sum(series) / len(series)
+            now = _now_price()
+            if now is None or avg == 0:
+                return None
+            return round(100 * now / avg, 1)
+
+        return None
 
     def _read_sun_attribute(self, sub: str) -> Any:
         """Read attributes from the sun.sun entity.

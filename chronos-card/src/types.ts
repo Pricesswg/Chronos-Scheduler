@@ -48,6 +48,15 @@ export interface BlockAction {
    * turned on during the block window, or immediately for members already
    * on. Unset = the classic behaviour (activate at block start). */
   mode?: "global" | "sequential" | "on_demand";
+  /** Which edges of the block act. Unset or "start" = the historical
+   * behaviour, the action fires when the block begins and nothing happens
+   * when it ends. "both" also sends `end_action` when the block finishes
+   * and no other block takes over. Deliberately NOT hardcoded to an off:
+   * the sensible end state depends on the device. */
+  trigger?: "start" | "both";
+  /** Action sent when the block ends, used only when trigger is "both".
+   * Same shape as the block's own action. */
+  end_action?: { id: string; value?: number | string | string[]; extras?: Record<string, any> };
   /** Irrigation sequential mode: ordered list of stations. The scheduler
    * opens each valve, waits its minutes, closes it, then moves to the
    * next. Total program length = sum of all minutes. */
@@ -80,6 +89,11 @@ export interface Block {
   start_offset?: number; // minutes, can be negative
   end_anchor?: TimeAnchor;
   end_offset?: number;
+  /** Random shift, in minutes: the block moves by up to this much either
+   * way, by a per-day amount that stays the same all day (presence
+   * simulation). Both edges shift together, so the length is unchanged.
+   * Unset/0 = fixed times. */
+  jitter_min?: number;
   /** Optional subset of the schedule's `device_ids` to act on for this block.
    * When unset or empty, dispatch falls back to all devices on the schedule.
    * Backend intersects with the schedule's set, so stale references are safe. */
@@ -247,6 +261,11 @@ export interface Settings {
   /** Navigation layout: "top" (default) merges sidebar and topbar into a
    * single icon bar; "sidebar" keeps the classic left sidebar. */
   nav_style?: "top" | "sidebar";
+  /** Entity holding electricity prices, used by the price.* rule variables. */
+  price_entity?: string;
+  /** What a NEWLY created block does. Applied at creation only, so existing
+   * blocks never change behaviour on their own. */
+  default_block_trigger?: "start" | "both";
   /** Ask for confirmation before switching a schedule or a weather rule
    * OFF from the card. Switching one back ON is never confirmed. Default
    * true. Card-side only: the switch entities and the schedule_toggle

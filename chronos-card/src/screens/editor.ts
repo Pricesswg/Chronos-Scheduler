@@ -28,6 +28,126 @@ export class ChronosEditor extends LitElement {
    * none. View-only and not persisted: it is a reading aid, not config. */
   @state() private _compareId = "";
 
+  /** Does the block act only when it starts, or on both edges? Off by
+   * default, so nothing changes for existing blocks; the end action is a
+   * free choice (pre-filled with the device's off, which is what most
+   * people want) because the sensible end state depends on the device. */
+  private _renderBlockTrigger(schedule: any, block: Block, typeActions: any[]) {
+    const offAction = typeActions.find((a) => a.kind === "off");
+    // No meaningful "end" for scenes, helpers or service calls.
+    if (!offAction) return nothing;
+    const dt = schedule.device_type;
+    const both = block.action?.trigger === "both";
+    const endId = block.action?.end_action?.id || "";
+    const endDef = typeActions.find((a) => a.id === endId);
+    return html`
+      <div class="field">
+        <div class="row" style="gap:10px;align-items:center">
+          <label class="switch">
+            <input type="checkbox" .checked=${both}
+              @change=${(e: Event) => this._setBlockTrigger(
+                schedule.id,
+                (e.target as HTMLInputElement).checked ? "both" : "start",
+                offAction.id,
+              )}/>
+            <span class="switch__track"></span>
+            <span class="switch__thumb"></span>
+          </label>
+          <span class="text-sm fw-600">${t("editor.trigger.label")}</span>
+        </div>
+        <span class="field__hint" style="display:block;margin-top:4px">${t("editor.trigger.hint")}</span>
+        ${both ? html`
+          <div class="row" style="gap:10px;align-items:flex-start;margin-top:10px;flex-wrap:wrap">
+            <select class="select" style="max-width:220px"
+              @change=${(e: Event) => this._setBlockEndAction(schedule.id, (e.target as HTMLSelectElement).value, typeActions)}>
+              ${typeActions.map((a) => html`
+                <option value="${a.id}" ?selected=${endId === a.id}>${actionDefLabel(dt, a.id, a.label)}</option>
+              `)}
+            </select>
+            ${endDef?.value?.type === "number" ? html`
+              <input class="input mono" type="number" style="width:120px"
+                min="${endDef.value.min ?? 0}" max="${endDef.value.max ?? 100}" step="${endDef.value.step ?? 1}"
+                .value=${String(block.action?.end_action?.value ?? endDef.value.default ?? "")}
+                @change=${(e: Event) => this._setBlockEndValue(schedule.id, parseFloat((e.target as HTMLInputElement).value))}/>
+            ` : endDef?.value?.type === "enum" ? html`
+              <select class="select" style="max-width:180px"
+                @change=${(e: Event) => this._setBlockEndValue(schedule.id, (e.target as HTMLSelectElement).value)}>
+                ${(endDef.value.options || []).map((o: string) => html`
+                  <option value="${o}" ?selected=${String(block.action?.end_action?.value ?? "") === o}>${o}</option>
+                `)}
+              </select>
+            ` : nothing}
+          </div>
+        ` : nothing}
+      </div>
+    `;
+  }
+
+  /** Random shift: the block moves by up to N minutes, by an amount that is
+   * drawn once per day and then stays put. For presence simulation. */
+  private _renderBlockJitter(schedule: any, block: Block) {
+    return html`
+      <div class="field">
+        <label class="field__label">${t("editor.jitter.label")} <span class="text-mute">(min)</span></label>
+        <div class="row" style="gap:10px;align-items:center">
+          <input class="input" type="number" min="0" max="120" step="5" style="width:110px"
+            .value=${String(block.jitter_min ?? "")} placeholder="—"
+            @change=${(e: Event) => {
+              const v = parseFloat((e.target as HTMLInputElement).value);
+              this._setBlockJitter(schedule.id, !isNaN(v) && v > 0 ? Math.min(v, 120) : null);
+            }}/>
+          <span class="field__hint" style="margin:0">${t("editor.jitter.hint")}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  private _patchBlock(schedId: string, patch: (b: any) => void) {
+    const sched = this.card._schedules.find((s) => s.id === schedId);
+    if (!sched) return;
+    const blocks = sched.blocks.map((b, i) => {
+      if (i !== this._selectedBlockIdx) return b;
+      const nb = { ...b, action: { ...(b.action || {}) } };
+      patch(nb);
+      return nb;
+    });
+    this.card.updateBlocksLocal(schedId, blocks);
+  }
+
+  private _setBlockTrigger(schedId: string, trigger: "start" | "both", defaultEndId: string) {
+    this._patchBlock(schedId, (b) => {
+      if (trigger === "both") {
+        b.action.trigger = "both";
+        if (!b.action.end_action?.id) b.action.end_action = { id: defaultEndId };
+      } else {
+        delete b.action.trigger;
+        delete b.action.end_action;
+      }
+    });
+  }
+
+  private _setBlockEndAction(schedId: string, actionId: string, typeActions: any[]) {
+    const def = typeActions.find((a) => a.id === actionId);
+    this._patchBlock(schedId, (b) => {
+      b.action.end_action = { id: actionId };
+      if (def?.value?.default !== undefined) b.action.end_action.value = def.value.default;
+    });
+  }
+
+  private _setBlockEndValue(schedId: string, value: number | string) {
+    if (typeof value === "number" && isNaN(value)) return;
+    this._patchBlock(schedId, (b) => {
+      b.action.end_action = { ...(b.action.end_action || { id: "" }), value };
+    });
+  }
+
+  private _setBlockJitter(schedId: string, minutes: number | null) {
+    this._patchBlock(schedId, (b) => {
+      if (minutes) b.jitter_min = minutes;
+      else delete b.jitter_min;
+    });
+  }
+
   /** Two irrigation programs that can end up watering together once their
    * scale rules max out: same water line, so it is worth flagging at design
    * time rather than discovering it on the first hot day. */
@@ -177,6 +297,7 @@ export class ChronosEditor extends LitElement {
                 .referenceDeviceType=${this._compareSchedule()?.device_type || "thermostat"}
                 .referenceLabel=${this._compareSchedule()?.name || ""}
                 .runSpans=${this.card.runSpansForSchedule(schedule)}
+                .defaultTrigger=${this.card._settings?.default_block_trigger ?? "start"}
                 @block-select=${(e: CustomEvent) => { this._selectedBlockIdx = e.detail.index; }}
                 @blocks-changed=${(e: CustomEvent) => { this.card.updateBlocksLocal(schedule.id, e.detail.blocks); }}
               ></chronos-timeline>
@@ -392,6 +513,8 @@ export class ChronosEditor extends LitElement {
                       </div>
                     </div>
                   ` : nothing}
+                  ${this._renderBlockTrigger(schedule, block, availableActions)}
+                  ${this._renderBlockJitter(schedule, block)}
                   ${currentActionDef?.extras?.length ? this._renderExtras(schedule.id, block, currentActionDef) : nothing}
                   ${this._renderBlockDeviceSubset(schedule, block)}
                   <button class="btn btn--ghost" style="color:var(--danger)" @click=${() => this._removeBlock(schedule.id)}>

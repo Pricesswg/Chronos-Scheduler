@@ -258,6 +258,41 @@ const RECIPES: Recipe[] = [
       },
     ],
   },
+  {
+    // Half of the electricity-price question in discussion #12 already works
+    // today and nobody knew: rules read any sensor directly, and price.* adds
+    // the hour's rank so "the cheapest hours" is a plain comparison.
+    id: "cheap_hours_water_heater",
+    device_type: "boiler",
+    default_name_key: "recipe.cheap_hours_water_heater.preset_name",
+    days: [1, 1, 1, 1, 1, 1, 1],
+    blocks: [
+      { start: 0, end: DAY_END_HOUR, action: { id: "set_temperature", value: 55 } },
+    ],
+    weather_rules: [
+      {
+        if: "price.rank_today <= 4", then: "Force action", active: true,
+        effect: "force_action", block_index: null,
+        action_id: "set_temperature", action_value: 60, fire_mode: "every",
+      },
+    ],
+  },
+  {
+    // Sergio's question in #19: run only when the PV battery is full enough.
+    id: "solar_surplus_boiler",
+    device_type: "boiler",
+    default_name_key: "recipe.solar_surplus_boiler.preset_name",
+    days: [1, 1, 1, 1, 1, 1, 1],
+    blocks: [
+      { start: 10, end: 16, action: { id: "set_temperature", value: 65 } },
+    ],
+    weather_rules: [
+      {
+        if: "sensor.battery_soc < 80", then: "Skip", active: true,
+        effect: "skip", block_index: null,
+      },
+    ],
+  },
 ];
 
 @customElement("chronos-help-screen")
