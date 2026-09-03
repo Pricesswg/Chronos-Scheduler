@@ -879,7 +879,13 @@ export const chronosStyles = css`
   /* Utility */
   .row { display: flex; align-items: center; gap: 10px; }
   .col { display: flex; flex-direction: column; gap: 10px; }
-  .sp-between { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  /* Page headers put the title on the left and the action buttons on the right.
+   * They must be allowed to wrap: on a phone the two sides cannot share a line,
+   * and a non-wrapping row is pushed past .app's clip-path, which silently eats
+   * the buttons instead of scrolling to them (issue #22, "Add" gone on mobile).
+   * Wrapping is inert while everything fits, so it needs no breakpoint. */
+  .sp-between { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; row-gap: 10px; }
+  .sp-between > .row { flex-wrap: wrap; }
   .text-mute { color: var(--text-muted); }
   .text-soft { color: var(--text-soft); }
   .text-sm { font-size: 12.5px; }
