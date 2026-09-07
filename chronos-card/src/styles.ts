@@ -962,4 +962,5 @@ export const chronosStyles = css`
 
   .chip--paused { background: color-mix(in srgb, var(--warn) 14%, transparent); color: var(--warn); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
   .chip--conflict { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); border-color: color-mix(in srgb, var(--danger) 35%, transparent); }
+  .chip--idle { background: var(--bg-sunken); color: var(--text-muted); border-style: dashed; }
 `;

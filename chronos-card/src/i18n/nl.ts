@@ -838,4 +838,13 @@ export const NL_STRINGS: Record<string, string> = {
   "editor.conflict.title": "Apparaten gedeeld met andere schema's",
   "editor.conflict.item": "{device}: ook “{name}” handelt {b}, overlappend met {a}. Het laatst verzonden commando wint, en van buitenaf lijkt het alsof het apparaat uit zichzelf handelt.",
   "overview.conflicts": "Conflicten: {n}",
+  "mode.home": "Thuis",
+  "mode.away": "Weg",
+  "mode.holiday": "Vakantie",
+  "mode.hint": "Huidige modus. Schema's kunnen zich tot bepaalde modi beperken: wisselen schakelt uit wat Chronos had ingeschakeld in de schema's die wegvallen en past de nieuwe meteen toe.",
+  "mode.inactive": "Rust in {mode}",
+  "editor.modes.label": "Actief in modi",
+  "editor.modes.hint": "Alles geselecteerd = altijd. Deselecteer de modi waarin dit schema moet rusten; de modus wisselt u in het overzicht, via de select-entiteit of de dienst chronos.set_mode.",
+  "editor.presence.away_hint": "Alleen aanwezigheid simuleren als er niemand thuis is?",
+  "editor.presence.away_button": "Alleen in de modus Weg",
 };

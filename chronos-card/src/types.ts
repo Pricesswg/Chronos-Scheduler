@@ -219,6 +219,9 @@ export interface Schedule {
   /** Pause deadline, ISO local time. While it is in the future the schedule
    * does nothing; the backend drops it once it has passed. */
   paused_until?: string | null;
+  /** Modes this schedule runs in (home / away / holiday). Unset or empty
+   * means every mode. */
+  modes?: string[];
 }
 
 export interface Settings {
@@ -274,6 +277,8 @@ export interface Settings {
   nav_style?: "top" | "sidebar";
   /** Show the Chronos entry in the Home Assistant sidebar (default on). */
   sidebar_panel?: boolean;
+  /** Current mode: "home" | "away" | "holiday". */
+  mode?: string;
   /** Entity holding electricity prices, used by the price.* rule variables. */
   price_entity?: string;
   /** What a NEWLY created block does. Applied at creation only, so existing

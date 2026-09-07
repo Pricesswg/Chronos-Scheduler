@@ -838,4 +838,13 @@ export const ES_STRINGS: Record<string, string> = {
   "editor.conflict.title": "Dispositivos compartidos con otras programaciones",
   "editor.conflict.item": "{device}: también «{name}» actúa {b}, solapándose con {a}. Gana la última orden enviada, y desde fuera parece que el dispositivo actúa por su cuenta.",
   "overview.conflicts": "Conflictos: {n}",
+  "mode.home": "Casa",
+  "mode.away": "Fuera",
+  "mode.holiday": "Vacaciones",
+  "mode.hint": "Modo actual. Las programaciones pueden limitarse a ciertos modos: cambiarlo apaga lo que Chronos había encendido en las que se retiran y aplica de inmediato las que entran.",
+  "mode.inactive": "Inactiva en {mode}",
+  "editor.modes.label": "Activa en los modos",
+  "editor.modes.hint": "Todos seleccionados = siempre. Deselecciona los modos en los que esta programación debe quedarse inactiva; el modo se cambia desde la vista general, la entidad select o el servicio chronos.set_mode.",
+  "editor.presence.away_hint": "¿Simular presencia solo cuando no hay nadie?",
+  "editor.presence.away_button": "Solo en modo Fuera",
 };

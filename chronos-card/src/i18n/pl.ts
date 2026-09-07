@@ -838,4 +838,13 @@ export const PL_STRINGS: Record<string, string> = {
   "editor.conflict.title": "Urządzenia współdzielone z innymi harmonogramami",
   "editor.conflict.item": "{device}: także „{name}” działa {b}, nakładając się na {a}. Wygrywa ostatnie wysłane polecenie, a z zewnątrz wygląda, jakby urządzenie działało samo.",
   "overview.conflicts": "Konflikty: {n}",
+  "mode.home": "Dom",
+  "mode.away": "Poza domem",
+  "mode.holiday": "Urlop",
+  "mode.hint": "Bieżący tryb. Harmonogramy mogą ograniczać się do wybranych trybów: zmiana wyłącza to, co Chronos włączył w harmonogramach schodzących ze sceny, i od razu stosuje te wchodzące.",
+  "mode.inactive": "Nieaktywny w trybie {mode}",
+  "editor.modes.label": "Aktywny w trybach",
+  "editor.modes.hint": "Wszystkie zaznaczone = zawsze. Odznacz tryby, w których ten harmonogram ma pozostać nieaktywny; tryb zmienia się w przeglądzie, encją select lub usługą chronos.set_mode.",
+  "editor.presence.away_hint": "Symulować obecność tylko, gdy nikogo nie ma?",
+  "editor.presence.away_button": "Tylko w trybie Poza domem",
 };

@@ -28,6 +28,9 @@ export async function makeHass() {
   const two = (n) => String(n).padStart(2, "0");
   const localIso = (d) => `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}T${two(d.getHours())}:${two(d.getMinutes())}:00`;
   schedules[1].paused_until = localIso(midnight);
+  // s2 only simulates presence when nobody is home.
+  schedules[1].modes = ["away"];
+  const live = { mode: "home" };
   const rules = [
     { id: "r1", name: "Salta se piove", if: "precipitation > 2", then: "Skip", effect: "skip", active: true, fire_mode: "every", targets: [{ schedule_id: "s1", block_index: null }] },
     { id: "r2", name: "Più acqua col caldo", if: "", then: "Scale value", effect: "scale_value", active: true, fire_mode: "every",
@@ -69,7 +72,8 @@ export async function makeHass() {
     "chronos/rules/save": (m) => m.rule,
     "chronos/rules/remove": () => null,
     "chronos/rules/reorder": () => rules,
-    "chronos/settings/get": () => ({ ...fixtures.settings, language: "it", nav_style: "top", weather_entity: "weather.casa", live_map: false, price_entity: "sensor.prezzo_energia" }),
+    "chronos/settings/get": () => ({ ...fixtures.settings, language: "it", nav_style: "top", weather_entity: "weather.casa", live_map: false, price_entity: "sensor.prezzo_energia", mode: live.mode }),
+    "chronos/mode/set": (m) => { live.mode = m.mode; return { ...fixtures.settings, mode: live.mode }; },
     "chronos/settings/update": (m) => ({ ...fixtures.settings, ...m.patch }),
     "chronos/preview/forecast": () => forecast,
     "chronos/entities/available": () => [

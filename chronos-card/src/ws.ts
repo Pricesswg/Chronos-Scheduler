@@ -66,6 +66,13 @@ export async function pauseSchedule(
   return hass.callWS({ type: "chronos/schedules/pause", schedule_id: String(id), until });
 }
 
+export const MODES = ["home", "away", "holiday"] as const;
+
+/** Switch the current mode; returns the settings. */
+export async function setMode(hass: HomeAssistant, mode: string): Promise<Settings> {
+  return hass.callWS({ type: "chronos/mode/set", mode });
+}
+
 export async function fetchRules(hass: HomeAssistant): Promise<WeatherRule[]> {
   return hass.callWS({ type: "chronos/rules/list" });
 }

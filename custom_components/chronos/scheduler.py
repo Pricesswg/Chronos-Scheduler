@@ -14,7 +14,8 @@ from homeassistant.helpers.start import async_at_started
 from homeassistant.util import dt as dt_util
 
 from .const import SIGNAL_STATE
-from .gate import is_in_date_range, is_paused, pause_deadline, schedule_is_live
+from .const import MODES
+from .gate import is_in_date_range, is_paused, pause_deadline, schedule_is_live, schedule_runs_in_mode
 from .store import ChronosStore
 from .timing import jitter_minutes
 from .rules import RulesMixin
@@ -156,7 +157,7 @@ class ChronosScheduler(
         if sched is None:
             return {"ok": False, "error": f"schedule {schedule_id} not found"}
         local_now = dt_util.now()
-        reason = schedule_is_live(sched, local_now)
+        reason = schedule_is_live(sched, local_now, mode=self._mode())
         if reason:
             return {"ok": False, "error": reason}
         current_hour = local_now.hour + local_now.minute / 60
@@ -166,6 +167,39 @@ class ChronosScheduler(
         _LOGGER.info("Chronos: manual fire_now schedule=%s block=%s", sched.get("name"), block)
         await self._dispatch_action(sched, block)
         return {"ok": True, "block": block}
+
+    def _mode(self) -> str:
+        return str(self._store.settings.get("mode") or "home")
+
+    async def set_mode(self, mode: str) -> dict:
+        """Switch the current mode. Schedules that stop being live in the new
+        mode have what they were running closed first (end action, presence
+        lights), exactly like a pause; schedules that become live have their
+        block bookkeeping reset so the immediate tick applies their active
+        block as a catch-up."""
+        if mode not in MODES:
+            return {"ok": False, "error": f"unknown mode {mode!r}"}
+        before = self._mode()
+        if mode == before:
+            return {"ok": True, "mode": mode}
+        local_now = dt_util.now()
+        for sched in self._store.schedules:
+            sid = str(sched.get("id", ""))
+            was = schedule_is_live(sched, local_now, mode=before) is None
+            will = schedule_is_live(sched, local_now, mode=mode) is None
+            if was and not will:
+                previous = self._last_executed.pop(sid, None)
+                if previous is not None:
+                    await self._apply_block_end(sched, previous)
+                for key in [k for k in self._presence_state if k.startswith(f"{sid}:")]:
+                    await self._presence_switch_off(sched, key)
+            elif will and not was:
+                self._last_executed.pop(sid, None)
+        await self._store.async_update_settings({"mode": mode})
+        _LOGGER.info("Chronos: mode %s -> %s", before, mode)
+        async_dispatcher_send(self._hass, SIGNAL_STATE)
+        await self._tick(dt_util.utcnow())
+        return {"ok": True, "mode": mode}
 
     async def pause_schedule(self, schedule_id: str, until) -> dict:
         """Pause a schedule until `until` (aware datetime), or resume it
@@ -262,7 +296,7 @@ class ChronosScheduler(
                 # below like a catch-up.
                 await self._store.async_set_pause(sched_id, None)
                 async_dispatcher_send(self._hass, SIGNAL_STATE)
-            if schedule_is_live(sched, local_now):
+            if schedule_is_live(sched, local_now, mode=self._mode()):
                 continue
 
             # Compute effective blocks: original blocks with continuous rule
@@ -338,6 +372,7 @@ class ChronosScheduler(
         runs_today = (
             enabled
             and not paused
+            and schedule_runs_in_mode(sched, self._mode())
             and (weekday >= len(days) or bool(days[weekday]))
             and is_in_date_range(sched, local_now)
         )

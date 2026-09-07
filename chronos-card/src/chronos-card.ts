@@ -48,6 +48,7 @@ import {
   reorderRules as wsReorderRules,
   updateSettings as wsUpdateSettings,
   pauseSchedule as wsPauseSchedule,
+  setMode as wsSetMode,
 } from "./ws";
 import { fmtHour, computeRepeat, setSnapMinutes, setHassRef, resolveBlockTime, pausedUntil, fmtWhen } from "./utils";
 
@@ -537,6 +538,26 @@ export class ChronosCard extends LitElement {
       }
     }
     return [...new Set(out)];
+  }
+
+  currentMode(): string {
+    return this._settings?.mode || "home";
+  }
+
+  /** False when the schedule limits itself to modes that exclude the
+   * current one; unset or empty `modes` runs everywhere. */
+  scheduleRunsInMode(s: Schedule): boolean {
+    const modes = s.modes || [];
+    return !modes.length || modes.includes(this.currentMode());
+  }
+
+  async doSetMode(mode: string) {
+    try {
+      const settings = await wsSetMode(this.hass, mode);
+      this._settings = { ...this._settings, ...settings, mode };
+    } catch (e) {
+      console.error("Chronos: set mode failed", e);
+    }
   }
 
   isPaused(s: Schedule): boolean {

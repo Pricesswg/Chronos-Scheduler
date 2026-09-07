@@ -136,6 +136,12 @@ Pausing is not the same as disabling: the schedule stays enabled and comes back 
 
 The same pause is available as a `button` entity per schedule (`<name> skip today`) and as the `chronos.pause` and `chronos.resume` services, for dashboards and automations.
 
+### Modes
+
+Chronos has three modes, **Home**, **Away** and **Holiday**, chosen with the selector at the top of the overview. By default a schedule runs in every mode. In the editor, under Repeat, **Runs in modes** lets a schedule declare the modes it belongs to: deselect Home on a presence-simulation schedule and it only plays its evenings when nobody is there; keep the irrigation in every mode and limit the heating to Home and Holiday. Schedules idle in the current mode show *Idle in …* on their card.
+
+Switching the mode is immediate and safe, with the same rule as a pause: what Chronos had switched on in the schedules that step aside is switched off first, and the schedules of the new mode apply their active block at once. The mode is also a `select` entity in Home Assistant and the `chronos.set_mode` service, so a presence sensor, a calendar or a dashboard button can drive it.
+
 ## Schedule editor
 
 The **Schedule editor** is where you configure the daily timeline.
@@ -1000,7 +1006,7 @@ Copy the schedule id from the editor's ID chip (or pick the schedule in the card
 
 An optional **alarm glow** pulses a red ring around the card while the most recent activity is an error, and clears itself as soon as the schedule runs successfully again. The card is display-only, so it is safe on a shared or wall dashboard; every section can be turned off in the card editor, and the colors follow your Home Assistant theme.
 
-Each schedule also has a `button` entity, `<name> skip today`, which pauses it until midnight, and the status sensor exposes `paused_until` while a pause is active.
+A `select` entity holds the current mode. Each schedule also has a `button` entity, `<name> skip today`, which pauses it until midnight, and the status sensor exposes `paused_until` while a pause is active.
 
 ### Services
 
@@ -1011,6 +1017,7 @@ To drive Chronos from automations or scripts:
 | `chronos.schedule_toggle` | Enables or disables a schedule, same as the switch entity. Target by `name` (case-insensitive, must be unique among your schedules) or by `schedule_id`. |
 | `chronos.pause` | Pauses a schedule until a date and time (`until`), or until midnight when `until` is empty, the same as Skip today. Target by `schedule_id` or by unique `name`. What Chronos switched on is switched off first. |
 | `chronos.resume` | Ends a pause now. The active block, if any, is applied at once. |
+| `chronos.set_mode` | Switches between `home`, `away` and `holiday`. Schedules restricted to other modes stop and what they switched on is switched off; schedules of the new mode apply at once. |
 | `chronos.fire_block` | Fires the currently active block of a schedule immediately, bypassing weather rules. Useful for testing. It does not bypass the schedule itself: a disabled schedule, or one not scheduled today, answers with the reason instead of firing. |
 | `chronos.reload` | Reloads the Chronos configuration from storage. |
 

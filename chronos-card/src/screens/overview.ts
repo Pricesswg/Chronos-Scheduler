@@ -53,6 +53,13 @@ export class ChronosOverview extends LitElement {
             <span class="tag mono">${total}</span>
           </div>
           <div class="row" style="flex-wrap:wrap;gap:8px">
+            <div class="segmented" data-role="mode" title="${t("mode.hint")}">
+              ${(["home", "away", "holiday"] as const).map((m) => html`
+                <button data-active="${this.card.currentMode() === m}" data-mode="${m}" @click=${() => this.card.doSetMode(m)}>
+                  ${t("mode." + m)}
+                </button>
+              `)}
+            </div>
             <button class="btn" @click=${() => this.card.navigate("week")}>${icon("calendar", 14)} ${t("nav.week")}</button>
             <button class="btn" @click=${() => this.card.createSceneSchedule()} title="${t("overview.new_scene.hint")}">
               ${icon("sun", 14)} ${t("overview.new_scene")}
@@ -73,6 +80,7 @@ export class ChronosOverview extends LitElement {
             const activeRules = this.card.rulesForSchedule(s.id).filter((r) => r.active).length;
             const conflicts = this.card.deviceConflictWarnings(s);
             const paused = s.enabled && this.card.isPaused(s);
+            const idle = s.enabled && !this.card.scheduleRunsInMode(s);
             return html`
               <div class="sched-card" data-selected="${s.id === this.card._selectedId}"
                 @click=${() => this.card.selectSchedule(s.id, "editor")}>
@@ -120,6 +128,7 @@ export class ChronosOverview extends LitElement {
                   </div>
                   <div style="flex:1"></div>
                   ${conflicts.length ? html`<span class="chip chip--conflict" title="${conflicts.join("\n")}">${icon("info", 11)} ${t("overview.conflicts", { n: conflicts.length })}</span>` : nothing}
+                  ${idle ? html`<span class="chip chip--idle" data-role="idle">${icon("moon", 11)} ${t("mode.inactive", { mode: t("mode." + this.card.currentMode()) })}</span>` : nothing}
                   ${paused ? html`<span class="chip chip--paused">${icon("pause", 11)} ${t("pause.badge", { when: this.card.pausedLabel(s) })}</span>` : nothing}
                   ${activeRules > 0 ? html`<span class="chip chip--weather">${icon("cloud", 11)} ${t("overview.rules_count", { n: activeRules })}</span>` : nothing}
                   <span class="chip ${s.enabled ? "chip--on" : ""}"><span class="chip__dot"></span>${s.enabled ? t("schedule.active") : t("schedule.disabled")}</span>

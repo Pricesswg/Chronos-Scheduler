@@ -31,6 +31,31 @@ export class ChronosEditor extends LitElement {
   /** Presence simulation: the block stops being "one state for the whole
    * window" and becomes several activations at times drawn for the day. The
    * user caps how many and how long; the minutes and the device are ours. */
+  /** Modes the schedule runs in. All three selected means no restriction
+   * and is stored as an empty list; the last one cannot be switched off. */
+  private _renderModes(schedule: any) {
+    const all = ["home", "away", "holiday"];
+    const active: string[] = schedule.modes?.length ? schedule.modes : all;
+    const toggle = (m: string) => {
+      const next = active.includes(m) ? active.filter((x) => x !== m) : [...active, m];
+      if (!next.length) return;
+      this.card.updateScheduleLocal(schedule.id, { modes: next.length === all.length ? [] : all.filter((x) => next.includes(x)) });
+    };
+    return html`
+      <div class="field" style="margin-top:14px" data-role="modes">
+        <label class="field__label">${t("editor.modes.label")}</label>
+        <div class="row" style="gap:6px">
+          ${all.map((m) => html`
+            <button class="chip" data-mode="${m}" data-active="${active.includes(m)}"
+              style="cursor:pointer;${active.includes(m) ? "background:var(--accent);color:white;border-color:transparent" : ""}"
+              @click=${() => toggle(m)}>${t("mode." + m)}</button>
+          `)}
+        </div>
+        <span class="field__hint">${t("editor.modes.hint")}</span>
+      </div>
+    `;
+  }
+
   private _renderBlockPresence(schedule: any, block: Block, typeActions: any[]) {
     // Needs something to switch off again, so only device types with an off.
     if (!typeActions.some((a) => a.kind === "off")) return nothing;
@@ -48,6 +73,13 @@ export class ChronosEditor extends LitElement {
           <span class="text-sm fw-600">${t("editor.presence.label")}</span>
         </div>
         <span class="field__hint" style="display:block;margin-top:4px">${t("editor.presence.hint")}</span>
+        ${on && !(schedule.modes?.length === 1 && schedule.modes[0] === "away") ? html`
+          <div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center">
+            <span class="text-xs text-mute">${t("editor.presence.away_hint")}</span>
+            <button class="btn btn--sm" data-action="only-away" @click=${() => this.card.updateScheduleLocal(schedule.id, { modes: ["away"] })}>
+              ${icon("moon", 12)} ${t("editor.presence.away_button")}
+            </button>
+          </div>` : nothing}
         ${on ? html`
           <div class="row" style="gap:10px;margin-top:10px;flex-wrap:wrap;align-items:flex-end">
             <div class="field" style="margin:0">
@@ -439,6 +471,7 @@ export class ChronosEditor extends LitElement {
                   <button class="btn btn--sm btn--ghost" @click=${() => this.card.updateScheduleLocal(schedule.id, { days: [0,0,0,0,0,1,1] })}>${t("editor.days.weekend")}</button>
                 </div>
               </div>
+              ${this._renderModes(schedule)}
               ${this._renderDateRange(schedule)}
             </div>
 

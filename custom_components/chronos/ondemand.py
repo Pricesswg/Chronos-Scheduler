@@ -150,7 +150,7 @@ class OnDemandMixin:
         on-demand scene block, else None. Same validity gates as the tick
         (enabled, day mask, date range, active window)."""
         local_now = dt_util.now()
-        if schedule_is_live(sched, local_now):
+        if schedule_is_live(sched, local_now, mode=self._mode()):
             return None
         current_hour = local_now.hour + local_now.minute / 60
         block, _idx = self._block_at(self._effective_blocks(sched), current_hour)

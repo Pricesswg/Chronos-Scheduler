@@ -67,14 +67,26 @@ def is_in_date_range(sched: dict, today_local) -> bool:
     return cur >= start or cur <= end
 
 
-def schedule_is_live(sched: dict | None, local_now) -> str | None:
-    """Return None when the schedule may act at local_now, else the reason
-    it may not, worded for History entries and service errors."""
+def schedule_runs_in_mode(sched: dict | None, mode: str | None) -> bool:
+    """A schedule with a non-empty `modes` list only runs in those modes;
+    no list, or an empty one, means every mode. No mode given = no check."""
+    if not mode or not sched:
+        return True
+    modes = sched.get("modes") or []
+    return not modes or mode in modes
+
+
+def schedule_is_live(sched: dict | None, local_now, mode: str | None = None) -> str | None:
+    """Return None when the schedule may act at local_now (in `mode`, when
+    given), else the reason it may not, worded for History entries and
+    service errors."""
     if not sched or not sched.get("enabled"):
         return "schedule disabled"
     if is_paused(sched, local_now):
         until = pause_deadline(sched)
         return f"paused until {until:%Y-%m-%d %H:%M}"
+    if not schedule_runs_in_mode(sched, mode):
+        return f"not active in mode {mode}"
     days = sched.get("days", [0] * 7)
     weekday = local_now.weekday()
     if weekday < len(days) and not days[weekday]:

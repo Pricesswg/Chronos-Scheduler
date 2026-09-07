@@ -96,3 +96,22 @@ resume:
       example: "Garden irrigation"
       selector:
         text:
+
+set_mode:
+  name: Set mode
+  description: >
+    Switch Chronos between home, away and holiday. Schedules restricted to
+    other modes stop and what they had switched on is switched off;
+    schedules of the new mode apply their active block at once. Same as the
+    mode selector in the card and the select entity.
+  fields:
+    mode:
+      name: Mode
+      required: true
+      example: "away"
+      selector:
+        select:
+          options:
+            - home
+            - away
+            - holiday

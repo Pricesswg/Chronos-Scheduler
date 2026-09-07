@@ -253,7 +253,7 @@ class RecallsMixin:
 
             sched = self._store.get_schedule(rec["schedule_id"])
             active_block: dict | None = None
-            expire_reason = "schedule removed" if sched is None else schedule_is_live(sched, local_now)
+            expire_reason = "schedule removed" if sched is None else schedule_is_live(sched, local_now, mode=self._mode())
             if not expire_reason:
                 blocks = self._effective_blocks(sched)
                 active_block, _idx = self._block_at(blocks, current_hour)

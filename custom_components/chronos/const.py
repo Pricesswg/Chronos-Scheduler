@@ -1,5 +1,5 @@
 DOMAIN = "chronos"
-VERSION = "1.40.0"
+VERSION = "1.41.0"
 STORAGE_VERSION = 1
 STORAGE_KEY_DEVICES = f"{DOMAIN}.devices"
 STORAGE_KEY_SCHEDULES = f"{DOMAIN}.schedules"
@@ -406,6 +406,8 @@ DEFAULT_SETTINGS = {
     # service bypass it by design, so automations keep working unattended.
     "confirm_disable": True,
     "sidebar_panel": True,
+    # Current mode; schedules may restrict themselves to some modes.
+    "mode": "home",
 }
 
 # Auto-off timer for turn_on blocks: device type → switch-off service
@@ -437,3 +439,7 @@ EVENT_COMMAND_ERROR = f"{DOMAIN}_command_error"
 # is created, saved or removed).
 SIGNAL_STATE = f"{DOMAIN}_state_updated"
 SIGNAL_SCHEDULES_CHANGED = f"{DOMAIN}_schedules_changed"
+
+# Modes a schedule can restrict itself to. The current one lives in the
+# settings (`mode`); a schedule with an empty `modes` list runs in all.
+MODES = ("home", "away", "holiday")

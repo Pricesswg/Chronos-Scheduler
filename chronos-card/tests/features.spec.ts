@@ -52,3 +52,25 @@ test("the editor pause button resumes a paused schedule", async ({ page }) => {
   await btn.click();
   await expect(btn).toContainText("Pausa");
 });
+
+test("the mode selector switches the mode and idles the schedules of other modes", async ({ page }) => {
+  await mount(page, "overview");
+  const cards = page.locator("chronos-overview .sched-card");
+  await expect(cards.nth(1).locator('[data-role="idle"]')).toContainText("Ferma in Casa");
+  await page.locator('chronos-overview [data-role="mode"] button[data-mode="away"]').click();
+  await expect(page.locator('chronos-overview [data-role="mode"] button[data-mode="away"]')).toHaveAttribute("data-active", "true");
+  await expect(cards.nth(1).locator('[data-role="idle"]')).toHaveCount(0);
+  const log = await page.evaluate(() => (window as any).__wsLog.filter((m) => m.type === "chronos/mode/set"));
+  expect(log).toEqual([{ type: "chronos/mode/set", mode: "away" }]);
+});
+
+test("the editor offers to limit a presence block to Away", async ({ page }) => {
+  await mount(page, "editor");
+  await page.evaluate(() => (window as any).__card.selectSchedule("s2", "editor"));
+  const modes = page.locator('chronos-editor [data-role="modes"]');
+  await expect(modes.locator('button[data-mode="away"]')).toHaveAttribute("data-active", "true");
+  await expect(modes.locator('button[data-mode="home"]')).toHaveAttribute("data-active", "false");
+  // s1 is unrestricted: all three active, and the presence hint is not shown.
+  await page.evaluate(() => (window as any).__card.selectSchedule("s1", "editor"));
+  await expect(page.locator('chronos-editor [data-role="modes"] button[data-active="true"]')).toHaveCount(3);
+});

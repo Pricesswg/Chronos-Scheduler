@@ -25,6 +25,7 @@ from .const import (
     ACTIONS_BY_TYPE,
     DOMAIN,
     DOMAIN_TO_TYPE,
+    MODES,
     SIGNAL_SCHEDULES_CHANGED,
     SIGNAL_STATE,
     SUPPORTED_DOMAINS,
@@ -47,7 +48,7 @@ _PANEL_REGISTERED_FLAG = f"{DOMAIN}_panel_registered"
 # Entity platforms: each schedule is exposed as a switch (enable/disable),
 # a binary_sensor (a block is running now) and a sensor (next change +
 # status attributes). Additive: the card keeps using the WebSocket API.
-PLATFORMS = [Platform.SWITCH, Platform.BINARY_SENSOR, Platform.SENSOR, Platform.BUTTON]
+PLATFORMS = [Platform.SWITCH, Platform.BINARY_SENSOR, Platform.SENSOR, Platform.BUTTON, Platform.SELECT]
 
 
 def notify_entities(hass: HomeAssistant, *, structural: bool) -> None:
@@ -428,6 +429,18 @@ def _register_services(hass: HomeAssistant) -> None:
             cv.has_at_least_one_key("schedule_id", "name"),
         ),
     )
+    async def _svc_set_mode(call) -> None:
+        scheduler: ChronosScheduler = hass.data[DOMAIN]["scheduler"]
+        result = await scheduler.set_mode(str(call.data["mode"]))
+        if not result.get("ok"):
+            _LOGGER.warning("Chronos set_mode: %s", result.get("error"))
+            return
+        notify_entities(hass, structural=False)
+
+    hass.services.async_register(
+        DOMAIN, "set_mode", _svc_set_mode,
+        schema=vol.Schema({vol.Required("mode"): vol.In(MODES)}),
+    )
     hass.services.async_register(
         DOMAIN, "resume", _svc_resume,
         schema=vol.All(_target_schema, cv.has_at_least_one_key("schedule_id", "name")),
@@ -664,9 +677,35 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
         hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
     ) -> None:
         store: ChronosStore = hass.data[DOMAIN]["store"]
-        settings = await store.async_update_settings(msg["patch"])
+        patch = dict(msg["patch"])
+        # The mode is not a plain setting: switching it closes and applies
+        # schedules, so it goes through the scheduler.
+        mode = patch.pop("mode", None)
+        settings = await store.async_update_settings(patch)
+        if mode is not None:
+            scheduler: ChronosScheduler = hass.data[DOMAIN]["scheduler"]
+            await scheduler.set_mode(str(mode))
+            notify_entities(hass, structural=False)
+            settings = store.settings
         await async_sync_sidebar_panel(hass)
         connection.send_result(msg["id"], settings)
+
+    @websocket_api.websocket_command({
+        vol.Required("type"): "chronos/mode/set",
+        vol.Required("mode"): vol.In(MODES),
+    })
+    @websocket_api.async_response
+    async def ws_mode_set(
+        hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+    ) -> None:
+        scheduler: ChronosScheduler = hass.data[DOMAIN]["scheduler"]
+        result = await scheduler.set_mode(msg["mode"])
+        if not result.get("ok"):
+            connection.send_error(msg["id"], "invalid_format", str(result.get("error")))
+            return
+        notify_entities(hass, structural=False)
+        store: ChronosStore = hass.data[DOMAIN]["store"]
+        connection.send_result(msg["id"], store.settings)
 
     # --- Preview / discovery ---
 
@@ -868,6 +907,7 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_rules_reorder)
     websocket_api.async_register_command(hass, ws_settings_get)
     websocket_api.async_register_command(hass, ws_settings_update)
+    websocket_api.async_register_command(hass, ws_mode_set)
     websocket_api.async_register_command(hass, ws_preview_forecast)
     websocket_api.async_register_command(hass, ws_entities_available)
     websocket_api.async_register_command(hass, ws_weather_entities)

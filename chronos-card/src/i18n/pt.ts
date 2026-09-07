@@ -838,4 +838,13 @@ export const PT_STRINGS: Record<string, string> = {
   "editor.conflict.title": "Dispositivos partilhados com outros agendamentos",
   "editor.conflict.item": "{device}: também «{name}» atua {b}, sobreposto a {a}. Ganha o último comando enviado, e de fora parece que o dispositivo age sozinho.",
   "overview.conflicts": "Conflitos: {n}",
+  "mode.home": "Casa",
+  "mode.away": "Fora",
+  "mode.holiday": "Férias",
+  "mode.hint": "Modo atual. Os agendamentos podem limitar-se a certos modos: mudar de modo desliga o que o Chronos tinha ligado nos que saem de cena e aplica de imediato os que entram.",
+  "mode.inactive": "Parada em {mode}",
+  "editor.modes.label": "Ativo nos modos",
+  "editor.modes.hint": "Todos selecionados = sempre. Desmarque os modos em que este agendamento deve ficar parado; o modo muda-se na visão geral, na entidade select ou no serviço chronos.set_mode.",
+  "editor.presence.away_hint": "Simular presença só quando não está ninguém?",
+  "editor.presence.away_button": "Só no modo Fora",
 };

@@ -18,6 +18,7 @@ A single Lovelace card provides:
 - Random shift per block: the block moves each day by up to N minutes either way, by an amount drawn once per day and stable for the whole day, for presence simulation. The timeline shows the band it can land in
 - Presence simulation per block: instead of holding one state for the whole window, the block switches on and off several times at times that change every evening. You set the window, how many activations at most and how long each one lasts; Chronos picks the exact minutes and which of the block's devices to use, so it is not always the same room lighting up. The plan is drawn once a day and survives a restart
 - Pause and Skip today: every schedule can be paused until midnight, for a few hours or until a date and time, from the card, from a `button` entity per schedule and from the `chronos.pause` / `chronos.resume` services. What Chronos had switched on is switched off first, so nothing keeps running because its switch-off got paused away; the resume re-applies the active block at once
+- Modes: Home, Away and Holiday. Each schedule declares the modes it runs in (all by default); switching the mode, from the overview, the `select` entity or the `chronos.set_mode` service, closes what Chronos had switched on in the schedules that step aside and applies the entering ones at once. Presence-simulation blocks can be limited to Away with one click, so the house looks lived-in exactly when nobody is there
 - Device conflicts: when two enabled schedules drive the same device during overlapping blocks, the editor says so and the overview shows a badge. The last command wins in that case, which from outside looks like the device acting on its own, the most common support question
 - Scale value now works on sequential irrigation too: the computed value is taken as the TOTAL program length and the per-valve minutes are scaled by a common factor, so "water longer when it's hot" finally works zone by zone while keeping the proportions you set
 - Scaled durations are visible on the bar: the block stays solid at the configured duration and a hatched tail shows how far the watering reaches with the rule at its maximum. Plus an editor warning when two irrigation programs sharing days would overlap once their durations are scaled up, which is invisible in the configured times
@@ -392,6 +393,7 @@ You can support the development of this scheduler by giving a small donation her
 | `chronos.schedule_toggle` | Enable or disable a schedule from HA automations/scripts. Target by `schedule_id` or by `name` (case-insensitive, must be unique). The automation-friendly equivalent of the card's toggle, and of the per-schedule switch entity below |
 | `chronos.pause`           | Pause a schedule until a date and time, or until midnight when `until` is empty (Skip today). What Chronos switched on is switched off first |
 | `chronos.resume`          | End a pause now; the active block is applied at once |
+| `chronos.set_mode`        | Switch between `home`, `away` and `holiday`; schedules of other modes stop and what they switched on is switched off |
 
 Example: disable the irrigation schedule when the vacation input_boolean turns on:
 
@@ -421,7 +423,7 @@ Each schedule is also exposed as three Home Assistant entities, grouped under a 
 
 Entity IDs are keyed on the schedule's internal id, so renaming a schedule updates the friendly name without breaking automations that reference the entity. Creating or deleting a schedule adds or removes its entities live, no restart needed. The `next_change` time is approximate for sun-anchored blocks on future days.
 
-Each schedule also gets a `button` entity, `<name> skip today`: pressing it pauses the schedule until midnight, the same thing as Skip today in the card. The status sensor carries `paused_until` while a pause is active.
+A `select` entity, `Chronos Scheduler Mode`, holds the current mode (home / away / holiday) and switches it like the card does. Each schedule also gets a `button` entity, `<name> skip today`: pressing it pauses the schedule until midnight, the same thing as Skip today in the card. The status sensor carries `paused_until` while a pause is active.
 
 ## Development
 
