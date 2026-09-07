@@ -4,7 +4,7 @@
 const iso = (h) => { const d = new Date(); d.setHours(h, 0, 0, 0); return d.toISOString(); };
 const st = (state, attributes) => ({ state, attributes, last_changed: iso(6), last_updated: iso(6) });
 
-export async function makeHass() {
+export async function makeHass({ settings: settingsOverride = {} } = {}) {
   const fixtures = await (await fetch("/fixtures/backend.json")).json();
   const devices = [
     { id: "d1", entity_id: "switch.valvola_giardino_1", alias: "Valvola giardino 1", name: "Valvola giardino 1", type: "plug", area: "Giardino Est", enabled: true },
@@ -75,7 +75,7 @@ export async function makeHass() {
     "chronos/rules/save": (m) => m.rule,
     "chronos/rules/remove": () => null,
     "chronos/rules/reorder": () => rules,
-    "chronos/settings/get": () => ({ ...fixtures.settings, language: "it", nav_style: "top", weather_entity: "weather.casa", live_map: false, price_entity: "sensor.prezzo_energia", mode: live.mode }),
+    "chronos/settings/get": () => ({ ...fixtures.settings, language: "it", nav_style: "top", weather_entity: "weather.casa", live_map: false, price_entity: "sensor.prezzo_energia", mode: live.mode, ...settingsOverride }),
     "chronos/mode/set": (m) => { live.mode = m.mode; return { ...fixtures.settings, mode: live.mode }; },
     "chronos/settings/update": (m) => ({ ...fixtures.settings, ...m.patch }),
     "chronos/preview/forecast": () => forecast,

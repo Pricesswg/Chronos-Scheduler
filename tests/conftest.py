@@ -9,7 +9,9 @@ times are in the test time zone HA installs (US/Pacific), which is why the
 helpers below always convert through dt_util."""
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime
+from unittest.mock import patch
 
 import pytest
 from freezegun import freeze_time
@@ -55,7 +57,25 @@ def calls(hass: HomeAssistant) -> list:
     for domain in ("switch", "light"):
         for svc in ("turn_on", "turn_off"):
             hass.services.async_register(domain, svc, handler)
+    for domain, svc in (("valve", "open_valve"), ("valve", "close_valve"), ("scene", "turn_on")):
+        hass.services.async_register(domain, svc, handler)
     return recorded
+
+
+@pytest.fixture
+def fast_sleep():
+    """Irrigation runners wait with asyncio.sleep: record the requested
+    delays and return at once, keeping the yield so tasks still interleave.
+    Only delays of a minute or more are reported (HA itself sleeps 0)."""
+    real = asyncio.sleep
+    slept: list[float] = []
+
+    async def fake(delay, *args, **kwargs):
+        slept.append(delay)
+        await real(0)
+
+    with patch("asyncio.sleep", fake):
+        yield lambda: [d for d in slept if d >= 60]
 
 
 @pytest.fixture

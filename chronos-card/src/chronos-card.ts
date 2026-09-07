@@ -1129,9 +1129,23 @@ export class ChronosCard extends LitElement {
     `;
   }
 
+  /** Inside the sidebar panel HA draws no toolbar, so on a narrow screen
+   * the card itself offers the button that opens the HA sidebar. Shown by
+   * both navigation styles. */
+  private _renderHaMenuButton() {
+    if (!this.hasAttribute("sidebar") || !this.hasAttribute("narrow")) return nothing;
+    return html`
+      <button class="nav-ic nav-ic--menu" data-role="ha-menu" title="${t("nav.menu")}"
+        @click=${() => this.dispatchEvent(new CustomEvent("hass-toggle-menu", { bubbles: true, composed: true }))}>
+        ${icon("menu", 18)}
+      </button>
+    `;
+  }
+
   private _renderTopbar(title: string, crumbs: string, nowHour: number) {
     return html`
       <div class="topbar">
+        ${this._renderHaMenuButton()}
         <div>
           <div class="topbar__title">${title}</div>
           <div class="topbar__crumbs">${crumbs}</div>
@@ -1159,17 +1173,9 @@ export class ChronosCard extends LitElement {
         ${icon(n.iconName, 17)}<span class="nav-ic__lbl">${n.label}</span>
       </button>
     `;
-    // Inside the sidebar panel HA draws no toolbar, so on a narrow screen
-    // the card itself offers the button that opens the HA sidebar.
-    const haMenu = this.hasAttribute("sidebar") && this.hasAttribute("narrow")
-      ? html`<button class="nav-ic nav-ic--menu" title="${t("nav.menu")}"
-          @click=${() => this.dispatchEvent(new CustomEvent("hass-toggle-menu", { bubbles: true, composed: true }))}>
-          ${icon("menu", 18)}
-        </button>`
-      : nothing;
     return html`
       <nav class="topnav">
-        ${haMenu}
+        ${this._renderHaMenuButton()}
         <div class="topnav__brand">
           <span class="topnav__logo">
             <img src="/local/chronos-icon.png?v=${CARD_VERSION}" alt=""

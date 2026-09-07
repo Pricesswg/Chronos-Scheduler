@@ -18,12 +18,12 @@
   // host "card": the Lovelace card inside a view with HA's margins.
   // host "panel": <chronos-panel> as HA renders it in the sidebar, the whole
   // viewport, `narrow` as HA would pass it on a phone.
-  window.__mount = async ({ host = "card", narrow = false, ...config } = {}) => {
+  window.__mount = async ({ host = "card", narrow = false, settings = {}, ...config } = {}) => {
     const view = document.getElementById("view");
     view.innerHTML = "";
     view.style.padding = host === "panel" ? "0" : "8px";
     view.style.height = host === "panel" ? "100vh" : "";
-    const hass = await makeHass();
+    const hass = await makeHass({ settings });
     let card;
     if (host === "panel") {
       const panel = document.createElement("chronos-panel");

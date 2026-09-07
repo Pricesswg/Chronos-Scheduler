@@ -85,3 +85,16 @@ test("a rule can compare an on/off entity to one of its states", async ({ page }
   await expect(value.locator("option")).toHaveText(["on", "off"]);
   await expect(rule).toContainText("Giorno lavorativo");
 });
+
+test("the legacy navigation inside the panel offers the HA menu on a phone", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto("/");
+  await page.waitForFunction(() => typeof (window as any).__mount === "function");
+  const m = await page.evaluate(() => (window as any).__mount({ host: "panel", narrow: true, settings: { nav_style: "sidebar" } }));
+  expect(m.error).toBe("");
+  await page.evaluate(() => { (window as any).__menu = 0; document.addEventListener("hass-toggle-menu", () => { (window as any).__menu++; }); });
+  const btn = page.locator('chronos-card .topbar button[data-role="ha-menu"]');
+  await expect(btn).toHaveCount(1);
+  await btn.click();
+  expect(await page.evaluate(() => (window as any).__menu)).toBe(1);
+});
