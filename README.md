@@ -115,6 +115,12 @@ type: module
 
 On first run the integration asks to select a `weather.*` entity to use as the weather source. You can change it later from the in-card Settings, or even leave it empty if you only rely on point sensors (Ecowitt, WeatherFlow, …) configured per attribute under Settings → Weather source → sensor overrides.
 
+## Sidebar panel
+
+Chronos also appears as an entry in the Home Assistant sidebar, at `/chronos`. It is the same application as the card, full screen, with no dashboard in between: the natural place to manage schedules on a phone, where a card competes with the dashboard for space. Like the card, it is visible to every user, not only administrators.
+
+The cards are unchanged and stay available: the full card, the single-screen embeds and the schedule status card remain the way to put Chronos on a dashboard, and the panel is the place to manage what they show. If you only use the cards, switch the entry off under `Settings → Appearance → Entry in the Home Assistant sidebar`; the change applies at once, no restart.
+
 ## Card configuration
 
 Most users don't need to configure anything: schedules, devices, weather rules and integration settings live inside the card UI (no YAML to edit). The dashboard's "Edit card" dialog also opens a GUI form for the few presentation options the card exposes.

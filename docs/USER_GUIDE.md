@@ -834,6 +834,12 @@ You can customize thresholds and colors to match your preferences.
 
 ---
 
+### Sidebar entry
+
+Chronos is also listed in the Home Assistant sidebar, at `/chronos`, as a full-screen page: the same application as the card, without a dashboard around it. On a phone this is the comfortable way to edit schedules; the button at the top left opens the Home Assistant menu, since HA draws no toolbar of its own on a custom panel.
+
+The entry does not replace the cards. The full card, the single-screen embeds and the schedule status card keep working on your dashboards, and any change made in the panel shows up there immediately. **Entry in the Home Assistant sidebar**, under `Settings → Appearance`, removes or restores the entry on the spot, for people who prefer the cards alone.
+
 ## Scene schedules
 
 Scene schedules are used to activate one or more Home Assistant scenes at specific times.

@@ -821,4 +821,7 @@ export const PT_STRINGS: Record<string, string> = {
   "recipe.presence_simulation.when": "Quando não estás em casa",
   "recipe.presence_simulation.howto": "Escolhe duas ou três luzes de divisões diferentes. Entre as 18:30 e as 23:30 o Chronos faz no máximo 4 ligações de 20 a 90 minutos, a horas diferentes todas as noites e numa luz escolhida ao acaso. Arrasta o bloco para mudar a faixa.",
   "recipe.presence_simulation.preset_name": "Presença simulada",
+  "nav.menu": "Menu",
+  "settings.nav.sidebar_panel.title": "Entrada na barra lateral do Home Assistant",
+  "settings.nav.sidebar_panel.desc": "Abre o Chronos em ecrã inteiro a partir da barra lateral, sem passar por um painel. Os cartões dos painéis continuam disponíveis em qualquer caso.",
 };

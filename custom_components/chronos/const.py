@@ -1,5 +1,5 @@
 DOMAIN = "chronos"
-VERSION = "1.38.0"
+VERSION = "1.39.0"
 STORAGE_VERSION = 1
 STORAGE_KEY_DEVICES = f"{DOMAIN}.devices"
 STORAGE_KEY_SCHEDULES = f"{DOMAIN}.schedules"
@@ -405,6 +405,7 @@ DEFAULT_SETTINGS = {
     # Frontend-only guard: the switch entities and the schedule_toggle
     # service bypass it by design, so automations keep working unattended.
     "confirm_disable": True,
+    "sidebar_panel": True,
 }
 
 # Auto-off timer for turn_on blocks: device type → switch-off service

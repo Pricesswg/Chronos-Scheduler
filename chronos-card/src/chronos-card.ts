@@ -1,6 +1,8 @@
 // Very first import: makes customElements.define idempotent for the
 // chronos-* elements BEFORE the screen imports register them.
 import "./define-guard";
+// The sidebar host lives in the same bundle: one file serves card and panel.
+import "./panel";
 import { LitElement, html, nothing, PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { chronosStyles, chronosTokens } from "./styles";
@@ -1057,8 +1059,17 @@ export class ChronosCard extends LitElement {
         ${icon(n.iconName, 17)}<span class="nav-ic__lbl">${n.label}</span>
       </button>
     `;
+    // Inside the sidebar panel HA draws no toolbar, so on a narrow screen
+    // the card itself offers the button that opens the HA sidebar.
+    const haMenu = this.hasAttribute("sidebar") && this.hasAttribute("narrow")
+      ? html`<button class="nav-ic nav-ic--menu" title="${t("nav.menu")}"
+          @click=${() => this.dispatchEvent(new CustomEvent("hass-toggle-menu", { bubbles: true, composed: true }))}>
+          ${icon("menu", 18)}
+        </button>`
+      : nothing;
     return html`
       <nav class="topnav">
+        ${haMenu}
         <div class="topnav__brand">
           <span class="topnav__logo">
             <img src="/local/chronos-icon.png?v=${CARD_VERSION}" alt=""

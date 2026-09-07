@@ -821,4 +821,7 @@ export const NL_STRINGS: Record<string, string> = {
   "recipe.presence_simulation.when": "Wanneer je niet thuis bent",
   "recipe.presence_simulation.howto": "Kies twee of drie lampen in verschillende kamers. Tussen 18:30 en 23:30 doet Chronos maximaal 4 inschakelingen van 20 tot 90 minuten, elke avond op andere tijden en op een willekeurig gekozen lamp. Sleep het blok om het venster te wijzigen.",
   "recipe.presence_simulation.preset_name": "Gesimuleerde aanwezigheid",
+  "nav.menu": "Menu",
+  "settings.nav.sidebar_panel.title": "Item in de zijbalk van Home Assistant",
+  "settings.nav.sidebar_panel.desc": "Opent Chronos schermvullend vanuit de zijbalk, zonder via een dashboard te gaan. De dashboardkaarten blijven hoe dan ook beschikbaar.",
 };

@@ -15,17 +15,33 @@
 
   const settle = async (card, ms = 200) => { await card.updateComplete; await new Promise((r) => setTimeout(r, ms)); await card.updateComplete; };
 
-  window.__mount = async (config = {}) => {
+  // host "card": the Lovelace card inside a view with HA's margins.
+  // host "panel": <chronos-panel> as HA renders it in the sidebar, the whole
+  // viewport, `narrow` as HA would pass it on a phone.
+  window.__mount = async ({ host = "card", narrow = false, ...config } = {}) => {
     const view = document.getElementById("view");
     view.innerHTML = "";
-    const card = document.createElement("chronos-card");
-    card.setConfig({ type: "custom:chronos-card", ...config });
-    card.hass = await makeHass();
-    view.appendChild(card);
+    view.style.padding = host === "panel" ? "0" : "8px";
+    view.style.height = host === "panel" ? "100vh" : "";
+    const hass = await makeHass();
+    let card;
+    if (host === "panel") {
+      const panel = document.createElement("chronos-panel");
+      panel.hass = hass;
+      panel.narrow = narrow;
+      view.appendChild(panel);
+      await panel.updateComplete;
+      card = panel.shadowRoot.querySelector("chronos-card");
+    } else {
+      card = document.createElement("chronos-card");
+      card.setConfig({ type: "custom:chronos-card", ...config });
+      card.hass = hass;
+      view.appendChild(card);
+    }
     for (let i = 0; i < 60 && (card._loading ?? true); i++) await new Promise((r) => setTimeout(r, 50));
     await settle(card, 300);
     window.__card = card;
-    return { loading: !!card._loading, error: card._loadError || "" };
+    return { loading: !!card._loading, error: card._loadError || "", host, sidebar: card.hasAttribute("sidebar") };
   };
 
   window.__open = async (name) => {

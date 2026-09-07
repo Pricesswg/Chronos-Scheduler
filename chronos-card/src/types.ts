@@ -269,6 +269,8 @@ export interface Settings {
   /** Navigation layout: "top" (default) merges sidebar and topbar into a
    * single icon bar; "sidebar" keeps the classic left sidebar. */
   nav_style?: "top" | "sidebar";
+  /** Show the Chronos entry in the Home Assistant sidebar (default on). */
+  sidebar_panel?: boolean;
   /** Entity holding electricity prices, used by the price.* rule variables. */
   price_entity?: string;
   /** What a NEWLY created block does. Applied at creation only, so existing

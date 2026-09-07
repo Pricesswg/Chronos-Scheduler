@@ -821,4 +821,7 @@ export const ES_STRINGS: Record<string, string> = {
   "recipe.presence_simulation.when": "Cuando no estás en casa",
   "recipe.presence_simulation.howto": "Elige dos o tres luces de habitaciones distintas. Entre las 18:30 y las 23:30 Chronos hace como máximo 4 encendidos de 20 a 90 minutos, a horas distintas cada tarde y en una luz elegida al azar. Arrastra el bloque para cambiar la franja.",
   "recipe.presence_simulation.preset_name": "Presencia simulada",
+  "nav.menu": "Menú",
+  "settings.nav.sidebar_panel.title": "Entrada en la barra lateral de Home Assistant",
+  "settings.nav.sidebar_panel.desc": "Abre Chronos a pantalla completa desde la barra lateral, sin pasar por un panel. Las tarjetas de los paneles siguen disponibles en cualquier caso.",
 };

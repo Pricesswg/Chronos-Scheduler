@@ -821,4 +821,7 @@ export const PL_STRINGS: Record<string, string> = {
   "recipe.presence_simulation.when": "Gdy nie ma cię w domu",
   "recipe.presence_simulation.howto": "Wybierz dwie lub trzy lampy w różnych pokojach. Między 18:30 a 23:30 Chronos wykonuje najwyżej 4 włączenia po 20 do 90 minut, każdego wieczoru o innych porach i na losowo wybranej lampie. Przeciągnij blok, aby zmienić okno.",
   "recipe.presence_simulation.preset_name": "Symulowana obecność",
+  "nav.menu": "Menu",
+  "settings.nav.sidebar_panel.title": "Pozycja w pasku bocznym Home Assistant",
+  "settings.nav.sidebar_panel.desc": "Otwiera Chronos na pełnym ekranie z paska bocznego, bez przechodzenia przez pulpit. Karty na pulpitach pozostają dostępne tak czy inaczej.",
 };

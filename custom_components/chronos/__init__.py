@@ -5,8 +5,8 @@ import shutil
 from pathlib import Path
 
 import voluptuous as vol
-from homeassistant.components import websocket_api
-from homeassistant.components.frontend import add_extra_js_url
+from homeassistant.components import panel_custom, websocket_api
+from homeassistant.components.frontend import add_extra_js_url, async_remove_panel
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -36,6 +36,10 @@ _LOGGER = logging.getLogger(__name__)
 
 CARD_URL = f"/{DOMAIN}_static/chronos-card.js"
 _CARD_REGISTERED_FLAG = f"{DOMAIN}_card_registered"
+# Sidebar entry: a custom panel at /chronos hosting the same bundle, so the
+# card and the panel are one build. Additive: the dashboard cards stay.
+PANEL_URL_PATH = "chronos"
+_PANEL_REGISTERED_FLAG = f"{DOMAIN}_panel_registered"
 
 # Entity platforms: each schedule is exposed as a switch (enable/disable),
 # a binary_sensor (a block is running now) and a sensor (next change +
@@ -70,12 +74,48 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _register_websocket_commands(hass)
     _register_services(hass)
     await _register_frontend_card(hass)
+    await async_sync_sidebar_panel(hass)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     entry.async_on_unload(scheduler.stop)
 
     return True
+
+
+async def async_sync_sidebar_panel(hass: HomeAssistant) -> None:
+    """Make the sidebar entry match the `sidebar_panel` setting.
+
+    Idempotent, so it can run at setup and after every settings update:
+    registers the panel when the setting is on and no entry exists, removes
+    it when the setting is off. The panel is the plain bundle served for
+    the card; <chronos-panel> inside it hosts the card full-bleed.
+    """
+    data = hass.data.get(DOMAIN) or {}
+    store = data.get("store")
+    wanted = bool(store is not None and store.settings.get("sidebar_panel", True))
+    have = bool(hass.data.get(_PANEL_REGISTERED_FLAG))
+    if wanted and not have:
+        try:
+            await panel_custom.async_register_panel(
+                hass,
+                frontend_url_path=PANEL_URL_PATH,
+                webcomponent_name="chronos-panel",
+                sidebar_title="Chronos",
+                sidebar_icon="mdi:clock-time-eight-outline",
+                module_url=f"{CARD_URL}?v={VERSION}",
+                require_admin=False,
+                config={"version": VERSION},
+            )
+        except ValueError:
+            # Already there from an earlier load of this HA run: keep it.
+            _LOGGER.debug("Chronos: sidebar panel already registered")
+        hass.data[_PANEL_REGISTERED_FLAG] = True
+        _LOGGER.info("Chronos: sidebar panel registered at /%s", PANEL_URL_PATH)
+    elif have and not wanted:
+        async_remove_panel(hass, PANEL_URL_PATH, warn_if_unknown=False)
+        hass.data[_PANEL_REGISTERED_FLAG] = False
+        _LOGGER.info("Chronos: sidebar panel removed")
 
 
 async def _register_frontend_card(hass: HomeAssistant) -> None:
@@ -319,6 +359,11 @@ def _register_services(hass: HomeAssistant) -> None:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    # Drop the sidebar entry first, so a reload registers it again cleanly
+    # instead of hitting "overwriting panel" in the frontend.
+    if hass.data.get(_PANEL_REGISTERED_FLAG):
+        async_remove_panel(hass, PANEL_URL_PATH, warn_if_unknown=False)
+        hass.data[_PANEL_REGISTERED_FLAG] = False
     data = hass.data.pop(DOMAIN, {})
     scheduler = data.get("scheduler")
     if scheduler:
@@ -516,6 +561,7 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
     ) -> None:
         store: ChronosStore = hass.data[DOMAIN]["store"]
         settings = await store.async_update_settings(msg["patch"])
+        await async_sync_sidebar_panel(hass)
         connection.send_result(msg["id"], settings)
 
     # --- Preview / discovery ---

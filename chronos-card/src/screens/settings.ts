@@ -236,6 +236,18 @@ export class ChronosSettingsScreen extends LitElement {
             </div>
             <span class="field__hint">${t("settings.nav.hint")}</span>
           </div>
+          <div class="device-row" style="border:none;border-top:1px solid var(--border-soft);border-radius:0;padding:12px 0">
+            <div class="device-row__main">
+              <div class="device-row__name">${t("settings.nav.sidebar_panel.title")}</div>
+              <div class="device-row__meta" style="font-family:var(--font-sans)">${t("settings.nav.sidebar_panel.desc")}</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" .checked=${s.sidebar_panel ?? true}
+                @change=${(e: Event) => this._updateSetting("sidebar_panel", (e.target as HTMLInputElement).checked)}/>
+              <span class="switch__track"></span>
+              <span class="switch__thumb"></span>
+            </label>
+          </div>
           <div class="field">
             <label class="field__label">${t("settings.density")}</label>
             <div class="segmented">

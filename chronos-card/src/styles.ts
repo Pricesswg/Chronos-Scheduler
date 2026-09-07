@@ -953,4 +953,10 @@ export const chronosStyles = css`
    * by a few pixels (caught by the layout probe on the History filters). */
   .field { min-width: 0; }
   .input, .select { min-width: 0; max-width: 100%; }
+
+  /* Sidebar panel host (<chronos-panel>): the content area is ours, so the
+   * card fills it edge to edge with no card chrome; .content scrolls. */
+  :host([sidebar]) { height: 100%; }
+  :host([sidebar]) .app { border-radius: 0; border: 0; clip-path: none; min-height: 0; height: 100%; }
+  .nav-ic--menu { flex: 0 0 auto; margin-right: 2px; }
 `;
