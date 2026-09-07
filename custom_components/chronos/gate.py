@@ -6,6 +6,39 @@ Issue #23 came from this check being copied into each path by hand and one
 path forgetting it; nothing may bypass it again."""
 from __future__ import annotations
 
+from datetime import datetime, timedelta
+
+
+def pause_deadline(sched: dict | None) -> datetime | None:
+    """The instant a pause ends, or None when the schedule is not paused.
+    Stored as ISO text on the schedule (`paused_until`); garbage reads as
+    not paused rather than as paused forever."""
+    raw = sched.get("paused_until") if sched else None
+    if not raw:
+        return None
+    try:
+        return datetime.fromisoformat(str(raw))
+    except (TypeError, ValueError):
+        return None
+
+
+def is_paused(sched: dict | None, local_now) -> bool:
+    until = pause_deadline(sched)
+    if until is None:
+        return False
+    # Wall-clock comparison when only one side carries a time zone: the
+    # tick passes aware local time, tests and status helpers may not.
+    if (until.tzinfo is None) != (local_now.tzinfo is None):
+        until = until.replace(tzinfo=None)
+        local_now = local_now.replace(tzinfo=None)
+    return local_now < until
+
+
+def skip_today_deadline(local_now) -> datetime:
+    """Midnight at the start of tomorrow, in local_now's own time zone: the
+    deadline behind "skip today"."""
+    return (local_now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+
 
 def is_in_date_range(sched: dict, today_local) -> bool:
     """Return True if today (month/day) is inside the schedule's recurring
@@ -39,6 +72,9 @@ def schedule_is_live(sched: dict | None, local_now) -> str | None:
     it may not, worded for History entries and service errors."""
     if not sched or not sched.get("enabled"):
         return "schedule disabled"
+    if is_paused(sched, local_now):
+        until = pause_deadline(sched)
+        return f"paused until {until:%Y-%m-%d %H:%M}"
     days = sched.get("days", [0] * 7)
     weekday = local_now.weekday()
     if weekday < len(days) and not days[weekday]:

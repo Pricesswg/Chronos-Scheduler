@@ -56,6 +56,16 @@ export async function toggleSchedule(
   await hass.callWS({ type: "chronos/schedules/toggle", schedule_id: String(id), enabled });
 }
 
+/** Pause until an ISO local date-time, or resume with null. Returns the
+ * updated schedule. */
+export async function pauseSchedule(
+  hass: HomeAssistant,
+  id: string,
+  until: string | null
+): Promise<Schedule> {
+  return hass.callWS({ type: "chronos/schedules/pause", schedule_id: String(id), until });
+}
+
 export async function fetchRules(hass: HomeAssistant): Promise<WeatherRule[]> {
   return hass.callWS({ type: "chronos/rules/list" });
 }

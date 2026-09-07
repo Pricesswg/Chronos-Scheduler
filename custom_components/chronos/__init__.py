@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import shutil
+from datetime import datetime
 from pathlib import Path
 
 import voluptuous as vol
@@ -11,6 +12,7 @@ from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.util import dt as dt_util
 from homeassistant.helpers import (
     area_registry as ar,
     config_validation as cv,
@@ -29,6 +31,7 @@ from .const import (
     VERSION,
     WEATHER_ATTRIBUTES,
 )
+from .gate import skip_today_deadline
 from .scheduler import ChronosScheduler
 from .store import ChronosStore
 
@@ -44,7 +47,7 @@ _PANEL_REGISTERED_FLAG = f"{DOMAIN}_panel_registered"
 # Entity platforms: each schedule is exposed as a switch (enable/disable),
 # a binary_sensor (a block is running now) and a sensor (next change +
 # status attributes). Additive: the card keeps using the WebSocket API.
-PLATFORMS = [Platform.SWITCH, Platform.BINARY_SENSOR, Platform.SENSOR]
+PLATFORMS = [Platform.SWITCH, Platform.BINARY_SENSOR, Platform.SENSOR, Platform.BUTTON]
 
 
 def notify_entities(hass: HomeAssistant, *, structural: bool) -> None:
@@ -281,6 +284,45 @@ def _resolve_area_name(hass: HomeAssistant, entity_id: str) -> str:
     return area.name if area else ""
 
 
+def _parse_until(raw) -> datetime | None:
+    """ISO text → aware local datetime; None for empty, unparsable or past
+    values (a deadline already behind us is a resume)."""
+    if not raw:
+        return None
+    until = dt_util.parse_datetime(str(raw))
+    if until is None:
+        return None
+    if until.tzinfo is None:
+        until = until.replace(tzinfo=dt_util.DEFAULT_TIME_ZONE)
+    return until if until > dt_util.now() else None
+
+
+def _schedule_from_call(store: ChronosStore, call, service: str) -> dict | None:
+    """Resolve the schedule a service call targets, by id or by unique name.
+    Logs and returns None instead of acting on the wrong schedule."""
+    sched_id = str(call.data.get("schedule_id") or "").strip()
+    name = str(call.data.get("name") or "").strip()
+    if sched_id:
+        sched = store.get_schedule(sched_id)
+        if sched is None:
+            _LOGGER.warning("Chronos %s: no schedule with id %r", service, sched_id)
+        return sched
+    matches = [
+        s for s in store.schedules
+        if s.get("name", "").strip().casefold() == name.casefold()
+    ]
+    if not matches:
+        _LOGGER.warning("Chronos %s: no schedule named %r", service, name)
+        return None
+    if len(matches) > 1:
+        _LOGGER.warning(
+            "Chronos %s: name %r matches %d schedules, use schedule_id instead (%s)",
+            service, name, len(matches), ", ".join(s["id"] for s in matches),
+        )
+        return None
+    return matches[0]
+
+
 def _register_services(hass: HomeAssistant) -> None:
     """Register the HA services exposed by the integration."""
     if hass.services.has_service(DOMAIN, "fire_block"):
@@ -354,7 +396,46 @@ def _register_services(hass: HomeAssistant) -> None:
             cv.has_at_least_one_key("schedule_id", "name"),
         ),
     )
-    _LOGGER.debug("Chronos: services %s.fire_block, %s.schedule_toggle registered", DOMAIN, DOMAIN)
+    _target_schema = vol.Schema({
+        vol.Optional("schedule_id"): str,
+        vol.Optional("name"): str,
+    }, extra=vol.ALLOW_EXTRA)
+
+    async def _svc_pause(call) -> None:
+        # No `until` = skip today (pause until midnight).
+        store: ChronosStore = hass.data[DOMAIN]["store"]
+        scheduler: ChronosScheduler = hass.data[DOMAIN]["scheduler"]
+        sched = _schedule_from_call(store, call, "pause")
+        if sched is None:
+            return
+        until = _parse_until(call.data.get("until")) or skip_today_deadline(dt_util.now())
+        await scheduler.pause_schedule(sched["id"], until)
+        notify_entities(hass, structural=False)
+
+    async def _svc_resume(call) -> None:
+        store: ChronosStore = hass.data[DOMAIN]["store"]
+        scheduler: ChronosScheduler = hass.data[DOMAIN]["scheduler"]
+        sched = _schedule_from_call(store, call, "resume")
+        if sched is None:
+            return
+        await scheduler.pause_schedule(sched["id"], None)
+        notify_entities(hass, structural=False)
+
+    hass.services.async_register(
+        DOMAIN, "pause", _svc_pause,
+        schema=vol.All(
+            _target_schema.extend({vol.Optional("until"): str}),
+            cv.has_at_least_one_key("schedule_id", "name"),
+        ),
+    )
+    hass.services.async_register(
+        DOMAIN, "resume", _svc_resume,
+        schema=vol.All(_target_schema, cv.has_at_least_one_key("schedule_id", "name")),
+    )
+    _LOGGER.debug(
+        "Chronos: services %s.fire_block, %s.schedule_toggle, %s.pause, %s.resume registered",
+        DOMAIN, DOMAIN, DOMAIN, DOMAIN,
+    )
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -494,6 +575,29 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
             connection.send_result(msg["id"], {"success": True})
         except ValueError as err:
             connection.send_error(msg["id"], "not_found", str(err))
+
+    @websocket_api.websocket_command({
+        vol.Required("type"): "chronos/schedules/pause",
+        vol.Required("schedule_id"): vol.Coerce(str),
+        # ISO date-time, or null to resume. A naive value is local time.
+        vol.Required("until"): vol.Any(None, str),
+    })
+    @websocket_api.async_response
+    async def ws_schedules_pause(
+        hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
+    ) -> None:
+        scheduler: ChronosScheduler = hass.data[DOMAIN]["scheduler"]
+        until = _parse_until(msg["until"])
+        if msg["until"] and until is None:
+            connection.send_error(msg["id"], "invalid_format", f"cannot parse until={msg['until']!r}")
+            return
+        result = await scheduler.pause_schedule(msg["schedule_id"], until)
+        if not result.get("ok"):
+            connection.send_error(msg["id"], "not_found", str(result.get("error")))
+            return
+        notify_entities(hass, structural=False)
+        store: ChronosStore = hass.data[DOMAIN]["store"]
+        connection.send_result(msg["id"], store.get_schedule(msg["schedule_id"]))
 
     # --- Weather rules (v2, global store) ---
 

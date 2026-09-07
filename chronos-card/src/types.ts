@@ -216,6 +216,9 @@ export interface Schedule {
    * settings.default_timeline_variant. Persisted outside the dirty/save
    * flow: flipping the view must not prompt "unsaved changes". */
   timeline_variant?: "linear" | "radial" | "list";
+  /** Pause deadline, ISO local time. While it is in the future the schedule
+   * does nothing; the backend drops it once it has passed. */
+  paused_until?: string | null;
 }
 
 export interface Settings {

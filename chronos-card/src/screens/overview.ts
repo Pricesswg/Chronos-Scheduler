@@ -71,6 +71,8 @@ export class ChronosOverview extends LitElement {
           ${schedules.map((s) => {
             const devs = (s.device_ids || []).map((id) => devices.find((d) => d.id === id)).filter(Boolean);
             const activeRules = this.card.rulesForSchedule(s.id).filter((r) => r.active).length;
+            const conflicts = this.card.deviceConflictWarnings(s);
+            const paused = s.enabled && this.card.isPaused(s);
             return html`
               <div class="sched-card" data-selected="${s.id === this.card._selectedId}"
                 @click=${() => this.card.selectSchedule(s.id, "editor")}>
@@ -79,6 +81,10 @@ export class ChronosOverview extends LitElement {
                     <h3 class="sched-card__title">${s.name}</h3>
                     <div class="sched-card__sub">${computeRepeat(s.days)} · ${s.blocks.length}</div>
                   </div>
+                  <button class="btn btn--icon btn--ghost btn--sm" data-action="pause" title="${paused ? t("pause.resume") : t("pause.button")}"
+                    @click=${(e: Event) => { e.stopPropagation(); if (paused) this.card.doPauseSchedule(s.id, null); else this.card.openPauseModal(s.id); }}>
+                    ${icon(paused ? "play" : "pause", 13)}
+                  </button>
                   <label class="switch" @click=${(e: Event) => e.stopPropagation()}>
                     <input type="checkbox" .checked=${s.enabled} @change=${(e: Event) => {
                       const el = e.target as HTMLInputElement;
@@ -113,6 +119,8 @@ export class ChronosOverview extends LitElement {
                         ${devs.length > 5 ? html`<div class="device-icon-pill mono" style="font-size:10px">+${devs.length - 5}</div>` : nothing}`}
                   </div>
                   <div style="flex:1"></div>
+                  ${conflicts.length ? html`<span class="chip chip--conflict" title="${conflicts.join("\n")}">${icon("info", 11)} ${t("overview.conflicts", { n: conflicts.length })}</span>` : nothing}
+                  ${paused ? html`<span class="chip chip--paused">${icon("pause", 11)} ${t("pause.badge", { when: this.card.pausedLabel(s) })}</span>` : nothing}
                   ${activeRules > 0 ? html`<span class="chip chip--weather">${icon("cloud", 11)} ${t("overview.rules_count", { n: activeRules })}</span>` : nothing}
                   <span class="chip ${s.enabled ? "chip--on" : ""}"><span class="chip__dot"></span>${s.enabled ? t("schedule.active") : t("schedule.disabled")}</span>
                 </div>

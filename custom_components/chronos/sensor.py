@@ -44,4 +44,5 @@ class ChronosScheduleSensor(ChronosScheduleEntity, SensorEntity):
             "block_start": st.get("block_start"),
             "block_end": st.get("block_end"),
             "device_count": st.get("device_count"),
+            "paused_until": st.get("paused_until"),
         }

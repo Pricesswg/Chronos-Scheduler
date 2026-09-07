@@ -46,3 +46,53 @@ schedule_toggle:
       required: true
       selector:
         boolean:
+
+pause:
+  name: Pause schedule
+  description: >
+    Pause a schedule until a date and time, or until midnight when no
+    `until` is given (the same as the card's Skip today). Chronos leaves the
+    schedule's devices alone until then; what it had switched on is switched
+    off first, so nothing stays running because its switch-off was paused.
+    Target by schedule id or by unique name.
+  fields:
+    schedule_id:
+      name: Schedule ID
+      description: Schedule id, alternative to the name
+      required: false
+      example: "abc12345"
+      selector:
+        text:
+    name:
+      name: Schedule name
+      description: Exact schedule name, case-insensitive (alternative to the id)
+      required: false
+      example: "Garden irrigation"
+      selector:
+        text:
+    until:
+      name: Until
+      description: Date and time the schedule resumes. Empty = skip today (until midnight).
+      required: false
+      example: "2026-09-08 18:00"
+      selector:
+        datetime:
+
+resume:
+  name: Resume schedule
+  description: End a pause now. The active block, if any, is applied at once.
+  fields:
+    schedule_id:
+      name: Schedule ID
+      description: Schedule id, alternative to the name
+      required: false
+      example: "abc12345"
+      selector:
+        text:
+    name:
+      name: Schedule name
+      description: Exact schedule name, case-insensitive (alternative to the id)
+      required: false
+      example: "Garden irrigation"
+      selector:
+        text:

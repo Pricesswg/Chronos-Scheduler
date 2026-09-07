@@ -363,6 +363,18 @@ class ChronosStore:
         sched["enabled"] = enabled
         await self._save_schedules()
 
+    async def async_set_pause(self, schedule_id: str, until_iso: str | None) -> dict[str, Any]:
+        """Set (ISO text) or clear (None) the pause deadline of a schedule."""
+        sched = self.get_schedule(schedule_id)
+        if sched is None:
+            raise ValueError(f"Schedule not found: {schedule_id}")
+        if until_iso:
+            sched["paused_until"] = until_iso
+        else:
+            sched.pop("paused_until", None)
+        await self._save_schedules()
+        return sched
+
     # --- Weather rules (v2, global store) ---
 
     def get_rule(self, rule_id: str) -> dict[str, Any] | None:

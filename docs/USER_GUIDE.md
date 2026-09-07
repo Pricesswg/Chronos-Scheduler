@@ -128,6 +128,14 @@ From this section you can:
 
 ---
 
+### Pause and Skip today
+
+Each schedule card has a pause button next to its toggle. **Skip today** pauses the schedule until midnight; the other presets pause it for a few hours or until a date and time you pick. While paused the card shows *Paused until …*, the schedule does nothing, and Chronos resumes on its own when the deadline passes, re-applying the block that should be running at that moment. The button turns into **Resume** to end the pause early.
+
+Pausing is not the same as disabling: the schedule stays enabled and comes back by itself. One safety rule applies: what Chronos had switched on is switched off first. A running block with an end action gets that action at once (a valve on a plug must not stay open because its switch-off was paused away), and presence-simulation lights go off. A device you switched on yourself is left as it is.
+
+The same pause is available as a `button` entity per schedule (`<name> skip today`) and as the `chronos.pause` and `chronos.resume` services, for dashboards and automations.
+
 ## Schedule editor
 
 The **Schedule editor** is where you configure the daily timeline.
@@ -224,6 +232,10 @@ Each row shows:
 | Duration | Total block duration |
 
 ---
+
+### Devices shared with other schedules
+
+When another enabled schedule drives one of this schedule's devices during a block that overlaps one of yours, on a shared weekday and inside both date ranges, the editor shows a red box under the timeline naming the device, the other schedule and the two time windows. Chronos does not merge the two: the last command sent wins, and from outside the device looks like it acts on its own. Move the block, narrow the device list of one of the two schedules, or disable one. The overview shows a *Conflicts* badge on the schedules concerned.
 
 ## Selected block panel
 
@@ -988,6 +1000,8 @@ Copy the schedule id from the editor's ID chip (or pick the schedule in the card
 
 An optional **alarm glow** pulses a red ring around the card while the most recent activity is an error, and clears itself as soon as the schedule runs successfully again. The card is display-only, so it is safe on a shared or wall dashboard; every section can be turned off in the card editor, and the colors follow your Home Assistant theme.
 
+Each schedule also has a `button` entity, `<name> skip today`, which pauses it until midnight, and the status sensor exposes `paused_until` while a pause is active.
+
 ### Services
 
 To drive Chronos from automations or scripts:
@@ -995,6 +1009,8 @@ To drive Chronos from automations or scripts:
 | Service | What it does |
 |---|---|
 | `chronos.schedule_toggle` | Enables or disables a schedule, same as the switch entity. Target by `name` (case-insensitive, must be unique among your schedules) or by `schedule_id`. |
+| `chronos.pause` | Pauses a schedule until a date and time (`until`), or until midnight when `until` is empty, the same as Skip today. Target by `schedule_id` or by unique `name`. What Chronos switched on is switched off first. |
+| `chronos.resume` | Ends a pause now. The active block, if any, is applied at once. |
 | `chronos.fire_block` | Fires the currently active block of a schedule immediately, bypassing weather rules. Useful for testing. It does not bypass the schedule itself: a disabled schedule, or one not scheduled today, answers with the reason instead of firing. |
 | `chronos.reload` | Reloads the Chronos configuration from storage. |
 

@@ -14,7 +14,7 @@ from homeassistant.helpers.start import async_at_started
 from homeassistant.util import dt as dt_util
 
 from .const import SIGNAL_STATE
-from .gate import is_in_date_range, schedule_is_live
+from .gate import is_in_date_range, is_paused, pause_deadline, schedule_is_live
 from .store import ChronosStore
 from .timing import jitter_minutes
 from .rules import RulesMixin
@@ -167,6 +167,37 @@ class ChronosScheduler(
         await self._dispatch_action(sched, block)
         return {"ok": True, "block": block}
 
+    async def pause_schedule(self, schedule_id: str, until) -> dict:
+        """Pause a schedule until `until` (aware datetime), or resume it
+        when `until` is None.
+
+        Pausing means "leave my devices alone until then", with one safety
+        exception: what Chronos itself switched on is switched off first. A
+        running block with an end action gets it now instead of at its end
+        (a valve on a plug must not stay open because its off was paused
+        away), and presence lights go off. The block bookkeeping is reset so
+        the resume re-applies the active block like a catch-up tick.
+        """
+        sched = self._store.get_schedule(schedule_id)
+        if sched is None:
+            return {"ok": False, "error": f"schedule {schedule_id} not found"}
+        if until is not None:
+            previous = self._last_executed.pop(schedule_id, None)
+            if previous is not None:
+                await self._apply_block_end(sched, previous)
+            for key in [k for k in self._presence_state if k.startswith(f"{schedule_id}:")]:
+                await self._presence_switch_off(sched, key)
+            await self._store.async_set_pause(schedule_id, until.isoformat())
+            _LOGGER.info("Chronos: schedule %s paused until %s", sched.get("name"), until.isoformat())
+        else:
+            await self._store.async_set_pause(schedule_id, None)
+            self._last_executed.pop(schedule_id, None)
+            _LOGGER.info("Chronos: schedule %s resumed", sched.get("name"))
+            # Resume at once rather than at the next minute.
+            await self._tick(dt_util.utcnow())
+        async_dispatcher_send(self._hass, SIGNAL_STATE)
+        return {"ok": True, "paused_until": sched.get("paused_until")}
+
     async def stop(self) -> None:
         if self._unsub_tick:
             self._unsub_tick()
@@ -224,6 +255,13 @@ class ChronosScheduler(
         for sched in self._store.schedules:
             sched_id = sched.get("id", "?")
             sched_name = sched.get("name", "?")
+            if sched.get("paused_until") and not is_paused(sched, local_now):
+                # The pause ran out: drop the stale deadline so the card and
+                # the entities stop showing it. The block bookkeeping was
+                # reset when the pause began, so the active block re-applies
+                # below like a catch-up.
+                await self._store.async_set_pause(sched_id, None)
+                async_dispatcher_send(self._hass, SIGNAL_STATE)
             if schedule_is_live(sched, local_now):
                 continue
 
@@ -295,9 +333,11 @@ class ChronosScheduler(
         weekday = local_now.weekday()
         current_hour = local_now.hour + local_now.minute / 60
         enabled = bool(sched.get("enabled"))
+        paused = is_paused(sched, local_now)
         days = sched.get("days", [1] * 7)
         runs_today = (
             enabled
+            and not paused
             and (weekday >= len(days) or bool(days[weekday]))
             and is_in_date_range(sched, local_now)
         )
@@ -324,6 +364,7 @@ class ChronosScheduler(
             "block_end": block_end,
             "next_change": next_change,
             "device_count": len(sched.get("device_ids") or []),
+            "paused_until": pause_deadline(sched) if paused else None,
         }
 
     @staticmethod

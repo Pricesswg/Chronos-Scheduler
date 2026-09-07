@@ -3,6 +3,7 @@
 import "./define-guard";
 // The sidebar host lives in the same bundle: one file serves card and panel.
 import "./panel";
+import "./pause-modal";
 import { LitElement, html, nothing, PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { chronosStyles, chronosTokens } from "./styles";
@@ -17,6 +18,8 @@ import type {
   ActionDef,
   WeatherAttribute,
   WeatherRule,
+  Block,
+  DateRange,
 } from "./types";
 import { setActionsMap, setColorSettings } from "./actions";
 import { setLang, t } from "./i18n";
@@ -44,8 +47,9 @@ import {
   removeRule as wsRemoveRule,
   reorderRules as wsReorderRules,
   updateSettings as wsUpdateSettings,
+  pauseSchedule as wsPauseSchedule,
 } from "./ws";
-import { fmtHour, computeRepeat, setSnapMinutes, setHassRef, resolveBlockTime } from "./utils";
+import { fmtHour, computeRepeat, setSnapMinutes, setHassRef, resolveBlockTime, pausedUntil, fmtWhen } from "./utils";
 
 import "./screens/overview";
 import "./screens/editor";
@@ -93,6 +97,7 @@ export class ChronosCard extends LitElement {
   @state() _embed = false;
   @state() _selectedId = "";
   @state() _deviceDetailId = "";
+  @state() _pauseTargetId = "";
   @state() _schedules: Schedule[] = [];
   @state() _savedSchedules: Schedule[] = [];
   @state() _rules: WeatherRule[] = [];
@@ -489,6 +494,78 @@ export class ChronosCard extends LitElement {
       }
     }
     return [...new Set(out)];
+  }
+
+  /** Other enabled schedules that drive one of this schedule's devices while
+   * one of its blocks is active: same weekday, overlapping date ranges,
+   * overlapping block times and a device both blocks reach. The last
+   * command sent wins, and from outside the device looks like it acts on
+   * its own, which is the most common support question. */
+  deviceConflictWarnings(sched: Schedule): string[] {
+    if (!sched.enabled) return [];
+    const reach = (b: Block, s: Schedule) => {
+      const all = s.device_ids || [];
+      const sub = (b.device_ids || []).filter((d) => all.includes(d));
+      return sub.length ? sub : all;
+    };
+    const dayOverlap = (a: number[] = [], b: number[] = []) => a.some((v, i) => v && b[i]);
+    const md = (m: number, d: number) => m * 100 + d;
+    const contains = (r: DateRange, x: number) => {
+      const from = md(r.start_month, r.start_day), to = md(r.end_month, r.end_day);
+      return from <= to ? from <= x && x <= to : x >= from || x <= to;
+    };
+    const rangesOverlap = (a?: DateRange | null, b?: DateRange | null) =>
+      !a || !b || contains(a, md(b.start_month, b.start_day)) || contains(b, md(a.start_month, a.start_day));
+    const out: string[] = [];
+    for (const other of this._schedules) {
+      if (other.id === sched.id || !other.enabled) continue;
+      if (!dayOverlap(sched.days, other.days) || !rangesOverlap(sched.date_range, other.date_range)) continue;
+      for (const mine of sched.blocks) {
+        const mf = resolveBlockTime(mine, "start"), mt = resolveBlockTime(mine, "end");
+        for (const theirs of other.blocks) {
+          const of = resolveBlockTime(theirs, "start"), ot = resolveBlockTime(theirs, "end");
+          if (mt <= of || mf >= ot) continue;
+          const shared = reach(mine, sched).filter((d) => reach(theirs, other).includes(d));
+          for (const id of shared) {
+            const dev = this._devices.find((d) => d.id === id);
+            out.push(t("editor.conflict.item", {
+              device: dev?.alias || id, name: other.name,
+              a: `${fmtHour(mf)}-${fmtHour(mt)}`, b: `${fmtHour(of)}-${fmtHour(ot)}`,
+            }));
+          }
+        }
+      }
+    }
+    return [...new Set(out)];
+  }
+
+  isPaused(s: Schedule): boolean {
+    return pausedUntil(s) !== null;
+  }
+
+  pausedLabel(s: Schedule): string {
+    const d = pausedUntil(s);
+    return d ? fmtWhen(d) : "";
+  }
+
+  openPauseModal(id: string) { this._pauseTargetId = id; }
+  closePauseModal() { this._pauseTargetId = ""; }
+
+  /** Pause until an ISO local date-time, or resume with null. Only the
+   * deadline is merged into the working and saved copies: unsaved block
+   * edits must survive a pause. */
+  async doPauseSchedule(id: string, untilIso: string | null) {
+    let until: string | null = untilIso;
+    try {
+      const saved = await wsPauseSchedule(this.hass, id, untilIso);
+      until = saved?.paused_until ?? null;
+    } catch (e) {
+      console.error("Chronos: pause failed", e);
+      return;
+    }
+    const patch = (list: Schedule[]) => list.map((s) => (s.id === id ? { ...s, paused_until: until } : s));
+    this._schedules = patch(this._schedules);
+    this._savedSchedules = patch(this._savedSchedules);
   }
 
   rulesForSchedule(scheduleId: string): WeatherRule[] {
@@ -915,7 +992,8 @@ export class ChronosCard extends LitElement {
           <main class="content">
             <div class="content__inner content__inner--embed">
               ${this._renderScreen(nowHour)}
-            </div>
+              ${this._pauseTargetId ? html`<chronos-pause-modal .card=${this} .scheduleId=${this._pauseTargetId}></chronos-pause-modal>` : nothing}
+                </div>
           </main>
           ${this._pendingNav ? this._renderDirtyModal() : nothing}
           ${this._pendingDisable ? this._renderDisableModal() : nothing}
@@ -942,6 +1020,7 @@ export class ChronosCard extends LitElement {
         </main>
         ${this._pendingNav ? this._renderDirtyModal() : nothing}
         ${this._pendingDisable ? this._renderDisableModal() : nothing}
+        ${this._pauseTargetId ? html`<chronos-pause-modal .card=${this} .scheduleId=${this._pauseTargetId}></chronos-pause-modal>` : nothing}
         ${this._duplicateSourceId
           ? html`<chronos-duplicate-modal .card=${this} .sourceId=${this._duplicateSourceId}></chronos-duplicate-modal>`
           : nothing}

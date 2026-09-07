@@ -4,7 +4,7 @@ import { chronosStyles, chronosTokens } from "./styles";
 import { icon } from "./icons";
 import { t, setLang, actionDefLabel } from "./i18n";
 import { actionLabel, setColorSettings, setActionsMap } from "./actions";
-import { resolveBlockTime, fmtHour, computeRepeat, setHassRef } from "./utils";
+import { resolveBlockTime, fmtHour, computeRepeat, setHassRef, pausedUntil, fmtWhen } from "./utils";
 import {
   fetchSchedules, fetchDevices, fetchRules, fetchHistory, fetchForecast,
   fetchSettings, fetchActions, type HistoryEntry,
@@ -283,6 +283,7 @@ export class ChronosScheduleCard extends LitElement {
     return this._wrap(alarm, html`
       ${flag(c.show_header) ? html`
         <div class="scard__head">
+          ${s.enabled && pausedUntil(s) ? html`<span class="chip chip--paused">${icon("pause", 11)} ${t("pause.badge", { when: fmtWhen(pausedUntil(s)!) })}</span>` : nothing}
           <span class="chip ${s.enabled ? "chip--on" : ""}">
             ${s.enabled ? html`<span class="chip__dot"></span>` : nothing}
             ${s.enabled ? t("schedule.active") : t("common.disabled")}

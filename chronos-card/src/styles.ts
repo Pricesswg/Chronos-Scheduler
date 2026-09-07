@@ -959,4 +959,7 @@ export const chronosStyles = css`
   :host([sidebar]) { height: 100%; }
   :host([sidebar]) .app { border-radius: 0; border: 0; clip-path: none; min-height: 0; height: 100%; }
   .nav-ic--menu { flex: 0 0 auto; margin-right: 2px; }
+
+  .chip--paused { background: color-mix(in srgb, var(--warn) 14%, transparent); color: var(--warn); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
+  .chip--conflict { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); border-color: color-mix(in srgb, var(--danger) 35%, transparent); }
 `;

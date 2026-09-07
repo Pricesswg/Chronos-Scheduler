@@ -223,6 +223,22 @@ export class ChronosEditor extends LitElement {
   /** Two irrigation programs that can end up watering together once their
    * scale rules max out: same water line, so it is worth flagging at design
    * time rather than discovering it on the first hot day. */
+  /** Devices this schedule shares with other enabled schedules during one
+   * of its blocks (see ChronosCard.deviceConflictWarnings). */
+  private _renderConflictWarning(schedule: any) {
+    const warnings = this.card.deviceConflictWarnings(schedule);
+    if (!warnings.length) return nothing;
+    return html`
+      <div class="text-xs" data-conflicts="${warnings.length}" style="display:flex;gap:8px;align-items:flex-start;margin-top:8px;padding:8px 10px;border-radius:var(--r-md);background:color-mix(in srgb, var(--danger) 10%, transparent);color:var(--danger)">
+        ${icon("info", 12)}
+        <div>
+          <div class="fw-600">${t("editor.conflict.title")}</div>
+          ${warnings.map((w) => html`<div style="margin-top:2px">${w}</div>`)}
+        </div>
+      </div>
+    `;
+  }
+
   private _renderOverlapWarning(schedule: any) {
     const warnings = this.card.irrigationOverlapWarnings(schedule);
     if (!warnings.length) return nothing;
@@ -296,6 +312,7 @@ export class ChronosEditor extends LitElement {
               style="font-size:22px;font-weight:700;letter-spacing:-0.02em;border:1px solid transparent;background:transparent;padding:4px 8px;margin-left:-8px;width:100%;max-width:460px"/>
             <div class="row" style="margin-top:6px;gap:10px;flex-wrap:wrap">
               <span class="chip ${schedule.enabled ? "chip--on" : ""}"><span class="chip__dot"></span>${schedule.enabled ? t("schedule.active") : t("schedule.disabled")}</span>
+              ${schedule.enabled && this.card.isPaused(schedule) ? html`<span class="chip chip--paused">${icon("pause", 11)} ${t("pause.badge", { when: this.card.pausedLabel(schedule) })}</span>` : nothing}
               <span class="chip">${icon("repeat", 11)} ${computeRepeat(schedule.days)}</span>
               <span class="chip chip--accent">${deviceIcon(deviceType, 11)} ${deviceTypeLabel(deviceType, typeDef.label)}</span>
               ${!["scene", "automation", "service"].includes(deviceType)
@@ -323,6 +340,10 @@ export class ChronosEditor extends LitElement {
               <span class="switch__track"></span>
               <span class="switch__thumb"></span>
             </label>
+            <button class="btn" data-action="pause" title="${this.card.isPaused(schedule) ? t("pause.resume") : t("pause.button")}"
+              @click=${() => this.card.isPaused(schedule) ? this.card.doPauseSchedule(schedule.id, null) : this.card.openPauseModal(schedule.id)}>
+              ${icon(this.card.isPaused(schedule) ? "play" : "pause", 14)} ${this.card.isPaused(schedule) ? t("pause.resume") : t("pause.button")}
+            </button>
             <button class="btn" @click=${() => this.card.openDuplicateModal(schedule.id)} title="${t("dup.title")}">${icon("copy", 14)}</button>
             <button class="btn" @click=${() => this._exportSchedule(schedule)} title="${t("editor.export")}">${icon("download", 14)}</button>
             <button class="btn" style="color:var(--danger)" @click=${() => { this._confirmDelete = true; }} title="${t("common.delete")}">${icon("trash", 14)}</button>
@@ -343,6 +364,7 @@ export class ChronosEditor extends LitElement {
                   <h3 class="card__title">${t("wizard.step.time")}</h3>
                   <p class="card__sub">${t("editor.add_block_hint")}</p>
                   ${this._renderOverlapWarning(schedule)}
+                  ${this._renderConflictWarning(schedule)}
                 </div>
                 <div class="row" style="gap:8px;flex-wrap:wrap">
                   ${this._renderComparePicker(schedule)}

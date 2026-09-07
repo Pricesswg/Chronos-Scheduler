@@ -20,6 +20,14 @@ export async function makeHass() {
       date_range: { start_month: 10, start_day: 15, end_month: 4, end_day: 15 },
       blocks: [{ start: 6, end: 9, action: { id: "set_temperature", value: 21 } }, { start: 17, end: 23, action: { id: "set_temperature", value: 21.5 } }] },
   ];
+  // s4 shares d1 with s1 and overlaps its block: a device conflict.
+  schedules.push({ id: "s4", name: "Irrigazione zona 1 bis", device_type: "plug", device_ids: ["d1"], enabled: true, days: [1, 1, 1, 1, 1, 1, 1], timeline_variant: "linear",
+    blocks: [{ start: 6.25, end: 7, action: { id: "turn_on", trigger: "both", end_action: { id: "turn_off" } } }] });
+  // s2 starts paused until tomorrow midnight.
+  const midnight = new Date(); midnight.setDate(midnight.getDate() + 1); midnight.setHours(0, 0, 0, 0);
+  const two = (n) => String(n).padStart(2, "0");
+  const localIso = (d) => `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}T${two(d.getHours())}:${two(d.getMinutes())}:00`;
+  schedules[1].paused_until = localIso(midnight);
   const rules = [
     { id: "r1", name: "Salta se piove", if: "precipitation > 2", then: "Skip", effect: "skip", active: true, fire_mode: "every", targets: [{ schedule_id: "s1", block_index: null }] },
     { id: "r2", name: "Più acqua col caldo", if: "", then: "Scale value", effect: "scale_value", active: true, fire_mode: "every",
@@ -52,6 +60,11 @@ export async function makeHass() {
     "chronos/schedules/save": (m) => m.schedule,
     "chronos/schedules/remove": () => null,
     "chronos/schedules/toggle": () => null,
+    "chronos/schedules/pause": (m) => {
+      const s = schedules.find((x) => x.id === m.schedule_id);
+      if (m.until) s.paused_until = m.until; else delete s.paused_until;
+      return s;
+    },
     "chronos/rules/list": () => rules,
     "chronos/rules/save": (m) => m.rule,
     "chronos/rules/remove": () => null,
@@ -73,8 +86,10 @@ export async function makeHass() {
     "chronos/history/list": () => history,
     "chronos/history/clear": () => null,
   };
+  window.__wsLog = [];
   return {
     callWS: async (msg) => {
+      window.__wsLog.push(structuredClone(msg));
       const h = handlers[msg.type];
       if (!h) throw new Error(`unmocked WS command ${msg.type}`);
       return structuredClone(h(msg));

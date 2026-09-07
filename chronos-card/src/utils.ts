@@ -91,3 +91,27 @@ export function computeRepeat(days: number[]): string {
   const D = getDays();
   return days.map((d, i) => (d ? D[i] : null)).filter(Boolean).join(" · ");
 }
+
+/** The pause deadline of a schedule as a Date, or null when it is not
+ * paused (unset, unparsable, or already behind us). */
+export function pausedUntil(s: { paused_until?: string | null }, now: Date = new Date()): Date | null {
+  if (!s.paused_until) return null;
+  const d = new Date(s.paused_until);
+  if (isNaN(d.getTime()) || d <= now) return null;
+  return d;
+}
+
+/** "HH:MM" today, otherwise "DD/MM HH:MM". */
+export function fmtWhen(d: Date, now: Date = new Date()): string {
+  const two = (n: number) => String(n).padStart(2, "0");
+  const time = `${two(d.getHours())}:${two(d.getMinutes())}`;
+  const sameDay = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+  return sameDay ? time : `${two(d.getDate())}/${two(d.getMonth() + 1)} ${time}`;
+}
+
+/** Naive local ISO ("2026-09-08T00:00:00"): what the user means on the
+ * wall clock, which the backend reads in Home Assistant's own time zone. */
+export function localIso(d: Date): string {
+  const two = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}T${two(d.getHours())}:${two(d.getMinutes())}:00`;
+}
