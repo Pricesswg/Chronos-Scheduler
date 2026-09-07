@@ -368,7 +368,7 @@ export const PL_STRINGS: Record<string, string> = {
   "wr.if.add_and": "Dodaj warunek (AND)",
   "wr.if.sensor.label": "Albo wybierz czujnik Home Assistant",
   "wr.if.sensor.none": "— Użyj atrybutu pogodowego powyżej —",
-  "wr.if.sensor.hint": "Czujniki liczbowe (z jednostką miary lub stanem liczbowym). Przykłady: SOC akumulatora, prognoza PV, moc chwilowa.",
+  "wr.if.sensor.hint": "Czujniki liczbowe lub encje on/off: czujnik dnia roboczego, kalendarze, input boolean, harmonogramy HA, osoby (home/not_home).",
   "wr.if.sensor.search": "Filtruj czujniki…",
   "wr.if.sensor.no_match": "Żaden czujnik nie pasuje",
   "wr.var": "Zmienna pogodowa",
@@ -847,4 +847,8 @@ export const PL_STRINGS: Record<string, string> = {
   "editor.modes.hint": "Wszystkie zaznaczone = zawsze. Odznacz tryby, w których ten harmonogram ma pozostać nieaktywny; tryb zmienia się w przeglądzie, encją select lub usługą chronos.set_mode.",
   "editor.presence.away_hint": "Symulować obecność tylko, gdy nikogo nie ma?",
   "editor.presence.away_button": "Tylko w trybie Poza domem",
+  "recipe.workdays_only_morning.title": "Poranna rutyna tylko w dni robocze",
+  "recipe.workdays_only_morning.when": "Z integracją Workday w Home Assistant",
+  "recipe.workdays_only_morning.howto": "Włącza gniazdko (ekspres, światło w łazience) o 6:30 od poniedziałku do piątku, ale reguła pomija blok, gdy binary_sensor.workday_sensor jest off: integracja Workday zna już święta. Działa z każdą encją on/off: kalendarzem, osobą (home/not_home), input boolean.",
+  "recipe.workdays_only_morning.preset_name": "Poranki w dni robocze",
 };

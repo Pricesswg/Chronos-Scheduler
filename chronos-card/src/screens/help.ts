@@ -297,6 +297,23 @@ const RECIPES: Recipe[] = [
     weather_rules: [],
   },
   {
+    // Public holidays are where a weekly schedule goes wrong. The workday
+    // integration already knows them; the rule just reads it.
+    id: "workdays_only_morning",
+    device_type: "plug",
+    default_name_key: "recipe.workdays_only_morning.preset_name",
+    days: [1, 1, 1, 1, 1, 0, 0],
+    blocks: [
+      { start: 6.5, end: 7, action: { id: "turn_on", trigger: "both", end_action: { id: "turn_off" } } },
+    ],
+    weather_rules: [
+      {
+        if: "binary_sensor.workday_sensor == off", then: "Skip", active: true,
+        effect: "skip", block_index: null,
+      },
+    ],
+  },
+  {
     // Sergio's question in #19: run only when the PV battery is full enough.
     id: "solar_surplus_boiler",
     device_type: "boiler",

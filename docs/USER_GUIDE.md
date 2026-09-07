@@ -426,6 +426,12 @@ In the block panel, **Act at the end of the block too** changes that. When the b
 - If another block starts exactly when this one ends, the end action is skipped: the next block's own action already defines the state, and sending an off in between would only make the device blink.
 - An offline device gets the same treatment as the auto-off timer: the switch-off is retried when it comes back, with the truth recorded in History.
 
+### Workdays, calendars and people
+
+Besides the weather variables, a rule can name any entity directly. Numeric sensors compare as numbers (`sensor.battery_soc < 80`). On/off entities compare as text with `==` or `!=`, and the rule builder offers their states instead of a number field: binary sensors (`binary_sensor.workday_sensor == off`), calendars (`calendar.ferie == on` while an event is running, all-day events included), input booleans, Home Assistant schedule helpers, and people or device trackers (`person.alessandro != home`).
+
+The classic use is public holidays: the Workday integration already knows them, so **Skip when `binary_sensor.workday_sensor == off`** on the morning routine does the job without a second schedule. The Help screen has this as a ready-made recipe, "Morning routine on workdays only". For longer absences use Modes instead, and let a calendar or a presence sensor switch the mode with `chronos.set_mode`.
+
 ### Electricity prices
 
 Chronos does not talk to any energy market: it reads the price sensor from an integration you already have (Nordpool, ENTSO-e, Tibber and similar). Pick it under `Settings → Language and weather source → Electricity price entity`.

@@ -368,7 +368,7 @@ export const PT_STRINGS: Record<string, string> = {
   "wr.if.add_and": "Adicionar condição (AND)",
   "wr.if.sensor.label": "Ou escolha um sensor do Home Assistant",
   "wr.if.sensor.none": "— Usar um atributo meteo acima —",
-  "wr.if.sensor.hint": "Sensores numéricos (com unidade de medida ou estado numérico). Exemplos: SOC da bateria, previsão FV, potência instantânea.",
+  "wr.if.sensor.hint": "Sensores numéricos, ou entidades on/off: sensor de dia útil, calendários, booleanos, agendas do HA, pessoas (home/not_home).",
   "wr.if.sensor.search": "Filtrar sensores…",
   "wr.if.sensor.no_match": "Nenhum sensor corresponde",
   "wr.var": "Variável meteo",
@@ -847,4 +847,8 @@ export const PT_STRINGS: Record<string, string> = {
   "editor.modes.hint": "Todos selecionados = sempre. Desmarque os modos em que este agendamento deve ficar parado; o modo muda-se na visão geral, na entidade select ou no serviço chronos.set_mode.",
   "editor.presence.away_hint": "Simular presença só quando não está ninguém?",
   "editor.presence.away_button": "Só no modo Fora",
+  "recipe.workdays_only_morning.title": "Rotina da manhã só nos dias úteis",
+  "recipe.workdays_only_morning.when": "Com a integração Workday do Home Assistant",
+  "recipe.workdays_only_morning.howto": "Liga a tomada (máquina de café, luz da casa de banho) às 6:30 de segunda a sexta, mas a regra salta o bloco quando binary_sensor.workday_sensor está off: a integração Workday já conhece os feriados. Serve para qualquer entidade on/off: um calendário, uma pessoa (home/not_home), um booleano.",
+  "recipe.workdays_only_morning.preset_name": "Manhãs úteis",
 };

@@ -74,3 +74,14 @@ test("the editor offers to limit a presence block to Away", async ({ page }) => 
   await page.evaluate(() => (window as any).__card.selectSchedule("s1", "editor"));
   await expect(page.locator('chronos-editor [data-role="modes"] button[data-active="true"]')).toHaveCount(3);
 });
+
+test("a rule can compare an on/off entity to one of its states", async ({ page }) => {
+  await mount(page, "weatherRule");
+  const rule = page.locator("chronos-weather-rule");
+  const sensorSelect = rule.locator("select").filter({ has: page.locator('option[value="binary_sensor.workday_sensor"]') }).first();
+  await sensorSelect.selectOption("binary_sensor.workday_sensor");
+  const value = rule.locator('select[data-role="state-value"]').first();
+  await expect(value).toHaveCount(1);
+  await expect(value.locator("option")).toHaveText(["on", "off"]);
+  await expect(rule).toContainText("Giorno lavorativo");
+});

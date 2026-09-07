@@ -27,6 +27,18 @@ const EFFECTS: { key: RuleEffect; needsIf: boolean; needsBlock: boolean }[] = [
  * specs). Multi-schedule targets must share the device type for these. */
 const VALUE_EFFECTS: RuleEffect[] = ["force_action", "replace_value", "scale_value", "hold"];
 
+/** Directly referenced entities that are compared as text, by domain, with
+ * the states they can take. Everything else compares as a number. Mirrors
+ * WeatherMixin._DIRECT_DOMAINS in the backend. */
+const STATE_OPTIONS: Record<string, string[]> = {
+  binary_sensor: ["on", "off"],
+  calendar: ["on", "off"],
+  input_boolean: ["on", "off"],
+  schedule: ["on", "off"],
+  person: ["home", "not_home"],
+  device_tracker: ["home", "not_home"],
+};
+
 @customElement("chronos-weather-rule")
 export class ChronosWeatherRule extends LitElement {
   static styles = chronosStyles;
@@ -302,11 +314,23 @@ export class ChronosWeatherRule extends LitElement {
    * as IF threshold operands so we skip them. */
   private _numericSensors(): any[] {
     const all = this.card._sensorEntities || [];
-    return all.filter((s: any) => {
+    const numeric = all.filter((s: any) => {
+      if (STATE_OPTIONS[s.entity_id.split(".")[0]]) return false;
       if (s.unit_of_measurement) return true;
       const f = parseFloat(s.state);
       return Number.isFinite(f);
     });
+    // On/off and home/not_home entities after the numeric ones: workday
+    // sensor, calendars, input booleans, HA schedule helpers, people.
+    const states = all.filter((s: any) => STATE_OPTIONS[s.entity_id.split(".")[0]]);
+    return [...numeric, ...states];
+  }
+
+  /** The states a directly referenced entity can be compared to, or null
+   * for numeric ones. */
+  private _stateOptions(variable: string): string[] | null {
+    const domain = variable.split(".")[0];
+    return variable.includes(".") ? STATE_OPTIONS[domain] || null : null;
   }
 
   private _renderIfSection(weatherAttrs: any[]) {
@@ -331,6 +355,8 @@ export class ChronosWeatherRule extends LitElement {
     const varDef = weatherAttrs.find((v) => v.key === c.variable);
     const sensors = this._numericSensors();
     const isSensorRef = !varDef && /^[\w]+\./.test(c.variable);
+    const stateOptions = isSensorRef ? this._stateOptions(c.variable) : null;
+    const enumOptions: string[] | null = varDef?.type === "enum" ? (varDef.options || []) : stateOptions;
     return html`
       <div class="card card--ghost" style="padding:12px 14px">
         <div class="sp-between" style="margin-bottom:10px">
@@ -362,7 +388,7 @@ export class ChronosWeatherRule extends LitElement {
             <div class="field">
               <label class="field__label">${t("wr.op")}</label>
               <select class="select mono" @change=${(e: Event) => this._patchClause(idx, { op: (e.target as HTMLSelectElement).value })}>
-                ${varDef?.type === "enum"
+                ${enumOptions
                   ? html`
                       <option value="==" ?selected=${c.op === "=="}>${t("wr.op.eq")} (==)</option>
                       <option value="!=" ?selected=${c.op === "!="}>${t("wr.op.neq")} (!=)</option>`
@@ -377,9 +403,9 @@ export class ChronosWeatherRule extends LitElement {
             </div>
             <div class="field">
               <label class="field__label">${t("wr.threshold")}</label>
-              ${varDef?.type === "enum"
-                ? html`<select class="select" @change=${(e: Event) => this._patchClause(idx, { value: (e.target as HTMLSelectElement).value })}>
-                    ${(varDef.options || []).map((o: string) => html`<option value="${o}" ?selected=${c.value === o}>${o}</option>`)}
+              ${enumOptions
+                ? html`<select class="select" data-role="state-value" @change=${(e: Event) => this._patchClause(idx, { value: (e.target as HTMLSelectElement).value })}>
+                    ${enumOptions.map((o: string) => html`<option value="${o}" ?selected=${c.value === o}>${o}</option>`)}
                   </select>`
                 : html`<input class="input mono" .value=${c.value}
                     @input=${(e: InputEvent) => this._patchClause(idx, { value: (e.target as HTMLInputElement).value })}/>`}
@@ -425,7 +451,7 @@ export class ChronosWeatherRule extends LitElement {
           <option value="" ?selected=${!isSensorRef}>${t("wr.if.sensor.none")}</option>
           ${visible.map((s: any) => html`
             <option value="${s.entity_id}" ?selected=${c.variable === s.entity_id}>
-              ${s.friendly_name || s.entity_id}${s.unit_of_measurement ? ` (${s.unit_of_measurement})` : ""} — ${s.entity_id}
+              ${s.friendly_name || s.entity_id}${s.unit_of_measurement ? ` (${s.unit_of_measurement})` : ""}${STATE_OPTIONS[s.entity_id.split(".")[0]] ? ` (${STATE_OPTIONS[s.entity_id.split(".")[0]].join("/")})` : ""} — ${s.entity_id}
             </option>
           `)}
           ${q && !visible.length ? html`<option disabled>${t("wr.if.sensor.no_match")}</option>` : nothing}
@@ -437,6 +463,16 @@ export class ChronosWeatherRule extends LitElement {
 
   private _setClauseVariable(idx: number, variable: string) {
     this._patchClause(idx, { variable });
+    // A state entity compares with == / != against one of its states.
+    const states = this._stateOptions(variable);
+    if (states) {
+      const cur = this._clauses[idx];
+      this._patchClause(idx, {
+        op: cur.op === "!=" ? "!=" : "==",
+        value: states.includes(cur.value) ? cur.value : states[0],
+      });
+      return;
+    }
     // If switching to/from an enum-typed weather attribute, normalise the op.
     const wa = this.card._weatherAttributes.find((v) => v.key === variable);
     if (wa?.type === "enum") {

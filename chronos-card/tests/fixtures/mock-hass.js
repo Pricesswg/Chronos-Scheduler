@@ -50,9 +50,12 @@ export async function makeHass() {
     "sun.sun": st("above_horizon", { elevation: 38.2, azimuth: 195, rising: false, next_rising: iso(6), next_setting: iso(19), next_dawn: iso(5), next_dusk: iso(20) }),
     "sensor.temperatura_esterna": st("23.8", { friendly_name: "Temperatura esterna", unit_of_measurement: "°C", device_class: "temperature" }),
     "sensor.umidita_esterna": st("58", { friendly_name: "Umidità esterna", unit_of_measurement: "%", device_class: "humidity" }),
+    "binary_sensor.workday_sensor": st("on", { friendly_name: "Giorno lavorativo" }),
+    "calendar.ferie": st("off", { friendly_name: "Ferie" }),
+    "person.alessandro": st("home", { friendly_name: "Alessandro" }),
     "sensor.prezzo_energia": st("0.18", { friendly_name: "Prezzo energia", unit_of_measurement: "€/kWh", current_price: 0.18, today: Array.from({ length: 24 }, (_, i) => 0.1 + 0.01 * i) }),
   };
-  const sensors = Object.entries(states).filter(([e]) => e.startsWith("sensor.")).map(([entity_id, s]) => ({ entity_id, name: s.attributes.friendly_name, unit: s.attributes.unit_of_measurement, device_class: s.attributes.device_class || null }));
+  const sensors = Object.entries(states).filter(([e]) => /^(sensor|binary_sensor|calendar|person)\./.test(e)).map(([entity_id, s]) => ({ entity_id, friendly_name: s.attributes.friendly_name, unit_of_measurement: s.attributes.unit_of_measurement || "", device_class: s.attributes.device_class || "", state: s.state }));
   const forecast = Array.from({ length: 8 }, (_, i) => ({ datetime: iso(12 + i), temperature: 24 - i, condition: i < 4 ? "sunny" : "rainy", precipitation: i < 4 ? 0 : 1.2, wind_speed: 10 + i, humidity: 55 + i }));
   const handlers = {
     "chronos/devices/list": () => devices,

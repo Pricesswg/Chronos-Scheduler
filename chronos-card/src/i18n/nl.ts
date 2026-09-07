@@ -368,7 +368,7 @@ export const NL_STRINGS: Record<string, string> = {
   "wr.if.add_and": "Voorwaarde toevoegen (AND)",
   "wr.if.sensor.label": "Of kies een Home Assistant-sensor",
   "wr.if.sensor.none": "— Gebruik een weerattribuut hierboven —",
-  "wr.if.sensor.hint": "Numerieke sensoren (met meeteenheid of numerieke status). Voorbeelden: accu-SOC, PV-prognose, momentaan vermogen.",
+  "wr.if.sensor.hint": "Numerieke sensoren, of aan/uit-entiteiten: werkdagsensor, agenda's, input booleans, HA-schema's, personen (home/not_home).",
   "wr.if.sensor.search": "Sensoren filteren…",
   "wr.if.sensor.no_match": "Geen sensor komt overeen",
   "wr.var": "Weervariabele",
@@ -847,4 +847,8 @@ export const NL_STRINGS: Record<string, string> = {
   "editor.modes.hint": "Alles geselecteerd = altijd. Deselecteer de modi waarin dit schema moet rusten; de modus wisselt u in het overzicht, via de select-entiteit of de dienst chronos.set_mode.",
   "editor.presence.away_hint": "Alleen aanwezigheid simuleren als er niemand thuis is?",
   "editor.presence.away_button": "Alleen in de modus Weg",
+  "recipe.workdays_only_morning.title": "Ochtendroutine alleen op werkdagen",
+  "recipe.workdays_only_morning.when": "Met de Workday-integratie van Home Assistant",
+  "recipe.workdays_only_morning.howto": "Schakelt de stekker (koffiezetapparaat, badkamerlamp) om 6:30 in van maandag tot vrijdag, maar de regel slaat het blok over wanneer binary_sensor.workday_sensor off is: de Workday-integratie kent de feestdagen al. Werkt met elke aan/uit-entiteit: een agenda, een persoon (home/not_home), een input boolean.",
+  "recipe.workdays_only_morning.preset_name": "Werkdagochtenden",
 };

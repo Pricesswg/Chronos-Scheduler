@@ -63,7 +63,13 @@ class WeatherMixin:
     # directly from hass.states bypassing the weather/sun resolver. This
     # lets users build rules on arbitrary HA sensors (e.g. battery SOC,
     # PV forecast aggregators), introduced in v1.10.
-    _DIRECT_DOMAINS = {"sensor", "binary_sensor", "number", "input_number"}
+    # Entities a rule may name directly. Numeric ones compare as numbers;
+    # the on/off and home/not_home ones (workday sensor, calendars, HA
+    # schedule helpers, people) compare as text with == / !=.
+    _DIRECT_DOMAINS = {
+        "sensor", "binary_sensor", "number", "input_number",
+        "calendar", "input_boolean", "schedule", "person", "device_tracker",
+    }
 
     def _read_attribute(self, key: str) -> Any:
         """Read a weather attribute. If the user mapped the key to a

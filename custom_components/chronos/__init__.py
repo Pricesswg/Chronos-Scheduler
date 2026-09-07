@@ -821,7 +821,10 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
         hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict
     ) -> None:
         entities = []
-        for state in hass.states.async_all(["sensor", "binary_sensor"]):
+        # Same domains the rule engine reads directly (WeatherMixin._DIRECT_DOMAINS).
+        for state in hass.states.async_all([
+            "sensor", "binary_sensor", "calendar", "input_boolean", "schedule", "person", "device_tracker",
+        ]):
             attrs = state.attributes
             entities.append({
                 "entity_id": state.entity_id,

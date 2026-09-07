@@ -368,7 +368,7 @@ export const ES_STRINGS: Record<string, string> = {
   "wr.if.add_and": "Añadir condición (AND)",
   "wr.if.sensor.label": "O elige un sensor de Home Assistant",
   "wr.if.sensor.none": "— Usar un atributo meteo de arriba —",
-  "wr.if.sensor.hint": "Sensores numéricos (con unidad de medida o estado numérico). Ejemplos: SOC de batería, previsión FV, potencia instantánea.",
+  "wr.if.sensor.hint": "Sensores numéricos, o entidades on/off: sensor de día laborable, calendarios, booleanos, planificaciones de HA, personas (home/not_home).",
   "wr.if.sensor.search": "Filtrar sensores…",
   "wr.if.sensor.no_match": "Ningún sensor coincide",
   "wr.var": "Variable meteo",
@@ -847,4 +847,8 @@ export const ES_STRINGS: Record<string, string> = {
   "editor.modes.hint": "Todos seleccionados = siempre. Deselecciona los modos en los que esta programación debe quedarse inactiva; el modo se cambia desde la vista general, la entidad select o el servicio chronos.set_mode.",
   "editor.presence.away_hint": "¿Simular presencia solo cuando no hay nadie?",
   "editor.presence.away_button": "Solo en modo Fuera",
+  "recipe.workdays_only_morning.title": "Rutina de la mañana solo en días laborables",
+  "recipe.workdays_only_morning.when": "Con la integración Workday de Home Assistant",
+  "recipe.workdays_only_morning.howto": "Enciende el enchufe (cafetera, luz del baño) a las 6:30 de lunes a viernes, pero la regla salta el bloque cuando binary_sensor.workday_sensor está off: la integración Workday ya conoce los festivos. Vale para cualquier entidad on/off: un calendario, una persona (home/not_home), un booleano.",
+  "recipe.workdays_only_morning.preset_name": "Mañanas laborables",
 };
