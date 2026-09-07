@@ -1865,8 +1865,17 @@ class ChronosScheduler:
             return False
         try:
             domain, _, service = off_service.partition(".")
+            # Same chained context as every other action: without it the
+            # logbook showed these switch-offs (end of block, auto-off,
+            # presence, valve close) as changes with no cause.
+            ctx = _fire_with_context(self._hass, EVENT_BLOCK_EXECUTED, {
+                "device_id": None,
+                "entity_id": entity_id,
+                "action_id": action_id,
+                "value": None,
+            }, sched)
             await self._hass.services.async_call(
-                domain, service, {"entity_id": entity_id}, blocking=False
+                domain, service, {"entity_id": entity_id}, blocking=False, context=ctx,
             )
             return True
         except Exception:
@@ -1950,6 +1959,22 @@ class ChronosScheduler:
                     "name": rec.get("schedule_name", "?"),
                     "device_type": rec.get("device_type", ""),
                 }
+                # The recall belongs to its schedule. Once that is disabled
+                # or deleted the lost switch-off must stay lost, or it comes
+                # back to life with the device hours after the user turned
+                # the schedule off: the one path that let a disabled
+                # schedule act. The block-window branch below already had
+                # this check; this branch never did.
+                owner = self._store.get_schedule(rec.get("schedule_id"))
+                if owner is None or not owner.get("enabled"):
+                    self._pending_recalls.pop(key, None)
+                    dirty = True
+                    self._store.append_history(_make_history_entry(
+                        snap, kind="block", action_id=rec.get("action_id") or "?",
+                        entity_id=ent, outcome="error",
+                        error="Off-recall expired: schedule disabled or removed",
+                    ))
+                    continue
                 armed = dt_util.parse_datetime(rec.get("armed_at") or "")
                 age_h = (
                     (dt_util.utcnow() - armed).total_seconds() / 3600
@@ -1974,8 +1999,18 @@ class ChronosScheduler:
                 ok = False
                 try:
                     off_domain, _, off_name = str(rec.get("off_service") or "").partition(".")
+                    # Chained context: the logbook attributes the switch-off
+                    # to Chronos instead of showing an unexplained change,
+                    # which is what every "it acted on its own" report
+                    # needs to be settled either way.
+                    ctx = _fire_with_context(self._hass, EVENT_BLOCK_EXECUTED, {
+                        "device_id": None,
+                        "entity_id": ent,
+                        "action_id": rec.get("action_id") or "?",
+                        "value": "recall",
+                    }, snap)
                     await self._hass.services.async_call(
-                        off_domain, off_name, {"entity_id": ent}, blocking=False
+                        off_domain, off_name, {"entity_id": ent}, blocking=False, context=ctx,
                     )
                     ok = True
                 except Exception:

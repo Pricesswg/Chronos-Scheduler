@@ -35,15 +35,19 @@ export class ChronosDeviceScreen extends LitElement {
           </button>
         </div>
 
-        <div class="row" style="gap:16px">
-          <div style="width:60px;height:60px;border-radius:16px;background:${getDeviceColor(device, state, this.card._settings).soft};color:${getDeviceColor(device, state, this.card._settings).accent};display:grid;place-items:center">
+        <!-- Wraps: on a phone the picker drops under the title instead of
+             pushing the whole screen sideways (issue #22). The icon keeps
+             its size, the id line may break anywhere since entity ids have
+             no spaces. -->
+        <div class="row" style="gap:16px;flex-wrap:wrap">
+          <div style="flex:none;width:60px;height:60px;border-radius:16px;background:${getDeviceColor(device, state, this.card._settings).soft};color:${getDeviceColor(device, state, this.card._settings).accent};display:grid;place-items:center">
             ${deviceIcon(device.type, 28)}
           </div>
-          <div style="flex:1">
+          <div style="flex:1 1 180px;min-width:0">
             <h1 class="page-title" style="margin-bottom:2px">${device.alias}</h1>
-            <p class="page-sub mono" style="margin-bottom:0">${device.entity_id} · ${device.area}</p>
+            <p class="page-sub mono" style="margin-bottom:0;overflow-wrap:anywhere">${device.entity_id} · ${device.area}</p>
           </div>
-          <select class="select" style="width:240px"
+          <select class="select" style="flex:1 1 200px;max-width:100%"
             @change=${(e: Event) => this.card.selectDevice((e.target as HTMLSelectElement).value)}>
             ${this.card._devices.map((d) => html`<option value="${d.id}" ?selected=${d.id === device.id}>${d.alias}</option>`)}
           </select>

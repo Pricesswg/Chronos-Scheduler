@@ -237,7 +237,7 @@ export class ChronosHistoryScreen extends LitElement {
       : (typeof e.value === "object" ? JSON.stringify(e.value) : String(e.value));
     return html`
       <div class="col" style="gap:0;padding:8px 12px;border-radius:6px;background:${isErr || isWarn ? `color-mix(in srgb, ${tint} 8%, transparent)` : "var(--bg-sunken)"};border:1px solid ${isErr || isWarn ? `color-mix(in srgb, ${tint} 30%, transparent)` : "var(--border-soft)"};user-select:text">
-        <div class="row" style="gap:10px">
+        <div class="row" style="gap:10px;flex-wrap:wrap">
           <span class="mono text-xs text-mute" style="min-width:140px;flex-shrink:0">${tsStr}</span>
           <span class="chip" style="flex-shrink:0;background:${e.kind === "rule" ? "color-mix(in srgb, var(--accent) 12%, transparent)" : e.kind === "system" ? "color-mix(in srgb, var(--warn) 14%, transparent)" : "var(--bg)"};color:${e.kind === "rule" ? "var(--accent-ink)" : e.kind === "system" ? "var(--warn)" : "var(--text)"}">
             ${e.kind === "rule" ? icon("cloud", 11) : e.kind === "system" ? icon("repeat", 11) : icon("clock", 11)} ${t("history.kind." + e.kind)}
