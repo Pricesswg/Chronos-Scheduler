@@ -1,0 +1,81 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chronos layout harness</title>
+<style>
+  html, body { margin: 0; background: #f6f7f9; }
+  /* Mimic a Home Assistant view: the card gets the width minus the view's
+     own margins, which is what a phone actually offers. */
+  #view { padding: 8px; box-sizing: border-box; }
+</style>
+<div id="view"></div>
+<script type="module">
+  import "/www/chronos-card.js";
+  import { makeHass } from "/fixtures/mock-hass.js";
+
+  const settle = async (card, ms = 200) => { await card.updateComplete; await new Promise((r) => setTimeout(r, ms)); await card.updateComplete; };
+
+  window.__mount = async (config = {}) => {
+    const view = document.getElementById("view");
+    view.innerHTML = "";
+    const card = document.createElement("chronos-card");
+    card.setConfig({ type: "custom:chronos-card", ...config });
+    card.hass = await makeHass();
+    view.appendChild(card);
+    for (let i = 0; i < 60 && (card._loading ?? true); i++) await new Promise((r) => setTimeout(r, 50));
+    await settle(card, 300);
+    window.__card = card;
+    return { loading: !!card._loading, error: card._loadError || "" };
+  };
+
+  window.__open = async (name) => {
+    const c = window.__card;
+    if (name === "editor") c.selectSchedule("s1", "editor");
+    else if (name === "device") { c.selectDevice("d1"); c.navigate("device"); }
+    else if (name === "weatherRule") c.editWeatherRule("r1");
+    else c.navigate(name);
+    await settle(c, 250);
+    return c._screen;
+  };
+
+  // Android's accessibility font scale grows text but not fixed-size boxes,
+  // which is the case that broke issue #22. Scale every element's computed
+  // font size by the factor, children included, after the screen rendered.
+  window.__scaleFonts = async (scale) => {
+    const all = [];
+    const walk = (root) => { for (const el of root.querySelectorAll("*")) { all.push(el); if (el.shadowRoot) walk(el.shadowRoot); } };
+    walk(window.__card.shadowRoot);
+    const sizes = all.map((el) => parseFloat(getComputedStyle(el).fontSize));
+    all.forEach((el, i) => { if (sizes[i]) el.style.fontSize = (sizes[i] * scale) + "px"; });
+    await settle(window.__card, 150);
+  };
+
+  // Anything whose right edge passes the card's is a layout escape, except
+  // inside an intentional horizontal scroller (the nav strip, hour rows).
+  window.__probe = () => {
+    const card = window.__card;
+    const app = card.shadowRoot.querySelector(".app");
+    const content = card.shadowRoot.querySelector(".content");
+    const limit = app.getBoundingClientRect().right + 0.5;
+    const culprits = [];
+    const walk = (root, insideScroller) => {
+      for (const el of root.children) {
+        const cs = getComputedStyle(el);
+        const scroller = insideScroller || (el !== content && el !== app && /auto|scroll/.test(cs.overflowX));
+        const r = el.getBoundingClientRect();
+        if (!scroller && r.width > 0 && r.right > limit) {
+          culprits.push({ tag: el.tagName.toLowerCase(), cls: String(el.className || "").slice(0, 40), text: (el.textContent || "").trim().slice(0, 30), over: Math.round(r.right - limit) });
+        }
+        if (el.shadowRoot) walk(el.shadowRoot, scroller);
+        walk(el, scroller);
+      }
+    };
+    walk(card.shadowRoot, false);
+    return {
+      screen: card._screen,
+      contentOverflow: content ? content.scrollWidth - content.clientWidth : -1,
+      documentOverflow: document.documentElement.scrollWidth - window.innerWidth,
+      culprits: culprits.slice(0, 6),
+    };
+  };
+</script>

@@ -314,7 +314,7 @@ export class ChronosEditor extends LitElement {
               </span>
             </div>
           </div>
-          <div class="row" style="gap:10px;flex-shrink:0;flex-wrap:wrap">
+          <div class="row" style="gap:10px;min-width:0;flex-wrap:wrap">
             <label class="switch">
               <input type="checkbox" .checked=${schedule.enabled} @change=${(e: Event) => {
                 const el = e.target as HTMLInputElement;

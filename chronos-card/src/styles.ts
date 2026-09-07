@@ -331,7 +331,7 @@ export const chronosStyles = css`
   }
   .card--pad-lg { padding: 22px; }
   .card--ghost { background: var(--bg-soft); }
-  .card__header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .card__header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; row-gap: 8px; }
   .card__title { font-weight: 600; font-size: 15px; letter-spacing: -0.01em; margin: 0; }
   .card__sub { color: var(--text-muted); font-size: 12.5px; margin: 2px 0 0; }
 
@@ -877,7 +877,11 @@ export const chronosStyles = css`
   }
 
   /* Utility */
-  .row { display: flex; align-items: center; gap: 10px; }
+  /* Rows wrap. Below the width where their content fits, the alternative is
+   * the content escaping the card, which .app clips: the layout probe found
+   * this in the editor header, the compare picker and the settings headers
+   * at phone widths with a large font. Inert while everything fits. */
+  .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .col { display: flex; flex-direction: column; gap: 10px; }
   /* Page headers put the title on the left and the action buttons on the right.
    * They must be allowed to wrap: on a phone the two sides cannot share a line,
@@ -942,4 +946,11 @@ export const chronosStyles = css`
     .segmented button { padding: 5px 8px; font-size: 11.5px; }
     .btn { padding: 7px 10px; font-size: 12.5px; }
   }
+
+  /* Form controls and their .field wrappers must be allowed to shrink: a
+   * datetime-local input has a wide intrinsic size and, with min-width:auto,
+   * a grid column cannot go below it, so a phone with a large font overflowed
+   * by a few pixels (caught by the layout probe on the History filters). */
+  .field { min-width: 0; }
+  .input, .select { min-width: 0; max-width: 100%; }
 `;

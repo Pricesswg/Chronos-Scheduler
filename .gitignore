@@ -20,3 +20,8 @@ venv/
 
 # Old build location (now lives in custom_components/chronos/www/)
 /dist/
+
+# Tests
+.pytest_cache/
+chronos-card/test-results/
+chronos-card/playwright-report/

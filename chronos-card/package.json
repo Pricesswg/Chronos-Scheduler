@@ -5,13 +5,17 @@
   "type": "module",
   "scripts": {
     "build": "rollup -c",
-    "watch": "rollup -c -w"
+    "watch": "rollup -c -w",
+    "test": "npm run test:i18n && npm run test:layout",
+    "test:i18n": "node scripts/check-i18n.mjs",
+    "test:layout": "playwright test"
   },
   "dependencies": {
     "leaflet": "^1.9.4",
     "lit": "^3.1.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@rollup/plugin-commonjs": "^29.0.3",
     "@rollup/plugin-node-resolve": "^15.2.0",
     "@rollup/plugin-terser": "^1.0.0",

@@ -989,7 +989,7 @@ To drive Chronos from automations or scripts:
 | Service | What it does |
 |---|---|
 | `chronos.schedule_toggle` | Enables or disables a schedule, same as the switch entity. Target by `name` (case-insensitive, must be unique among your schedules) or by `schedule_id`. |
-| `chronos.fire_block` | Fires the currently active block of a schedule immediately, bypassing timing and weather rules. Useful for testing. |
+| `chronos.fire_block` | Fires the currently active block of a schedule immediately, bypassing weather rules. Useful for testing. It does not bypass the schedule itself: a disabled schedule, or one not scheduled today, answers with the reason instead of firing. |
 | `chronos.reload` | Reloads the Chronos configuration from storage. |
 
 Example, pausing irrigation while a vacation flag is on:

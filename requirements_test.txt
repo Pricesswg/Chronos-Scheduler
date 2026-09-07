@@ -1,0 +1,2 @@
+# Pins a matching Home Assistant core, pytest and the hass fixtures.
+pytest-homeassistant-custom-component

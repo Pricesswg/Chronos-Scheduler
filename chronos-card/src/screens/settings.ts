@@ -323,7 +323,7 @@ export class ChronosSettingsScreen extends LitElement {
           )}
 
           <div>
-            <div class="row" style="justify-content:space-between;align-items:flex-end;margin-bottom:8px">
+            <div class="row" style="justify-content:space-between;align-items:flex-end;margin-bottom:8px;flex-wrap:wrap;row-gap:8px">
               <div>
                 <div class="fw-600" style="font-size:13.5px">${t("settings.colors.preset.title")}</div>
                 <div class="text-xs text-mute">${t("settings.colors.preset.desc")}</div>
@@ -532,12 +532,12 @@ export class ChronosSettingsScreen extends LitElement {
   ) {
     return html`
       <div>
-        <div class="row" style="justify-content:space-between;align-items:flex-end;margin-bottom:8px">
+        <div class="row" style="justify-content:space-between;align-items:flex-end;margin-bottom:8px;flex-wrap:wrap;row-gap:8px">
           <div>
             <div class="fw-600" style="font-size:13.5px">${title}</div>
             <div class="text-xs text-mute">${desc}</div>
           </div>
-          <div class="row" style="gap:6px">
+          <div class="row" style="gap:6px;flex-wrap:wrap">
             <button class="btn btn--sm" @click=${() => this._addStop(stops, settingsKey)}>
               ${icon("plus", 12)} ${t("settings.colors.add_stop")}
             </button>

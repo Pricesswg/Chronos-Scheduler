@@ -380,7 +380,7 @@ You can support the development of this scheduler by giving a small donation her
 | Service                   | Description                                                              |
 |---------------------------|--------------------------------------------------------------------------|
 | `chronos.reload`          | Reload Chronos configuration from storage                                |
-| `chronos.fire_block`      | Fire the currently active block of a schedule (bypass timing and rules)  |
+| `chronos.fire_block`      | Fire the currently active block of a schedule, bypassing weather rules. A disabled schedule, or one not scheduled today, is refused with the reason |
 | `chronos.schedule_toggle` | Enable or disable a schedule from HA automations/scripts. Target by `schedule_id` or by `name` (case-insensitive, must be unique). The automation-friendly equivalent of the card's toggle, and of the per-schedule switch entity below |
 
 Example: disable the irrigation schedule when the vacation input_boolean turns on:
@@ -418,7 +418,15 @@ Source layout:
 ```
 custom_components/chronos/    # Python integration
 ├── __init__.py               # Entry, WS commands, frontend card auto-registration
-├── scheduler.py              # 1-min tick, weather rule evaluator, action dispatcher
+├── scheduler.py              # Core: lifecycle, the minute tick, effective blocks, status
+├── gate.py                   # schedule_is_live: the one check every acting path goes through
+├── dispatch.py               # Block → service calls, end-of-block actions, auto-off
+├── rules.py, weather.py      # Rule evaluation and effects; the variables rules read
+├── recalls.py                # Offline recall of lost actions
+├── irrigation.py             # Timed and sequential programs, restart recovery
+├── presence.py, timing.py    # Presence simulation; per-day deterministic randomness
+├── ondemand.py               # Scenes and on-demand blocks
+├── expressions.py, pricing.py, events.py   # Rule grammar, price series, history and events
 ├── store.py                  # Persistence via HA Store API
 ├── config_flow.py            # Setup UI
 ├── const.py                  # Device types, actions, weather attributes
@@ -426,11 +434,12 @@ custom_components/chronos/    # Python integration
 └── www/chronos-card.js       # Frontend bundle (committed)
 
 chronos-card/                 # TypeScript / Lit sources
-└── src/
-    ├── chronos-card.ts       # Main custom element
-    ├── timeline.ts           # Linear / radial / list timeline
-    ├── i18n.ts               # IT / EN / FR / DE strings
-    └── screens/              # 9 screens
+├── src/
+│   ├── chronos-card.ts       # Main custom element
+│   ├── timeline.ts           # Linear / radial / list timeline
+│   ├── i18n.ts, i18n/        # IT / EN / FR / DE inline, ES / PT / NL / PL overlays
+│   └── screens/              # One element per screen
+└── tests/                    # Layout probe (Playwright) and its fake backend
 ```
 
 To rebuild the frontend bundle:
@@ -440,6 +449,30 @@ cd chronos-card
 npm install
 npm run build
 ```
+
+### Tests
+
+Backend tests run against a real Home Assistant core; the test requirements pin a matching version:
+
+```sh
+pip install -r requirements_test.txt
+pytest
+```
+
+They drive the scheduler tick by tick with frozen time and fake services, so a block start, an end-of-block action, an offline recall, a presence-simulation evening or a disabled schedule are asserted on the service calls Chronos actually makes, context included.
+
+Frontend tests check translation coverage and run a layout probe: the real card with a fake backend is rendered on every screen at 1200, 360 and 320 px, also with the system font scaled to 130 %, and any horizontal overflow or page error fails the test. Rendering needs Chromium once:
+
+```sh
+cd chronos-card
+npm run build
+npx playwright install chromium
+npm test
+```
+
+The probe's fake backend answers `chronos/actions`, `chronos/weather/attributes` and `chronos/settings/get` from `tests/fixtures/backend.json`, generated from `const.py` by `python chronos-card/tests/fixtures/build.py`; regenerate it after changing those constants.
+
+Both suites run in CI on every push (`.github/workflows/validate.yml`), next to the HACS and hassfest validations.
 
 Releases are produced via `scripts/release.sh <version> "<release notes>"` which bumps versions in `const.py`, `manifest.json`, and `chronos-card/src/version.ts`, rebuilds, commits, tags, pushes and creates the GitHub release.
 
