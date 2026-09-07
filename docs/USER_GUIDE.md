@@ -743,6 +743,8 @@ If an override is empty, Chronos uses the main weather entity for that attribute
 
 This card controls the Live status screen extras.
 
+**Map source** picks where the background tiles of the Live map come from. Esri's gray canvas is the default: no API key, a light and a dark variant, and a quiet look that leaves the radar readable. CARTO is still available for whoever prefers it, with the watermark it stamps on keyless tiles since September 2026. OpenTopoMap shows terrain. **Custom XYZ template** accepts any https address with `{z}`, `{x}` and `{y}`: your own tile server, or a provider you have a key for, with the key in the address. Sources without a dark variant are darkened with a filter in dark mode. If a source stops answering, the map falls back to Esri on its own and tells you under the map.
+
 **Animated weather background** animates the weather hero with the current condition: sun glow, drifting clouds, fog, randomized rain, storm with lightning, snow. The effects are lightweight CSS behind the text and are disabled automatically when the operating system asks for reduced motion. Turn this off if you prefer a fully static screen.
 
 **Show weather map** turns the interactive map on or off. The map downloads CARTO basemap tiles and RainViewer radar frames from the internet at view time: turn it off if your installation must stay fully offline. Everything else on the Live status screen keeps working without external requests.

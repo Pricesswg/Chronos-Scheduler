@@ -50,6 +50,7 @@ export async function makeHass({ settings: settingsOverride = {} } = {}) {
     "sun.sun": st("above_horizon", { elevation: 38.2, azimuth: 195, rising: false, next_rising: iso(6), next_setting: iso(19), next_dawn: iso(5), next_dusk: iso(20) }),
     "sensor.temperatura_esterna": st("23.8", { friendly_name: "Temperatura esterna", unit_of_measurement: "°C", device_class: "temperature" }),
     "sensor.umidita_esterna": st("58", { friendly_name: "Umidità esterna", unit_of_measurement: "%", device_class: "humidity" }),
+    "zone.home": st("0", { friendly_name: "Casa", latitude: 45.46, longitude: 9.19, radius: 100 }),
     "binary_sensor.workday_sensor": st("on", { friendly_name: "Giorno lavorativo" }),
     "calendar.ferie": st("off", { friendly_name: "Ferie" }),
     "person.alessandro": st("home", { friendly_name: "Alessandro" }),

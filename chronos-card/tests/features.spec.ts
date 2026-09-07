@@ -98,3 +98,24 @@ test("the legacy navigation inside the panel offers the HA menu on a phone", asy
   await btn.click();
   expect(await page.evaluate(() => (window as any).__menu)).toBe(1);
 });
+
+test("the map source is selectable and a custom template gets its own field", async ({ page }) => {
+  await page.setViewportSize({ width: 1200, height: 900 });
+  await page.goto("/");
+  await page.waitForFunction(() => typeof (window as any).__mount === "function");
+  const m = await page.evaluate(() => (window as any).__mount({ host: "card", settings: { live_map: true } }));
+  expect(m.error).toBe("");
+  await page.evaluate(() => (window as any).__open("settings"));
+  const select = page.locator('chronos-settings-screen select[data-role="map-source"]');
+  await expect(select).toHaveCount(1);
+  await expect(select.locator("option")).toHaveCount(4);
+  await expect(select).toHaveValue("esri");
+  await select.selectOption("custom");
+  const url = page.locator('chronos-settings-screen input[data-role="map-custom-url"]');
+  await expect(url).toHaveCount(1);
+  await url.fill("https://tiles.example.org/{z}/{x}/{y}.png");
+  await url.press("Tab");
+  const log = await page.evaluate(() => (window as any).__wsLog.filter((x) => x.type === "chronos/settings/update").map((x) => x.patch));
+  expect(log[0]).toEqual({ map_source: "custom" });
+  expect(log[log.length - 1]).toEqual({ map_custom_url: "https://tiles.example.org/{z}/{x}/{y}.png" });
+});

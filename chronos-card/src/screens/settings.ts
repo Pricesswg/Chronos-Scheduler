@@ -128,6 +128,23 @@ export class ChronosSettingsScreen extends LitElement {
           </div>
           ${(s.live_map ?? true) ? html`
             <div class="field" style="border-top:1px solid var(--border-soft);padding-top:12px">
+              <label class="field__label">${t("settings.live.source.title")}</label>
+              <select class="select" data-role="map-source"
+                @change=${(e: Event) => this._updateSetting("map_source", (e.target as HTMLSelectElement).value)}>
+                ${(["esri", "carto", "topo", "custom"] as const).map((v) => html`
+                  <option value="${v}" ?selected=${(s.map_source || "esri") === v}>${t("settings.live.source." + v)}</option>
+                `)}
+              </select>
+              <span class="field__hint">${t("settings.live.source.desc")}</span>
+              ${s.map_source === "custom" ? html`
+                <input class="input mono" type="text" spellcheck="false" autocomplete="off" data-role="map-custom-url" style="margin-top:8px"
+                  .value=${s.map_custom_url || ""}
+                  placeholder="https://tiles.example.org/{z}/{x}/{y}.png"
+                  @change=${(e: Event) => this._updateSetting("map_custom_url", (e.target as HTMLInputElement).value.trim())}/>
+                <span class="field__hint">${t("settings.live.source.custom_hint")}</span>
+              ` : nothing}
+            </div>
+            <div class="field" style="border-top:1px solid var(--border-soft);padding-top:12px">
               <label class="field__label">${t("settings.live.owm.title")}</label>
               <input class="input mono" type="text" spellcheck="false" autocomplete="off"
                 .value=${s.owm_api_key || ""}

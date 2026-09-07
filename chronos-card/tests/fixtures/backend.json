@@ -760,6 +760,8 @@
   "price_entity": "",
   "default_block_trigger": "start",
   "nav_style": "top",
-  "confirm_disable": true
+  "confirm_disable": true,
+  "map_source": "esri",
+  "map_custom_url": ""
  }
 }

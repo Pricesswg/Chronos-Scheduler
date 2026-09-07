@@ -20,17 +20,67 @@ const OWM_LAYERS = [
   { id: "pressure_new", key: "pressure" },
 ] as const;
 
-/** Base map: CARTO's free basemaps (OpenStreetMap data), the same
- * provider Home Assistant's own map card uses. Never point a
- * distributed app at tile.openstreetmap.org: the OSM tile policy
- * forbids it and their server answers offending clients (WebViews,
- * app user agents) with "Access blocked" text tiles. CARTO also has a
- * native dark style, so no CSS invert hack is needed. {r} serves @2x
- * tiles on retina screens automatically. */
-const CARTO_LIGHT = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
-const CARTO_DARK = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
-const BASE_ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a> &middot; <a href="https://www.rainviewer.com/">RainViewer</a>';
+/** Base map sources. None needs an API key.
+ *
+ * Esri's gray canvases are the default: a quiet background made for data
+ * overlays, in a light and a dark variant, on legacy tile endpoints Esri
+ * keeps serving without a key. CARTO stays selectable for whoever prefers
+ * its look, but since September 2026 CARTO stamps "API KEY REQUIRED" across
+ * every keyless tile, so it is no longer the default. OpenTopoMap is the
+ * community terrain map. "custom" takes any https XYZ template, for a
+ * self-hosted tile server or a provider the user holds a key for.
+ *
+ * Never point a distributed app at tile.openstreetmap.org: the OSM tile
+ * policy forbids it and their server answers offending clients with
+ * "Access blocked" text tiles. Sources without a dark variant get a CSS
+ * filter stack in dark mode instead. */
+interface BaseSource {
+  light: string;
+  dark?: string;
+  subdomains?: string;
+  maxZoom: number;
+  attribution: string;
+}
+const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services";
+const BASE_SOURCES: Record<string, BaseSource> = {
+  esri: {
+    light: `${ESRI}/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}`,
+    dark: `${ESRI}/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}`,
+    maxZoom: 16,
+    attribution: 'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors',
+  },
+  carto: {
+    light: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+    dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    subdomains: "abcd",
+    maxZoom: 18,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  },
+  topo: {
+    light: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+    subdomains: "abc",
+    maxZoom: 15,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM &middot; &copy; <a href="https://opentopomap.org/">OpenTopoMap</a> (CC-BY-SA)',
+  },
+};
+const DEFAULT_SOURCE = "esri";
+const RADAR_ATTRIBUTION = ' &middot; <a href="https://www.rainviewer.com/">RainViewer</a>';
+
+/** A custom XYZ template is accepted only when it is https, carries the
+ * {z}/{x}/{y} placeholders and has no characters that could break out of
+ * the URL, the same guard GCI Scope applies to shared session links. */
+export function customTileTemplate(url: string): string | null {
+  const src = (url || "").trim();
+  if (!src || src.length > 512 || !src.startsWith("https://")) return null;
+  if (!src.includes("{z}") || !src.includes("{x}") || !src.includes("{y}")) return null;
+  if (/[\s<>"'`]/.test(src)) return null;
+  try {
+    new URL(src.replace(/\{[sxyzr]\}/g, "0"));
+  } catch {
+    return null;
+  }
+  return src;
+}
 
 /** Interactive weather map for the Live screen: OpenStreetMap base tiles
  * (dark-filtered when the card theme is dark), RainViewer precipitation
@@ -47,6 +97,8 @@ export class ChronosWeatherMap extends LitElement {
   @property({ type: Number }) lon = 0;
   @property() owmKey = "";
   @property({ type: Boolean }) dark = false;
+  @property() source = DEFAULT_SOURCE;
+  @property() customUrl = "";
 
   @state() private _frames: RadarFrame[] = [];
   @state() private _frameIdx = 0;
@@ -55,6 +107,8 @@ export class ChronosWeatherMap extends LitElement {
   @state() private _owmLayer = "";
   @state() private _radarError = false;
   @state() private _owmError = false;
+  /** Source the base layer fell back to after its own tiles failed. */
+  @state() private _baseFallback = "";
 
   private _map?: L.Map;
   private _base?: L.TileLayer;
@@ -129,6 +183,9 @@ export class ChronosWeatherMap extends LitElement {
         color: var(--text-muted); font-size: 9.5px;
       }
       .leaflet-control-attribution a { color: var(--text-soft); }
+      /* Sources with no dark variant (OpenTopoMap, custom) in dark mode:
+       * the same kind of filter stack GCI Scope applies to its chart. */
+      .base-tiles--darkened { filter: invert(1) hue-rotate(180deg) brightness(0.82) contrast(0.92) saturate(0.7); }
     `,
   ];
 
@@ -171,6 +228,7 @@ export class ChronosWeatherMap extends LitElement {
       </div>
       ${noKey ? html`<div class="keynote">${icon("info", 12)} ${t("live.map.unlock_hint")}</div>` : nothing}
       ${this._owmError ? html`<div class="keynote keynote--warn">${icon("info", 12)} ${t("live.map.owm_error")}</div>` : nothing}
+        ${this._baseFallback ? html`<div class="wm-note" data-role="base-fallback">${icon("info", 11)} ${t("live.map.base_fallback", { source: this._baseFallback })}</div>` : nothing}
       <div id="map"></div>
     `;
   }
@@ -204,8 +262,9 @@ export class ChronosWeatherMap extends LitElement {
   }
 
   updated(changed: Map<string, unknown>) {
-    if (changed.has("dark") && this._base) {
-      this._base.setUrl(this.dark ? CARTO_DARK : CARTO_LIGHT);
+    if ((changed.has("dark") || changed.has("source") || changed.has("customUrl")) && this._map) {
+      this._baseFallback = "";
+      this._buildBase();
     }
     if ((changed.has("owmKey") || changed.has("dark")) && this._owmLayer) {
       // Key added/removed or theme flipped while an overlay is selected:
@@ -214,6 +273,56 @@ export class ChronosWeatherMap extends LitElement {
       this._owmLayer = "";
       this._setOwm(cur);
     }
+  }
+
+  /** Resolve the configured source to a tile spec, in the right theme. */
+  private _baseSpec(sourceId: string): { url: string; opts: L.TileLayerOptions; filtered: boolean } {
+    if (sourceId === "custom") {
+      const url = customTileTemplate(this.customUrl);
+      if (url) {
+        return {
+          url,
+          opts: { maxZoom: 18, attribution: "" },
+          filtered: this.dark,
+        };
+      }
+      sourceId = DEFAULT_SOURCE;
+    }
+    const src = BASE_SOURCES[sourceId] || BASE_SOURCES[DEFAULT_SOURCE];
+    const url = this.dark && src.dark ? src.dark : src.light;
+    return {
+      url,
+      opts: { maxZoom: src.maxZoom, subdomains: src.subdomains || "abc", attribution: src.attribution + RADAR_ATTRIBUTION },
+      filtered: this.dark && !src.dark,
+    };
+  }
+
+  /** (Re)create the base layer for the current source and theme. The first
+   * tile error of a non-default source swaps in the default one, so a dead
+   * custom server or a provider that changed its terms never leaves the
+   * radar floating on a blank map. */
+  private _buildBase(sourceId?: string) {
+    if (!this._map) return;
+    const id = sourceId || this.source || DEFAULT_SOURCE;
+    if (this._base) {
+      this._map.removeLayer(this._base);
+      this._base = undefined;
+    }
+    const spec = this._baseSpec(id);
+    const layer = L.tileLayer(spec.url, {
+      ...spec.opts,
+      className: spec.filtered ? "base-tiles base-tiles--darkened" : "base-tiles",
+    });
+    let failed = false;
+    layer.on("tileerror", () => {
+      if (failed || id === DEFAULT_SOURCE) return;
+      failed = true;
+      this._baseFallback = id;
+      this._buildBase(DEFAULT_SOURCE);
+    });
+    layer.addTo(this._map);
+    layer.bringToBack();
+    this._base = layer;
   }
 
   private _initMap() {
@@ -225,11 +334,7 @@ export class ChronosWeatherMap extends LitElement {
       zoomControl: true,
     });
     this._map.attributionControl.setPrefix(false);
-    this._base = L.tileLayer(this.dark ? CARTO_DARK : CARTO_LIGHT, {
-      maxZoom: 18,
-      subdomains: "abcd",
-      attribution: BASE_ATTRIBUTION,
-    }).addTo(this._map);
+    this._buildBase();
     L.marker([this.lat, this.lon], {
       icon: L.divIcon({ className: "home-dot", iconSize: [14, 14] }),
       interactive: false,

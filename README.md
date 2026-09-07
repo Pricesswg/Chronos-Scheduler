@@ -328,6 +328,8 @@ Useful for debugging "why didn't my schedule fire" or "did the SOC rule trigger 
 
 ## Live screen
 
+The base map comes from Esri's gray canvas tiles by default, light or dark with the theme, with no API key. `Settings → Live screen → Map source` also offers CARTO (which, since September 2026, stamps a watermark on every keyless tile), OpenTopoMap, or a custom XYZ template for a self-hosted tile server or a provider you hold a key for. If the chosen source stops answering, the map falls back to Esri on its own and says so under the map.
+
 The Live screen shows current conditions and running schedules at a glance:
 
 - **Weather hero** with temperature, feels-like, and stat chips (humidity, wind, gust, UV, pressure, rain rate) read from your weather entity.

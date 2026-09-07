@@ -272,6 +272,10 @@ export interface Settings {
    * lightning, snow driven by the weather condition). Default true;
    * prefers-reduced-motion disables it regardless. */
   live_fx?: boolean;
+  /** Base map of the Live screen. */
+  map_source?: "esri" | "carto" | "topo" | "custom";
+  /** XYZ template used when map_source is "custom". */
+  map_custom_url?: string;
   /** Navigation layout: "top" (default) merges sidebar and topbar into a
    * single icon bar; "sidebar" keeps the classic left sidebar. */
   nav_style?: "top" | "sidebar";

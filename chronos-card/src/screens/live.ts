@@ -119,6 +119,9 @@ function fmtClock(d: Date): string {
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+/** Short provider names for the map subtitle; the custom one is labelled by its setting. */
+const MAP_SOURCE_NAMES: Record<string, string> = { esri: "Esri", carto: "CARTO", topo: "OpenTopoMap", custom: "XYZ" };
+
 @customElement("chronos-live")
 export class ChronosLive extends LitElement {
   static styles = chronosStyles;
@@ -207,9 +210,10 @@ export class ChronosLive extends LitElement {
         <!-- Weather map -->
         ${mapEnabled ? html`
           <div class="card">
-            <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("live.map.title")}</h3><p class="card__sub">${t("live.map.subtitle")}</p></div></div>
+            <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("live.map.title")}</h3><p class="card__sub">${t("live.map.subtitle", { source: MAP_SOURCE_NAMES[(settings as any)?.map_source as string] || "Esri" })}</p></div></div>
             <chronos-weather-map .lat=${lat} .lon=${lon}
-              .owmKey=${(settings as any)?.owm_api_key || ""} .dark=${isDark}></chronos-weather-map>
+              .owmKey=${(settings as any)?.owm_api_key || ""} .dark=${isDark}
+              .source=${(settings as any)?.map_source || "esri"} .customUrl=${(settings as any)?.map_custom_url || ""}></chronos-weather-map>
           </div>
         ` : nothing}
 
