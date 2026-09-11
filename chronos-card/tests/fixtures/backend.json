@@ -757,11 +757,14 @@
   "live_map": true,
   "owm_api_key": "",
   "live_fx": true,
+  "map_source": "esri",
+  "map_custom_url": "",
   "price_entity": "",
   "default_block_trigger": "start",
   "nav_style": "top",
   "confirm_disable": true,
-  "map_source": "esri",
-  "map_custom_url": ""
+  "sidebar_panel": true,
+  "mode": "home",
+  "overview_group_by": "group"
  }
 }

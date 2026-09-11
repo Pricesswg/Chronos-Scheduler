@@ -136,6 +136,14 @@ Pausing is not the same as disabling: the schedule stays enabled and comes back 
 
 The same pause is available as a `button` entity per schedule (`<name> skip today`) and as the `chronos.pause` and `chronos.resume` services, for dashboards and automations.
 
+### Groups
+
+A schedule can carry a **group**, set in the editor right under the name: free text, with the groups already in use offered as chips so the names stay consistent. There is no list of groups to maintain, a group exists as long as one schedule uses it.
+
+The overview lists the schedules under one header per group, sorted by name, with the schedules without a group last. Each header shows how many schedules of the group are active and collapses with a tap; the collapsed state is remembered in the browser. As long as everything is in a single group, or nothing has a group, the overview stays flat, so nothing changes until you decide to use groups.
+
+`Settings > Appearance > Group the overview by` switches between no grouping, your groups, and the device type, which gives a grouped overview (irrigation, thermostats, lights) with no setup at all. The week view offers your groups as filter chips above the schedule ones.
+
 ### Modes
 
 Chronos has three modes, **Home**, **Away** and **Holiday**, chosen with the selector at the top of the overview. By default a schedule runs in every mode. In the editor, under Repeat, **Runs in modes** lets a schedule declare the modes it belongs to: deselect Home on a presence-simulation schedule and it only plays its evenings when nobody is there; keep the irrigation in every mode and limit the heating to Home and Holiday. Schedules idle in the current mode show *Idle in …* on their card.

@@ -6,6 +6,7 @@ import { KIND_COLORS } from "../actions";
 import { getDays } from "../utils";
 import { t } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
+import { knownGroups } from "../grouping";
 import "../timeline";
 
 @customElement("chronos-week")
@@ -31,6 +32,7 @@ export class ChronosWeek extends LitElement {
     const todayIdx = new Date().getDay();
     const adjustedToday = todayIdx === 0 ? 6 : todayIdx - 1;
     const days = getDays();
+    const groups = knownGroups(schedules);
 
     return html`
       <div class="col" style="gap:22px">
@@ -52,6 +54,15 @@ export class ChronosWeek extends LitElement {
                 </button>
               </div>
             </div>
+            ${groups.length ? html`
+              <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:8px;align-items:center" data-role="group-filter">
+                <span class="text-xs text-mute">${t("week.filter.groups")}</span>
+                ${groups.map((g) => html`
+                  <button class="chip" data-group="${g}" style="cursor:pointer"
+                    @click=${() => { this._filter = new Set(schedules.filter((s) => (s.group || "").trim() === g).map((s) => s.id)); }}>
+                    ${icon("hash", 11)} ${g}
+                  </button>`)}
+              </div>` : nothing}
             <div class="row" style="gap:6px;flex-wrap:wrap">
               ${schedules.map((s) => {
                 const on = !filterSet || filterSet.has(s.id);

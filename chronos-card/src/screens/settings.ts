@@ -266,6 +266,17 @@ export class ChronosSettingsScreen extends LitElement {
             </label>
           </div>
           <div class="field">
+            <label class="field__label">${t("settings.overview.group_by.title")}</label>
+            <div class="segmented" data-role="group-by">
+              ${(["none", "group", "type"] as const).map((v) => html`
+                <button data-active="${(s.overview_group_by ?? "group") === v}" @click=${() => this._updateSetting("overview_group_by", v)}>
+                  ${t("settings.overview.group_by." + v)}
+                </button>
+              `)}
+            </div>
+            <span class="field__hint">${t("settings.overview.group_by.hint")}</span>
+          </div>
+          <div class="field">
             <label class="field__label">${t("settings.density")}</label>
             <div class="segmented">
               ${(["comfortable", "compact"] as const).map((v) => html`

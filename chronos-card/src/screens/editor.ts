@@ -4,6 +4,7 @@ import { chronosStyles } from "../styles";
 import { icon, deviceIcon } from "../icons";
 import { getActionsForType, getActionDef, actionLabel, actionColor, KIND_COLORS, defaultAction } from "../actions";
 import { fmtHour, getDays, DEVICE_TYPES, computeRepeat, resolveBlockTime } from "../utils";
+import { knownGroups } from "../grouping";
 import { exportSchedule } from "../transfer";
 import { CARD_VERSION } from "../version";
 import { t, actionDefLabel, actionValueLabel, actionExtraLabel, deviceTypeLabel } from "../i18n";
@@ -31,6 +32,24 @@ export class ChronosEditor extends LitElement {
   /** Presence simulation: the block stops being "one state for the whole
    * window" and becomes several activations at times drawn for the day. The
    * user caps how many and how long; the minutes and the device are ours. */
+  /** The overview group (issue #24): free text, with the groups already in
+   * use offered as chips so names stay consistent without a group list. */
+  private _renderGroupField(schedule: any) {
+    const current = (schedule.group || "").trim();
+    const others = knownGroups(this.card._schedules).filter((g) => g !== current);
+    return html`
+      <div class="row" style="gap:6px;margin-top:4px;flex-wrap:wrap;align-items:center" data-role="group">
+        <span class="text-xs text-mute" style="display:inline-flex;align-items:center;gap:4px">${icon("hash", 11)} ${t("editor.group.label")}</span>
+        <input class="input" style="max-width:200px;padding:4px 8px;font-size:12.5px" .value=${schedule.group || ""}
+          placeholder="${t("editor.group.placeholder")}" title="${t("editor.group.hint")}"
+          @input=${(e: InputEvent) => this.card.updateScheduleLocal(schedule.id, { group: (e.target as HTMLInputElement).value })}/>
+        ${others.map((g) => html`
+          <button class="chip" data-group="${g}" style="cursor:pointer" title="${t("editor.group.use", { name: g })}"
+            @click=${() => this.card.updateScheduleLocal(schedule.id, { group: g })}>${g}</button>`)}
+      </div>
+    `;
+  }
+
   /** Modes the schedule runs in. All three selected means no restriction
    * and is stored as an empty list; the last one cannot be switched off. */
   private _renderModes(schedule: any) {
@@ -342,6 +361,7 @@ export class ChronosEditor extends LitElement {
             <input class="input" .value=${schedule.name}
               @input=${(e: InputEvent) => this.card.updateScheduleLocal(schedule.id, { name: (e.target as HTMLInputElement).value })}
               style="font-size:22px;font-weight:700;letter-spacing:-0.02em;border:1px solid transparent;background:transparent;padding:4px 8px;margin-left:-8px;width:100%;max-width:460px"/>
+            ${this._renderGroupField(schedule)}
             <div class="row" style="margin-top:6px;gap:10px;flex-wrap:wrap">
               <span class="chip ${schedule.enabled ? "chip--on" : ""}"><span class="chip__dot"></span>${schedule.enabled ? t("schedule.active") : t("schedule.disabled")}</span>
               ${schedule.enabled && this.card.isPaused(schedule) ? html`<span class="chip chip--paused">${icon("pause", 11)} ${t("pause.badge", { when: this.card.pausedLabel(schedule) })}</span>` : nothing}

@@ -222,6 +222,9 @@ export interface Schedule {
   /** Modes this schedule runs in (home / away / holiday). Unset or empty
    * means every mode. */
   modes?: string[];
+  /** Free-text group for the overview (issue #24). Schedules sharing a
+   * group are listed together under a collapsible header. */
+  group?: string;
 }
 
 export interface Settings {
@@ -283,6 +286,8 @@ export interface Settings {
   sidebar_panel?: boolean;
   /** Current mode: "home" | "away" | "holiday". */
   mode?: string;
+  /** How the overview is laid out: flat, by user group, or by device type. */
+  overview_group_by?: "none" | "group" | "type";
   /** Entity holding electricity prices, used by the price.* rule variables. */
   price_entity?: string;
   /** What a NEWLY created block does. Applied at creation only, so existing

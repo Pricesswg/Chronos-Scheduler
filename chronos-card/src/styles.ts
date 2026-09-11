@@ -963,4 +963,16 @@ export const chronosStyles = css`
   .chip--paused { background: color-mix(in srgb, var(--warn) 14%, transparent); color: var(--warn); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
   .chip--conflict { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); border-color: color-mix(in srgb, var(--danger) 35%, transparent); }
   .chip--idle { background: var(--bg-sunken); color: var(--text-muted); border-style: dashed; }
+
+  /* Overview group headers (issue #24): a full-width button so the whole
+   * line toggles, styled as a section title rather than a control. */
+  .group-head {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    padding: 6px 2px; background: none; border: 0; border-bottom: 1px solid var(--border-soft);
+    color: var(--text); font: inherit; font-weight: 600; font-size: 13.5px;
+    cursor: pointer; text-align: left; border-radius: 0;
+  }
+  .group-head:hover { color: var(--accent); }
+  .group-head[data-collapsed="true"] { color: var(--text-muted); }
+  .group-head__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 `;

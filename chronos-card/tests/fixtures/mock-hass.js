@@ -28,6 +28,10 @@ export async function makeHass({ settings: settingsOverride = {} } = {}) {
   const two = (n) => String(n).padStart(2, "0");
   const localIso = (d) => `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}T${two(d.getHours())}:${two(d.getMinutes())}:00`;
   schedules[1].paused_until = localIso(midnight);
+  // Groups (issue #24): two in "Giardino", one in "Riscaldamento", s2 without.
+  schedules[0].group = "Giardino";
+  schedules[2].group = "Riscaldamento";
+  schedules[3].group = "Giardino";
   // s2 only simulates presence when nobody is home.
   schedules[1].modes = ["away"];
   const live = { mode: "home" };

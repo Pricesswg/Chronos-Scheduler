@@ -1,5 +1,5 @@
 DOMAIN = "chronos"
-VERSION = "1.43.0"
+VERSION = "1.44.0"
 STORAGE_VERSION = 1
 STORAGE_KEY_DEVICES = f"{DOMAIN}.devices"
 STORAGE_KEY_SCHEDULES = f"{DOMAIN}.schedules"
@@ -411,6 +411,8 @@ DEFAULT_SETTINGS = {
     "sidebar_panel": True,
     # Current mode; schedules may restrict themselves to some modes.
     "mode": "home",
+    # Overview layout: "none" | "group" (user-assigned) | "type" (device type).
+    "overview_group_by": "group",
 }
 
 # Auto-off timer for turn_on blocks: device type → switch-off service
