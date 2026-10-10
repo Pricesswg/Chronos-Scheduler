@@ -877,4 +877,6 @@ export const ES_STRINGS: Record<string, string> = {
   "editor.manual_off.label": "Apagar tras un encendido manual",
   "editor.manual_off.hint": "Si alguien enciende a mano uno de estos dispositivos, Chronos lo apaga pasados estos minutos, a cualquier hora, también fuera de los bloques. Los encendidos hechos por Chronos no cuentan: a ellos se aplican el apagado automático del bloque y la acción final. Vacío = desactivado.",
   "editor.auto_off.both_hint": "Están definidos tanto el apagado automático como la acción final: el primero cuenta desde el encendido, la segunda se dispara al final del bloque. Actúa el que llegue antes; el otro encuentra el dispositivo ya apagado.",
+  "settings.safety.conflicts.title": "Avisos de solapamiento",
+  "settings.safety.conflicts.desc": "Avisa en la vista general y en el editor cuando dos programaciones activas controlan el mismo dispositivo a la misma hora, y cuando dos programas de riego pueden regar a la vez. Las programaciones de modos distintos nunca se señalan. Desactívalo si los solapamientos son intencionados.",
 };

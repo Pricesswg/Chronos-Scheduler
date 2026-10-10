@@ -50,18 +50,17 @@ class DispatchMixin:
                 "rule_then": rule.get("then", ""),
                 "action_id": "skip",
             }, context=Context())
-            if self._store.settings.get("notify_rule_triggered"):
-                await self._notify(
-                    f"Regola attivata: {rule.get('if', '')} → {rule.get('then', '')}",
-                    title=f"Chronos · {sched_name}",
-                )
             _LOGGER.info(
                 "Chronos: SKIPPED schedule=%s block=#%d by rule %s",
                 sched_name, block_idx, rule.get("if"),
             )
-            if self._store.settings.get("notify_sched_skipped"):
+            # A skipped block is ONE event, even though two settings describe
+            # it ("rule triggered" and "schedule skipped"): issue #31 saw two
+            # notifications for every skip. Send one when either is on.
+            settings = self._store.settings
+            if settings.get("notify_sched_skipped") or settings.get("notify_rule_triggered"):
                 await self._notify(
-                    f"Block skipped by weather rule: {rule.get('if', '')}",
+                    f"Block skipped by rule: {rule.get('if', '')}",
                     title=f"Chronos · {sched_name}",
                 )
             return

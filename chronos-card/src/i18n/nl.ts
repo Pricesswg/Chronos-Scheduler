@@ -877,4 +877,6 @@ export const NL_STRINGS: Record<string, string> = {
   "editor.manual_off.label": "Uitschakelen na handmatig inschakelen",
   "editor.manual_off.hint": "Als iemand een van deze apparaten handmatig inschakelt, schakelt Chronos het na dit aantal minuten uit, op elk moment van de dag, ook buiten de blokken. Inschakelingen door Chronos tellen niet mee: daarvoor gelden de automatische uitschakeling van het blok en de eindactie. Leeg = uit.",
   "editor.auto_off.both_hint": "Zowel de automatische uitschakeling als de eindactie zijn ingesteld: de eerste telt vanaf het inschakelen, de tweede vuurt aan het einde van het blok. Wat eerst komt handelt; de ander treft het apparaat al uit aan.",
+  "settings.safety.conflicts.title": "Overlapwaarschuwingen",
+  "settings.safety.conflicts.desc": "Meldt in het overzicht en de editor wanneer twee actieve schema's hetzelfde apparaat op dezelfde tijd aansturen, en wanneer twee irrigatieprogramma's tegelijk kunnen draaien. Schema's met verschillende modi worden nooit gemeld. Zet uit als de overlap bedoeld is.",
 };

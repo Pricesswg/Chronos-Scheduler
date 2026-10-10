@@ -408,6 +408,9 @@ DEFAULT_SETTINGS = {
     # Frontend-only guard: the switch entities and the schedule_toggle
     # service bypass it by design, so automations keep working unattended.
     "confirm_disable": True,
+    # Warn when two schedules drive the same device at the same time, and
+    # when two irrigation programs can water together. Issue #30.
+    "conflict_warnings": True,
     "sidebar_panel": True,
     # Current mode; schedules may restrict themselves to some modes.
     "mode": "home",

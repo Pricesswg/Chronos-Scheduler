@@ -368,6 +368,8 @@ IF temperature > 28 AND humidity > 70
 THEN extend the fan block
 ```
 
+Two schedules restricted to different modes are never flagged: a Home one and an Away one are alternatives, not rivals, so they can never both be live. Rules are deliberately not taken into account, because a skip rule may or may not fire at the time and cannot rule a conflict out. If the overlaps you are left with are intentional, **Settings > Safety > Overlap warnings** switches off both this box and the irrigation overlap warning, in the editor and in the overview.
+
 ### Rules are independent and shared (since 1.17)
 
 A rule is its own object, not a property of a single schedule. Each rule has a list of **targets**, where every target is a schedule plus the block it applies to. This means:

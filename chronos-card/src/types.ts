@@ -293,6 +293,8 @@ export interface Settings {
   overview_group_by?: "none" | "group" | "type";
   /** Group name -> hex colour for its tag, like Home Assistant labels. */
   group_colors?: Record<string, string>;
+  /** Show the overlap warnings in the editor and the overview. */
+  conflict_warnings?: boolean;
   /** Entity holding electricity prices, used by the price.* rule variables. */
   price_entity?: string;
   /** What a NEWLY created block does. Applied at creation only, so existing

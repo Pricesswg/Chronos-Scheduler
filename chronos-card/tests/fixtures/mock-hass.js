@@ -23,6 +23,11 @@ export async function makeHass({ settings: settingsOverride = {} } = {}) {
   // s4 shares d1 with s1 and overlaps its block: a device conflict.
   schedules.push({ id: "s4", name: "Irrigazione zona 1 bis", device_type: "plug", device_ids: ["d1"], enabled: true, days: [1, 1, 1, 1, 1, 1, 1], timeline_variant: "linear",
     blocks: [{ start: 6.25, end: 7, action: { id: "turn_on", trigger: "both", end_action: { id: "turn_off" } } }] });
+  // s2 is Away-only on light.sala; s5 drives the same light at the same
+  // hours but only when someone is home. The two can never both be live, so
+  // they are not in conflict (issue #29).
+  schedules.push({ id: "s5", name: "Luci sera quando sono in casa", device_type: "light", device_ids: ["d2"], enabled: true, days: [1, 1, 1, 1, 1, 1, 1], timeline_variant: "linear",
+    modes: ["home"], blocks: [{ start: 19, end: 21, action: { id: "turn_on", value: 40 } }] });
   // s2 starts paused until tomorrow midnight.
   const midnight = new Date(); midnight.setDate(midnight.getDate() + 1); midnight.setHours(0, 0, 0, 0);
   const two = (n) => String(n).padStart(2, "0");

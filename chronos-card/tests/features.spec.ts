@@ -127,16 +127,16 @@ test("the overview groups schedules under collapsible headers and remembers the 
   const heads = page.locator("chronos-overview .group-head");
   await expect(heads).toHaveText([/Giardino/, /Riscaldamento/, /Senza gruppo/]);
   await expect(heads.nth(0).locator(".tag")).toHaveText("2/2");
-  await expect(page.locator("chronos-overview .sched-card")).toHaveCount(4);
+  await expect(page.locator("chronos-overview .sched-card")).toHaveCount(5);
   await heads.nth(0).click();
   await expect(heads.nth(0)).toHaveAttribute("data-collapsed", "true");
-  await expect(page.locator("chronos-overview .sched-card")).toHaveCount(2);
+  await expect(page.locator("chronos-overview .sched-card")).toHaveCount(3);
   // A fresh mount on the same origin reads the collapsed state back.
   await page.evaluate(() => (window as any).__mount({ host: "card" }));
   await page.evaluate(() => (window as any).__open("overview"));
   await expect(page.locator("chronos-overview .group-head").nth(0)).toHaveAttribute("data-collapsed", "true");
   await page.locator("chronos-overview .group-head").nth(0).click();
-  await expect(page.locator("chronos-overview .sched-card")).toHaveCount(4);
+  await expect(page.locator("chronos-overview .sched-card")).toHaveCount(5);
 });
 
 test("grouping by device type and flat layout follow the setting", async ({ page }) => {
@@ -146,10 +146,11 @@ test("grouping by device type and flat layout follow the setting", async ({ page
   await page.evaluate(() => (window as any).__mount({ host: "card", settings: { overview_group_by: "type" } }));
   await page.evaluate(() => (window as any).__open("overview"));
   await expect(page.locator("chronos-overview .group-head")).toHaveText([/Luce/, /Presa/, /Termostato/]);
+  await expect(page.locator('chronos-overview [data-key="light"] .sched-card')).toHaveCount(2);
   await page.evaluate(() => (window as any).__mount({ host: "card", settings: { overview_group_by: "none" } }));
   await page.evaluate(() => (window as any).__open("overview"));
   await expect(page.locator("chronos-overview .group-head")).toHaveCount(0);
-  await expect(page.locator("chronos-overview .sched-card")).toHaveCount(4);
+  await expect(page.locator("chronos-overview .sched-card")).toHaveCount(5);
 });
 
 test("the week view filters by group and the editor offers the groups in use", async ({ page }) => {
@@ -206,4 +207,36 @@ test("rules are no longer called weather rules, and the safety-off field is offe
   await field.fill("30");
   await field.dispatchEvent("change");
   expect(await page.evaluate(() => (window as any).__card._schedules.find((s) => s.id === "s1").manual_off_min)).toBe(30);
+});
+
+test("schedules of different modes are not in conflict, and the warnings can be switched off", async ({ page }) => {
+  await mount(page, "editor");
+  // s2 (Away only) and s5 (Home only) drive the same light at the same
+  // hours: no conflict, in either direction.
+  await page.evaluate(() => (window as any).__card.selectSchedule("s5", "editor"));
+  await expect(page.locator("chronos-editor [data-conflicts]")).toHaveCount(0);
+  await page.evaluate(() => (window as any).__card.selectSchedule("s2", "editor"));
+  await expect(page.locator("chronos-editor [data-conflicts]")).toHaveCount(0);
+
+  // The check still fires when the modes do overlap: s1 and s4 both run in
+  // every mode on the same valve.
+  await page.evaluate(() => (window as any).__card.selectSchedule("s1", "editor"));
+  await expect(page.locator("chronos-editor [data-conflicts]")).toHaveAttribute("data-conflicts", "1");
+
+  // The setting hides what is left, in the editor and in the overview.
+  await page.evaluate(() => (window as any).__mount({ host: "card", settings: { conflict_warnings: false } }));
+  await page.evaluate(() => (window as any).__open("overview"));
+  await expect(page.locator("chronos-overview .chip--conflict")).toHaveCount(0);
+  await page.evaluate(() => (window as any).__card.selectSchedule("s1", "editor"));
+  await expect(page.locator("chronos-editor [data-conflicts]")).toHaveCount(0);
+});
+
+test("the overlap warnings toggle lives in Settings", async ({ page }) => {
+  await mount(page, "settings");
+  const row = page.locator('chronos-settings-screen [data-role="conflict-warnings"]');
+  await expect(row).toContainText("Avvisi di sovrapposizione");
+  await expect(row.locator("input")).toBeChecked();
+  await row.locator("label.switch").click();
+  const last = await page.evaluate(() => (window as any).__wsLog.filter((m) => m.type === "chronos/settings/update").pop());
+  expect(last.patch).toEqual({ conflict_warnings: false });
 });

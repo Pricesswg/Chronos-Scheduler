@@ -24,6 +24,7 @@ import type {
 import { setActionsMap, setColorSettings } from "./actions";
 import { setLang, t } from "./i18n";
 import { CARD_VERSION } from "./version";
+import { modesOverlap } from "./modes";
 import {
   fetchDevices,
   fetchSchedules,
@@ -469,6 +470,7 @@ export class ChronosCard extends LitElement {
    * pair description per clash. */
   irrigationOverlapWarnings(sched: Schedule): string[] {
     if (sched.device_type !== "irrigation" || !sched.enabled) return [];
+    if (!(this._settings?.conflict_warnings ?? true)) return [];
     const spanOf = (s: Schedule) =>
       this.runSpansForSchedule(s).map((sp) => ({
         from: resolveBlockTime(s.blocks[sp.idx], "start"),
@@ -501,9 +503,14 @@ export class ChronosCard extends LitElement {
    * one of its blocks is active: same weekday, overlapping date ranges,
    * overlapping block times and a device both blocks reach. The last
    * command sent wins, and from outside the device looks like it acts on
-   * its own, which is the most common support question. */
+   * its own, which is the most common support question.
+   *
+   * Schedules whose modes can never both be live are not in conflict
+   * (issue #29): a Home schedule and an Away one are alternatives, not
+   * rivals. Rules are deliberately NOT considered: a skip rule may or may
+   * not fire at the time, so it cannot rule a conflict out. */
   deviceConflictWarnings(sched: Schedule): string[] {
-    if (!sched.enabled) return [];
+    if (!sched.enabled || !(this._settings?.conflict_warnings ?? true)) return [];
     const reach = (b: Block, s: Schedule) => {
       const all = s.device_ids || [];
       const sub = (b.device_ids || []).filter((d) => all.includes(d));
@@ -521,6 +528,7 @@ export class ChronosCard extends LitElement {
     for (const other of this._schedules) {
       if (other.id === sched.id || !other.enabled) continue;
       if (!dayOverlap(sched.days, other.days) || !rangesOverlap(sched.date_range, other.date_range)) continue;
+      if (!modesOverlap(sched, other)) continue;
       for (const mine of sched.blocks) {
         const mf = resolveBlockTime(mine, "start"), mt = resolveBlockTime(mine, "end");
         for (const theirs of other.blocks) {

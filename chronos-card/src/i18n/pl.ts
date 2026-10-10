@@ -877,4 +877,6 @@ export const PL_STRINGS: Record<string, string> = {
   "editor.manual_off.label": "Wyłącz po ręcznym włączeniu",
   "editor.manual_off.hint": "Jeśli ktoś ręcznie włączy jedno z tych urządzeń, Chronos wyłączy je po tylu minutach, o każdej porze, także poza blokami. Włączenia wykonane przez Chronos się nie liczą: dla nich obowiązują automatyczne wyłączenie bloku i akcja końcowa. Puste = wyłączone.",
   "editor.auto_off.both_hint": "Ustawiono zarówno automatyczne wyłączenie, jak i akcję końcową: pierwsze liczy od włączenia, druga uruchamia się na koniec bloku. Działa to, co nastąpi wcześniej; drugie zastanie urządzenie już wyłączone.",
+  "settings.safety.conflicts.title": "Ostrzeżenia o nakładaniu",
+  "settings.safety.conflicts.desc": "Sygnalizuje w przeglądzie i edytorze, gdy dwa aktywne harmonogramy sterują tym samym urządzeniem w tych samych godzinach i gdy dwa programy nawadniania mogą podlewać jednocześnie. Harmonogramy w różnych trybach nigdy nie są sygnalizowane. Wyłącz, jeśli nakładanie jest zamierzone.",
 };

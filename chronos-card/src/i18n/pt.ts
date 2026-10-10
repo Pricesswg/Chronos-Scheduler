@@ -877,4 +877,6 @@ export const PT_STRINGS: Record<string, string> = {
   "editor.manual_off.label": "Desligar após uma ligação manual",
   "editor.manual_off.hint": "Se alguém ligar à mão um destes dispositivos, o Chronos desliga-o passados estes minutos, a qualquer hora, mesmo fora dos blocos. As ligações feitas pelo Chronos não contam: a elas aplicam-se o desligar automático do bloco e a ação de fim. Vazio = desativado.",
   "editor.auto_off.both_hint": "Estão definidos tanto o desligar automático como a ação de fim: o primeiro conta desde a ligação, a segunda dispara no fim do bloco. Age o que chegar primeiro; o outro encontra o dispositivo já desligado.",
+  "settings.safety.conflicts.title": "Avisos de sobreposição",
+  "settings.safety.conflicts.desc": "Assinala na visão geral e no editor quando dois agendamentos ativos comandam o mesmo dispositivo à mesma hora, e quando dois programas de rega podem regar ao mesmo tempo. Agendamentos de modos diferentes nunca são assinalados. Desliga se as sobreposições forem intencionais.",
 };
