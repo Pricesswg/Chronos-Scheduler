@@ -12,6 +12,13 @@ on:
     - cron: "0 4 * * *"
   workflow_dispatch:
 
+# Every job here only reads the checkout: the tests run locally in the
+# runner, and hacs/action and hassfest validate the files they find. None of
+# them writes to the repository, so the token gets read-only access instead
+# of the write-capable default (CodeQL actions/missing-workflow-permissions).
+permissions:
+  contents: read
+
 jobs:
   hacs:
     name: HACS Action
