@@ -287,8 +287,11 @@ export interface Settings {
   nav_style?: "top" | "sidebar";
   /** Show the Chronos entry in the Home Assistant sidebar (default on). */
   sidebar_panel?: boolean;
-  /** Current mode: "home" | "away" | "holiday". */
+  /** Current mode id. */
   mode?: string;
+  /** User-defined modes (discussion #28). The id never changes; an empty
+   * name on a built-in id shows the translated default. */
+  modes?: { id: string; name: string }[];
   /** How the overview is laid out: flat, by user group, or by device type. */
   overview_group_by?: "none" | "group" | "type";
   /** Group name -> hex colour for its tag, like Home Assistant labels. */

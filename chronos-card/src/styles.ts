@@ -349,6 +349,11 @@ export const chronosStyles = css`
   .btn--primary:hover { background: color-mix(in srgb, var(--accent) 90%, black); }
   .btn--ghost { border-color: transparent; background: transparent; color: var(--text-soft); }
   .btn--ghost:hover { background: var(--bg-sunken); color: var(--text); }
+  /* Disabled buttons must read as disabled: a delete that is refused (a mode
+   * in use, the current mode) looked exactly like one that works. */
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn:disabled:hover { background: transparent; color: inherit; }
+  .btn--primary:disabled:hover { background: var(--accent); color: white; }
   .btn--sm { padding: 5px 10px; font-size: 12px; }
   .btn--icon { padding: 8px; }
   .btn svg { width: 16px; height: 16px; }

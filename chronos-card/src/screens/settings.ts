@@ -1,9 +1,10 @@
 import { LitElement, html, nothing } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import { chronosStyles } from "../styles";
 import { icon } from "../icons";
 import { t, attrLabel } from "../i18n";
 import { langFlag, haLogo } from "../flags";
+import { MAX_MODES, modeKey, modeLabel, modeList, slugifyMode, type ModeDef } from "../modes";
 import {
   DEFAULT_TEMP_STOPS_CLIMATE,
   DEFAULT_TEMP_STOPS_BOILER,
@@ -26,6 +27,8 @@ export class ChronosSettingsScreen extends LitElement {
   static styles = chronosStyles;
 
   @property({ attribute: false, hasChanged: () => true }) card!: ChronosCard;
+  @state() private _newMode = "";
+  @state() private _modesError = "";
   @property({ type: Number }) nowHour = 0;
 
   render() {
@@ -223,6 +226,8 @@ export class ChronosSettingsScreen extends LitElement {
             `)}
           </div>
         </div>
+
+        ${this._renderModes(s)}
 
         <div class="card">
           <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("settings.safety.title")}</h3><p class="card__sub">${t("settings.safety.subtitle")}</p></div></div>
@@ -828,4 +833,87 @@ export class ChronosSettingsScreen extends LitElement {
   private _updateSetting(key: string, value: any) {
     this.card.doUpdateSettings({ [key]: value } as any);
   }
+
+  /** The user-defined modes (discussion #28): rename, add, delete. A mode
+   * that is current or in use cannot be deleted; the backend enforces the
+   * same rule and its message is shown if it refuses anyway. */
+  private _renderModes(s: any) {
+    const modes = modeList(s);
+    const current = s.mode || "home";
+    const used = (id: string) => this.card._schedules.filter((x) => (x.modes || []).includes(id)).length;
+    return html`
+      <div class="card" data-role="modes-settings">
+        <div class="card__header"><div style="flex:1"><h3 class="card__title">${t("settings.modes.title")}</h3><p class="card__sub">${t("settings.modes.subtitle")}</p></div></div>
+        <div class="col" style="gap:8px">
+          ${modes.map((m) => {
+            const inUse = used(m.id);
+            const isCurrent = m.id === current;
+            const blocked = isCurrent || inUse > 0 || modes.length === 1;
+            return html`
+              <div class="row" style="gap:8px;align-items:center;flex-wrap:nowrap" data-mode-row="${m.id}">
+                <input class="input" style="flex:1;min-width:0" .value=${m.name}
+                  placeholder="${modeLabel({ id: m.id, name: "" })}"
+                  @change=${(e: Event) => this._renameMode(m.id, (e.target as HTMLInputElement).value)}/>
+                <span class="tag mono">${m.id}</span>
+                <button class="btn btn--icon btn--ghost btn--sm" data-action="delete-mode" ?disabled=${blocked}
+                  title="${isCurrent ? t("settings.modes.current") : inUse ? t("settings.modes.in_use", { n: inUse }) : t("settings.modes.delete")}"
+                  @click=${() => this._saveModes(modes.filter((x) => x.id !== m.id))}>
+                  ${icon("trash", 12)}
+                </button>
+              </div>
+            `;
+          })}
+          <div class="row" style="gap:8px;flex-wrap:nowrap">
+            <input class="input" style="flex:1;min-width:0" data-role="new-mode" .value=${this._newMode}
+              placeholder="${t("settings.modes.add_placeholder")}"
+              @input=${(e: Event) => { this._newMode = (e.target as HTMLInputElement).value; }}
+              @keydown=${(e: KeyboardEvent) => { if (e.key === "Enter") this._addMode(modes); }}/>
+            <button class="btn btn--sm btn--primary" data-action="add-mode"
+              ?disabled=${!this._newMode.trim() || modes.length >= MAX_MODES}
+              @click=${() => this._addMode(modes)}>
+              ${icon("plus", 12)} ${t("settings.modes.add")}
+            </button>
+          </div>
+          ${this._modesError ? html`<span class="field__hint" data-role="modes-error" style="color:var(--danger)">${this._modesError}</span>` : nothing}
+          <span class="field__hint">${t("settings.modes.hint", { n: MAX_MODES })}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  private _clashes(modes: ModeDef[], candidate: ModeDef): boolean {
+    const key = modeKey(candidate);
+    return modes.some((m) => m.id !== candidate.id && modeKey(m) === key);
+  }
+
+  private async _renameMode(id: string, name: string) {
+    const modes = modeList(this.card._settings);
+    // The browser fires change again on blur: nothing to save if the name
+    // is what is already stored.
+    if (modes.find((m) => m.id === id)?.name === name.trim()) return;
+    const next = modes.map((m) => (m.id === id ? { id, name: name.trim() } : m));
+    const renamed = next.find((m) => m.id === id)!;
+    if (this._clashes(next, renamed)) {
+      this._modesError = t("settings.modes.duplicate");
+      return;
+    }
+    await this._saveModes(next);
+  }
+
+  private async _addMode(modes: ModeDef[]) {
+    const name = this._newMode.trim();
+    if (!name || modes.length >= MAX_MODES) return;
+    const mode = { id: slugifyMode(name, modes.map((m) => m.id)), name };
+    if (this._clashes([...modes, mode], mode)) {
+      this._modesError = t("settings.modes.duplicate");
+      return;
+    }
+    if (await this._saveModes([...modes, mode])) this._newMode = "";
+  }
+
+  private async _saveModes(modes: ModeDef[]): Promise<boolean> {
+    this._modesError = await this.card.doSaveModes(modes);
+    return !this._modesError;
+  }
+
 }

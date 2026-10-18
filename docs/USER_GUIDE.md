@@ -160,9 +160,13 @@ The overview lists the schedules under one header per group, sorted by name, wit
 
 ### Modes
 
-Chronos has three modes, **Home**, **Away** and **Holiday**, chosen with the selector at the top of the overview. By default a schedule runs in every mode. In the editor, under Repeat, **Runs in modes** lets a schedule declare the modes it belongs to: deselect Home on a presence-simulation schedule and it only plays its evenings when nobody is there; keep the irrigation in every mode and limit the heating to Home and Holiday. Schedules idle in the current mode show *Idle in …* on their card.
+Chronos starts with three modes, **Home**, **Away** and **Holiday**, chosen with the selector at the top of the overview. By default a schedule runs in every mode. In the editor, under Repeat, **Runs in modes** lets a schedule declare the modes it belongs to: deselect Home on a presence-simulation schedule and it only plays its evenings when nobody is there; keep the irrigation in every mode and limit the heating to Home and Holiday. Schedules idle in the current mode show *Idle in …* on their card.
 
 Switching the mode is immediate and safe, with the same rule as a pause: what Chronos had switched on in the schedules that step aside is switched off first, and the schedules of the new mode apply their active block at once. The mode is also a `select` entity in Home Assistant and the `chronos.set_mode` service, so a presence sensor, a calendar or a dashboard button can drive it.
+
+**Settings > Modes** lets you rename the modes and add your own, up to eight: a household that thinks in seasons can have Summer, Winter and Christmas instead of Home, Away and Holiday. Renaming never touches the schedules, which refer to a mode by an internal id that does not change. A mode cannot be deleted while it is the current one or while a schedule uses it, since a schedule restricted to that mode alone would otherwise start running in every mode; the delete button stays disabled and says why.
+
+In Home Assistant the select entity lists the modes by name. The three built-in modes keep `home`, `away` and `holiday` as their option until you give them a name of your own, so automations written against those options keep working; `chronos.set_mode` accepts either the id or the name.
 
 ## Schedule editor
 

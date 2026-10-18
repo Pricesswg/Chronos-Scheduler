@@ -414,6 +414,14 @@ DEFAULT_SETTINGS = {
     "sidebar_panel": True,
     # Current mode; schedules may restrict themselves to some modes.
     "mode": "home",
+    # The modes the user can switch between (discussion #28). Ids are stable,
+    # schedules reference them; the name is free and empty means "use the
+    # translated default" for the three built-in ids.
+    "modes": [
+        {"id": "home", "name": ""},
+        {"id": "away", "name": ""},
+        {"id": "holiday", "name": ""},
+    ],
     # Overview layout: "none" | "group" (user-assigned) | "type" (device type).
     "overview_group_by": "group",
     # Group name -> hex colour, chosen in the editor; a group without an
@@ -454,3 +462,5 @@ SIGNAL_SCHEDULES_CHANGED = f"{DOMAIN}_schedules_changed"
 # Modes a schedule can restrict itself to. The current one lives in the
 # settings (`mode`); a schedule with an empty `modes` list runs in all.
 MODES = ("home", "away", "holiday")
+# Upper bound on user-defined modes: the overview selector must stay usable.
+MAX_MODES = 8

@@ -1,4 +1,4 @@
-"""Select platform: one entity for the current mode (home / away / holiday).
+"""Select platform: one entity for the current mode (the user-defined modes).
 Changing it here is the same as changing it in the card or through the
 chronos.set_mode service: schedules restricted to other modes stop, what they
 were running is closed, schedules of the new mode apply at once."""
@@ -12,7 +12,8 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import notify_entities
-from .const import DOMAIN, MODES, SIGNAL_STATE
+from .const import DOMAIN, SIGNAL_STATE
+from .modes import mode_label, mode_list, resolve_mode
 from .scheduler import ChronosScheduler
 from .store import ChronosStore
 
@@ -30,7 +31,6 @@ class ChronosModeSelect(SelectEntity):
     _attr_has_entity_name = True
     _attr_name = "Mode"
     _attr_icon = "mdi:home-switch-outline"
-    _attr_options = list(MODES)
     _attr_unique_id = f"{DOMAIN}_mode"
 
     def __init__(self, hass: HomeAssistant) -> None:
@@ -47,12 +47,26 @@ class ChronosModeSelect(SelectEntity):
         return self.hass.data[DOMAIN]["store"]
 
     @property
-    def current_option(self) -> str:
-        return str(self._store.settings.get("mode") or "home")
+    def options(self) -> list[str]:
+        # Labels, not ids: a renamed mode shows its new name. A built-in mode
+        # with no custom name keeps its id as label, so automations written
+        # against home / away / holiday keep working.
+        return [mode_label(m) for m in mode_list(self._store.settings)]
+
+    @property
+    def current_option(self) -> str | None:
+        current = str(self._store.settings.get("mode") or "home")
+        for m in mode_list(self._store.settings):
+            if m["id"] == current:
+                return mode_label(m)
+        return None
 
     async def async_select_option(self, option: str) -> None:
         scheduler: ChronosScheduler = self.hass.data[DOMAIN]["scheduler"]
-        await scheduler.set_mode(option)
+        mode_id = resolve_mode(self._store.settings, option)
+        if mode_id is None:
+            return
+        await scheduler.set_mode(mode_id)
         notify_entities(self.hass, structural=False)
 
     async def async_added_to_hass(self) -> None:

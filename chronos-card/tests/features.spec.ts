@@ -279,3 +279,40 @@ test("the wizard locks the device type after the first pick", async ({ page }) =
   await wizard.locator('.tile-pick[data-device="d1"]').click();
   await expect(wizard.locator('.tile-pick[data-device="d3"]')).toBeEnabled();
 });
+
+test("modes are user-defined: rename, add, refuse duplicates, guard modes in use", async ({ page }) => {
+  await mount(page, "settings");
+  const box = page.locator('chronos-settings-screen [data-role="modes-settings"]');
+  await expect(box.locator("[data-mode-row]")).toHaveCount(3);
+  // The current mode (home) and a mode in use (away, by s2) cannot go.
+  await expect(box.locator('[data-mode-row="home"] [data-action="delete-mode"]')).toBeDisabled();
+  await expect(box.locator('[data-mode-row="away"] [data-action="delete-mode"]')).toBeDisabled();
+  await expect(box.locator('[data-mode-row="holiday"] [data-action="delete-mode"]')).toBeEnabled();
+  const updates = () => page.evaluate(() => (window as any).__wsLog.filter((m) => m.type === "chronos/settings/update"));
+
+  const home = box.locator('[data-mode-row="home"] input');
+  await home.fill("Estate");
+  await home.dispatchEvent("change");
+  await expect.poll(async () => (await updates()).length).toBe(1);
+  expect((await updates())[0].patch.modes).toEqual([
+    { id: "home", name: "Estate" }, { id: "away", name: "" }, { id: "holiday", name: "" },
+  ]);
+
+  await box.locator('[data-role="new-mode"]').fill("Natale");
+  await box.locator('[data-action="add-mode"]').click();
+  await expect.poll(async () => (await updates()).length).toBe(2);
+  expect((await updates())[1].patch.modes.at(-1)).toEqual({ id: "natale", name: "Natale" });
+  await expect(box.locator("[data-mode-row]")).toHaveCount(4);
+
+  // A duplicate name is refused before reaching the backend.
+  await box.locator('[data-role="new-mode"]').fill("estate");
+  await box.locator('[data-action="add-mode"]').click();
+  await expect(box.locator('[data-role="modes-error"]')).toBeVisible();
+  expect((await updates()).length).toBe(2);
+
+  // The overview selector and the editor chips follow the list.
+  await page.evaluate(() => (window as any).__open("overview"));
+  await expect(page.locator('chronos-overview [data-role="mode"] button')).toHaveText(["Estate", "Fuori", "Vacanza", "Natale"]);
+  await page.evaluate(() => (window as any).__card.selectSchedule("s1", "editor"));
+  await expect(page.locator('chronos-editor [data-role="modes"] button[data-active="true"]')).toHaveCount(4);
+});

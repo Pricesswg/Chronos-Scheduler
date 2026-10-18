@@ -100,18 +100,16 @@ resume:
 set_mode:
   name: Set mode
   description: >
-    Switch Chronos between home, away and holiday. Schedules restricted to
-    other modes stop and what they had switched on is switched off;
-    schedules of the new mode apply their active block at once. Same as the
-    mode selector in the card and the select entity.
+    Switch Chronos to another mode (home, away and holiday by default, or the
+    modes defined under Settings, Modes). Schedules restricted to other modes
+    stop and what they had switched on is switched off; schedules of the new
+    mode apply their active block at once. Same as the mode selector in the
+    card and the select entity.
   fields:
     mode:
       name: Mode
+      description: The mode's id or its name, case-insensitive.
       required: true
       example: "away"
       selector:
-        select:
-          options:
-            - home
-            - away
-            - holiday
+        text:

@@ -74,7 +74,7 @@ export class ChronosEditor extends LitElement {
   /** Modes the schedule runs in. All three selected means no restriction
    * and is stored as an empty list; the last one cannot be switched off. */
   private _renderModes(schedule: any) {
-    const all = ["home", "away", "holiday"];
+    const all = this.card.modes().map((m) => m.id);
     const active: string[] = schedule.modes?.length ? schedule.modes : all;
     const toggle = (m: string) => {
       const next = active.includes(m) ? active.filter((x) => x !== m) : [...active, m];
@@ -88,7 +88,7 @@ export class ChronosEditor extends LitElement {
           ${all.map((m) => html`
             <button class="chip" data-mode="${m}" data-active="${active.includes(m)}"
               style="cursor:pointer;${active.includes(m) ? "background:var(--accent);color:white;border-color:transparent" : ""}"
-              @click=${() => toggle(m)}>${t("mode." + m)}</button>
+              @click=${() => toggle(m)}>${this.card.modeName(m)}</button>
           `)}
         </div>
         <span class="field__hint">${t("editor.modes.hint")}</span>
@@ -113,11 +113,11 @@ export class ChronosEditor extends LitElement {
           <span class="text-sm fw-600">${t("editor.presence.label")}</span>
         </div>
         <span class="field__hint" style="display:block;margin-top:4px">${t("editor.presence.hint")}</span>
-        ${on && !(schedule.modes?.length === 1 && schedule.modes[0] === "away") ? html`
+        ${on && this.card.modes().some((m) => m.id === "away") && !(schedule.modes?.length === 1 && schedule.modes[0] === "away") ? html`
           <div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center">
             <span class="text-xs text-mute">${t("editor.presence.away_hint")}</span>
             <button class="btn btn--sm" data-action="only-away" @click=${() => this.card.updateScheduleLocal(schedule.id, { modes: ["away"] })}>
-              ${icon("moon", 12)} ${t("editor.presence.away_button")}
+              ${icon("moon", 12)} ${t("editor.presence.away_button", { mode: this.card.modeName("away") })}
             </button>
           </div>` : nothing}
         ${on ? html`

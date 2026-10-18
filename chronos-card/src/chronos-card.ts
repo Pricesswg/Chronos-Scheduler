@@ -24,7 +24,7 @@ import type {
 import { setActionsMap, setColorSettings } from "./actions";
 import { setLang, t } from "./i18n";
 import { CARD_VERSION } from "./version";
-import { modesOverlap } from "./modes";
+import { modeIds, modeLabel, modeList, modesOverlap, type ModeDef } from "./modes";
 import {
   fetchDevices,
   fetchSchedules,
@@ -532,10 +532,11 @@ export class ChronosCard extends LitElement {
     const rangesOverlap = (a?: DateRange | null, b?: DateRange | null) =>
       !a || !b || contains(a, md(b.start_month, b.start_day)) || contains(b, md(a.start_month, a.start_day));
     const out: string[] = [];
+    const allModes = modeIds(this._settings);
     for (const other of this._schedules) {
       if (other.id === sched.id || !other.enabled) continue;
       if (!dayOverlap(sched.days, other.days) || !rangesOverlap(sched.date_range, other.date_range)) continue;
-      if (!modesOverlap(sched, other)) continue;
+      if (!modesOverlap(sched, other, allModes)) continue;
       for (const mine of sched.blocks) {
         const mf = resolveBlockTime(mine, "start"), mt = resolveBlockTime(mine, "end");
         for (const theirs of other.blocks) {
@@ -557,6 +558,28 @@ export class ChronosCard extends LitElement {
 
   currentMode(): string {
     return this._settings?.mode || "home";
+  }
+
+  /** The user-defined modes, in their order. */
+  modes(): ModeDef[] {
+    return modeList(this._settings);
+  }
+
+  modeName(id: string): string {
+    const mode = this.modes().find((m) => m.id === id);
+    return mode ? modeLabel(mode) : id;
+  }
+
+  /** Replace the mode list. Returns "" or the backend's reason for refusing
+   * it (a mode in use or the current one cannot disappear). */
+  async doSaveModes(modes: ModeDef[]): Promise<string> {
+    try {
+      this._settings = await wsUpdateSettings(this.hass, { modes });
+      return "";
+    } catch (e: any) {
+      this._settings = await fetchSettings(this.hass);
+      return e?.message || String(e);
+    }
   }
 
   /** False when the schedule limits itself to modes that exclude the

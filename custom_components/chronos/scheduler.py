@@ -14,7 +14,7 @@ from homeassistant.helpers.start import async_at_started
 from homeassistant.util import dt as dt_util
 
 from .const import SIGNAL_STATE
-from .const import MODES
+from .modes import resolve_mode
 from .gate import is_in_date_range, is_paused, pause_deadline, schedule_is_live, schedule_runs_in_mode
 from .store import ChronosStore
 from .timing import jitter_minutes
@@ -186,8 +186,10 @@ class ChronosScheduler(
         lights), exactly like a pause; schedules that become live have their
         block bookkeeping reset so the immediate tick applies their active
         block as a catch-up."""
-        if mode not in MODES:
+        resolved = resolve_mode(self._store.settings, mode)
+        if resolved is None:
             return {"ok": False, "error": f"unknown mode {mode!r}"}
+        mode = resolved
         before = self._mode()
         if mode == before:
             return {"ok": True, "mode": mode}

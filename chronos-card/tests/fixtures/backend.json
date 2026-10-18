@@ -766,6 +766,20 @@
   "conflict_warnings": true,
   "sidebar_panel": true,
   "mode": "home",
+  "modes": [
+   {
+    "id": "home",
+    "name": ""
+   },
+   {
+    "id": "away",
+    "name": ""
+   },
+   {
+    "id": "holiday",
+    "name": ""
+   }
+  ],
   "overview_group_by": "group",
   "group_colors": {}
  }

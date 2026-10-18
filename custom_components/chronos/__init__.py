@@ -25,7 +25,6 @@ from .const import (
     ACTIONS_BY_TYPE,
     DOMAIN,
     DOMAIN_TO_TYPE,
-    MODES,
     SIGNAL_SCHEDULES_CHANGED,
     SIGNAL_STATE,
     SUPPORTED_DOMAINS,
@@ -33,6 +32,7 @@ from .const import (
     WEATHER_ATTRIBUTES,
 )
 from .gate import skip_today_deadline
+from .modes import validate_modes
 from .scheduler import ChronosScheduler
 from .store import ChronosStore
 
@@ -439,7 +439,9 @@ def _register_services(hass: HomeAssistant) -> None:
 
     hass.services.async_register(
         DOMAIN, "set_mode", _svc_set_mode,
-        schema=vol.Schema({vol.Required("mode"): vol.In(MODES)}),
+        # Id or name of a configured mode, validated by set_mode: the list is
+        # user-defined, so it cannot be a static schema.
+        schema=vol.Schema({vol.Required("mode"): cv.string}),
     )
     hass.services.async_register(
         DOMAIN, "resume", _svc_resume,
@@ -681,7 +683,21 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
         # The mode is not a plain setting: switching it closes and applies
         # schedules, so it goes through the scheduler.
         mode = patch.pop("mode", None)
+        if "modes" in patch:
+            error = validate_modes(
+                patch["modes"], store.schedules, str(store.settings.get("mode") or "home"),
+            )
+            if error:
+                connection.send_error(msg["id"], "invalid_format", error)
+                return
+            patch["modes"] = [
+                {"id": str(m["id"]), "name": str(m.get("name") or "").strip()}
+                for m in patch["modes"]
+            ]
         settings = await store.async_update_settings(patch)
+        if "modes" in patch:
+            # The select entity's options follow the list.
+            notify_entities(hass, structural=False)
         if mode is not None:
             scheduler: ChronosScheduler = hass.data[DOMAIN]["scheduler"]
             await scheduler.set_mode(str(mode))
@@ -692,7 +708,7 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
 
     @websocket_api.websocket_command({
         vol.Required("type"): "chronos/mode/set",
-        vol.Required("mode"): vol.In(MODES),
+        vol.Required("mode"): str,
     })
     @websocket_api.async_response
     async def ws_mode_set(
