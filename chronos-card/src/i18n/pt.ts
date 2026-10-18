@@ -879,4 +879,8 @@ export const PT_STRINGS: Record<string, string> = {
   "editor.auto_off.both_hint": "Estão definidos tanto o desligar automático como a ação de fim: o primeiro conta desde a ligação, a segunda dispara no fim do bloco. Age o que chegar primeiro; o outro encontra o dispositivo já desligado.",
   "settings.safety.conflicts.title": "Avisos de sobreposição",
   "settings.safety.conflicts.desc": "Assinala na visão geral e no editor quando dois agendamentos ativos comandam o mesmo dispositivo à mesma hora, e quando dois programas de rega podem regar ao mesmo tempo. Agendamentos de modos diferentes nunca são assinalados. Desliga se as sobreposições forem intencionais.",
+  "wizard.devices.type_lock": "Este agendamento vai comandar dispositivos do tipo {type}. Para outros tipos cria um agendamento à parte: os comandos mudam de tipo para tipo.",
+  "editor.foreign.title": "Dispositivos que este agendamento ({type}) não consegue comandar",
+  "editor.foreign.item": "{device} é do tipo {type}: recebe os comandos deste agendamento e ignora-os.",
+  "editor.foreign.fix": "Remove-o daqui com o caixote e adiciona-o a um agendamento do seu tipo. As versões anteriores do assistente permitiam misturar tipos; já não.",
 };

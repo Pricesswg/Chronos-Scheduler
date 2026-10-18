@@ -265,6 +265,12 @@ Each row shows:
 
 When another enabled schedule drives one of this schedule's devices during a block that overlaps one of yours, on a shared weekday and inside both date ranges, the editor shows a red box under the timeline naming the device, the other schedule and the two time windows. Chronos does not merge the two: the last command sent wins, and from outside the device looks like it acts on its own. Move the block, narrow the device list of one of the two schedules, or disable one. The overview shows a *Conflicts* badge on the schedules concerned.
 
+### One device type per schedule
+
+A schedule drives devices of a single type, because its actions and the Home Assistant services behind them come from that type: a Smart plug schedule sends `switch.turn_on` and `switch.turn_off`, a Thermostat schedule sends `climate.*`. The wizard locks the type as soon as you pick the first device, and the editor only offers devices of the schedule's type.
+
+Earlier versions of the wizard let a schedule mix types. In such a schedule the devices of the other types receive commands they cannot act on: Home Assistant ignores a `switch.turn_off` aimed at a `climate.*` entity, writing only a warning in its log, so the device silently keeps its state. The editor now lists those devices in a red box; remove them with the bin and add them to a schedule of their own type. They are also left out of the shared-device check above, since the schedule never really drives them.
+
 ## Selected block panel
 
 When you select a time block, the right panel shows the details of that block.

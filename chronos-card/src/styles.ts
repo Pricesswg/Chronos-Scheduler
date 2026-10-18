@@ -861,6 +861,8 @@ export const chronosStyles = css`
     transition: border-color 120ms, background 120ms; text-align: left; width: 100%;
   }
   .tile-pick:hover { border-color: color-mix(in srgb, var(--accent) 30%, var(--border)); }
+  .tile-pick:disabled { opacity: 0.4; cursor: not-allowed; }
+  .tile-pick:disabled:hover { border-color: var(--border); }
   .tile-pick[data-selected="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent-soft) 60%, var(--surface)); }
   .tile-pick__icon {
     width: 34px; height: 34px; border-radius: 9px;

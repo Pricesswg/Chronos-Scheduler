@@ -879,4 +879,8 @@ export const ES_STRINGS: Record<string, string> = {
   "editor.auto_off.both_hint": "Están definidos tanto el apagado automático como la acción final: el primero cuenta desde el encendido, la segunda se dispara al final del bloque. Actúa el que llegue antes; el otro encuentra el dispositivo ya apagado.",
   "settings.safety.conflicts.title": "Avisos de solapamiento",
   "settings.safety.conflicts.desc": "Avisa en la vista general y en el editor cuando dos programaciones activas controlan el mismo dispositivo a la misma hora, y cuando dos programas de riego pueden regar a la vez. Las programaciones de modos distintos nunca se señalan. Desactívalo si los solapamientos son intencionados.",
+  "wizard.devices.type_lock": "Esta programación controlará dispositivos de tipo {type}. Para otros tipos crea una programación aparte: los comandos cambian de un tipo a otro.",
+  "editor.foreign.title": "Dispositivos que esta programación ({type}) no puede controlar",
+  "editor.foreign.item": "{device} es de tipo {type}: recibe los comandos de esta programación y los ignora.",
+  "editor.foreign.fix": "Quítalo de aquí con la papelera y añádelo a una programación de su tipo. Las versiones anteriores del asistente permitían mezclar tipos; ya no.",
 };

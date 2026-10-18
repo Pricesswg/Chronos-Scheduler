@@ -146,10 +146,17 @@ export class ChronosWizard extends LitElement {
         // Filter out legacy scene/automation-type devices: those entity kinds
         // are picked per-block via the generic tiles, never as devices.
         const realDevices = this.card._devices.filter((d) => d.type !== "scene" && d.type !== "automation");
+        // A schedule drives ONE device type: its actions and services come
+        // from that type. Once the first device is picked, the others are
+        // locked out; mixing them used to send e.g. switch.turn_off to a
+        // climate entity, which Home Assistant ignores without an error.
+        const lockedType = this._pickedDevices.length ? this._inferDeviceType() : "";
         return html`
           <div class="col" style="gap:14px">
             <h3 style="margin:0">${t("wizard.devices.heading")}</h3>
             <p class="text-mute text-sm" style="margin:0">${t("wizard.devices.hint")}</p>
+            ${lockedType ? html`<p class="text-xs text-mute" data-role="type-lock" style="margin:0">
+              ${t("wizard.devices.type_lock", { type: deviceTypeLabel(lockedType, DEVICE_TYPES[lockedType]?.label || lockedType) })}</p>` : nothing}
             <div class="grid-auto" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">
               <button class="tile-pick" data-selected="${this._specialMode === "scene"}"
                 @click=${() => this._toggleSpecialMode("scene")}>
@@ -175,6 +182,8 @@ export class ChronosWizard extends LitElement {
               </button>
               ${this._specialMode ? nothing : realDevices.map((d) => html`
                 <button class="tile-pick" data-selected="${this._pickedDevices.includes(d.id)}"
+                  data-device="${d.id}"
+                  ?disabled=${!!lockedType && d.type !== lockedType}
                   title="${d.entity_id}"
                   @click=${() => this._togglePick(d.id)}>
                   <div class="row" style="gap:10px">
@@ -392,6 +401,8 @@ export class ChronosWizard extends LitElement {
 
   private _togglePick(id: string) {
     if (this._specialMode) return;
+    const dev = this.card._devices.find((d) => d.id === id);
+    if (this._pickedDevices.length && !this._pickedDevices.includes(id) && dev?.type !== this._inferDeviceType()) return;
     if (this._pickedDevices.includes(id)) {
       this._pickedDevices = this._pickedDevices.filter((x) => x !== id);
     } else {

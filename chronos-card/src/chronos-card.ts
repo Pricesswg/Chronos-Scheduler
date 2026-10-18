@@ -511,8 +511,15 @@ export class ChronosCard extends LitElement {
    * not fire at the time, so it cannot rule a conflict out. */
   deviceConflictWarnings(sched: Schedule): string[] {
     if (!sched.enabled || !(this._settings?.conflict_warnings ?? true)) return [];
+    // Only the devices a schedule really drives: one of another type gets the
+    // schedule type's commands and ignores them, so it cannot be fought over
+    // (issue #29, a Smart plug schedule holding a thermostat).
+    const drives = (s: Schedule, id: string) => {
+      const dev = this._devices.find((d) => d.id === id);
+      return !dev || dev.type === s.device_type;
+    };
     const reach = (b: Block, s: Schedule) => {
-      const all = s.device_ids || [];
+      const all = (s.device_ids || []).filter((id) => drives(s, id));
       const sub = (b.device_ids || []).filter((d) => all.includes(d));
       return sub.length ? sub : all;
     };

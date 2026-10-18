@@ -879,4 +879,8 @@ export const NL_STRINGS: Record<string, string> = {
   "editor.auto_off.both_hint": "Zowel de automatische uitschakeling als de eindactie zijn ingesteld: de eerste telt vanaf het inschakelen, de tweede vuurt aan het einde van het blok. Wat eerst komt handelt; de ander treft het apparaat al uit aan.",
   "settings.safety.conflicts.title": "Overlapwaarschuwingen",
   "settings.safety.conflicts.desc": "Meldt in het overzicht en de editor wanneer twee actieve schema's hetzelfde apparaat op dezelfde tijd aansturen, en wanneer twee irrigatieprogramma's tegelijk kunnen draaien. Schema's met verschillende modi worden nooit gemeld. Zet uit als de overlap bedoeld is.",
+  "wizard.devices.type_lock": "Dit schema stuurt apparaten van het type {type}. Maak voor andere typen een apart schema: de commando's verschillen per type.",
+  "editor.foreign.title": "Apparaten die dit schema ({type}) niet kan aansturen",
+  "editor.foreign.item": "{device} is van het type {type}: het ontvangt de commando's van dit schema en negeert ze.",
+  "editor.foreign.fix": "Verwijder het hier met de prullenbak en voeg het toe aan een schema van zijn eigen type. Eerdere versies van de wizard lieten typen mengen; nu niet meer.",
 };

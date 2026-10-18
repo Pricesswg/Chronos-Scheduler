@@ -295,6 +295,29 @@ export class ChronosEditor extends LitElement {
   /** Two irrigation programs that can end up watering together once their
    * scale rules max out: same water line, so it is worth flagging at design
    * time rather than discovering it on the first hot day. */
+  /** Devices whose type is not the schedule's. Older versions of the wizard
+   * let a schedule mix types; Chronos sends the schedule type's commands
+   * (e.g. switch.turn_off) to every device, and Home Assistant ignores them on
+   * an entity of another domain, silently. Said here so the user can move
+   * them to a schedule of their own type. */
+  private _renderForeignDevices(devices: any[], deviceType: string) {
+    const foreign = devices.filter((d) => d.type !== deviceType);
+    if (!foreign.length) return nothing;
+    const typeName = deviceTypeLabel(deviceType, DEVICE_TYPES[deviceType]?.label || deviceType);
+    return html`
+      <div class="text-xs" data-foreign="${foreign.length}" style="display:flex;gap:8px;align-items:flex-start;margin-top:10px;padding:8px 10px;border-radius:var(--r-md);background:color-mix(in srgb, var(--danger) 10%, transparent);color:var(--danger)">
+        ${icon("info", 12)}
+        <div>
+          <div class="fw-600">${t("editor.foreign.title", { type: typeName })}</div>
+          ${foreign.map((d) => html`<div style="margin-top:2px">${t("editor.foreign.item", {
+            device: d.alias, type: deviceTypeLabel(d.type, DEVICE_TYPES[d.type]?.label || d.type),
+          })}</div>`)}
+          <div style="margin-top:4px">${t("editor.foreign.fix")}</div>
+        </div>
+      </div>
+    `;
+  }
+
   /** Devices this schedule shares with other enabled schedules during one
    * of its blocks (see ChronosCard.deviceConflictWarnings). */
   private _renderConflictWarning(schedule: any) {
@@ -711,6 +734,7 @@ export class ChronosEditor extends LitElement {
                   <div style="flex:1"><h3 class="card__title">${t("editor.devices_section")}</h3><p class="card__sub">${t("editor.devices_count", { n: devices.length })}</p></div>
                 </div>
                 ${this._renderDevicePicker(schedule, deviceType)}
+                ${this._renderForeignDevices(devices, deviceType)}
                 <div class="col" style="gap:2px;margin-top:10px">
                   ${devices.map((d: any) => html`
                     <div class="device-row">

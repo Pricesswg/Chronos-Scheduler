@@ -240,3 +240,42 @@ test("the overlap warnings toggle lives in Settings", async ({ page }) => {
   const last = await page.evaluate(() => (window as any).__wsLog.filter((m) => m.type === "chronos/settings/update").pop());
   expect(last.patch).toEqual({ conflict_warnings: false });
 });
+
+test("a schedule holding a device of another type says so, and that device is not a conflict", async ({ page }) => {
+  await mount(page, "editor");
+  // Reproduce what older wizards produced (issue #29 follow-up): the Smart
+  // plug schedule s4 also holds the thermostat d3, which the enabled
+  // thermostat schedule s3 drives at overlapping times.
+  await page.evaluate(() => {
+    const c = (window as any).__card;
+    c.updateScheduleLocal("s3", { enabled: true });
+    c.updateScheduleLocal("s4", { device_ids: ["d1", "d3"] });
+    c.selectSchedule("s4", "editor");
+  });
+  const foreign = page.locator("chronos-editor [data-foreign]");
+  await expect(foreign).toHaveAttribute("data-foreign", "1");
+  await expect(foreign).toContainText("Termostato soggiorno");
+  // The thermostat is not driven by s4, so the only conflict left is the
+  // valve d1 it shares with s1.
+  const box = page.locator("chronos-editor [data-conflicts]");
+  await expect(box).toHaveAttribute("data-conflicts", "1");
+  await expect(box).not.toContainText("Termostato");
+});
+
+test("the wizard locks the device type after the first pick", async ({ page }) => {
+  await mount(page, "wizard");
+  const wizard = page.locator("chronos-wizard");
+  // Step 0 is the name / import step: move to the devices step.
+  await page.evaluate(() => {
+    const w = (window as any).__card.shadowRoot.querySelector("chronos-wizard");
+    w._step = 1;
+  });
+  await expect(wizard.locator('[data-role="type-lock"]')).toHaveCount(0);
+  await wizard.locator('.tile-pick[data-device="d1"]').click();
+  await expect(wizard.locator('[data-role="type-lock"]')).toContainText("Presa");
+  await expect(wizard.locator('.tile-pick[data-device="d3"]')).toBeDisabled();
+  await expect(wizard.locator('.tile-pick[data-device="d2"]')).toBeDisabled();
+  // Deselecting frees every type again.
+  await wizard.locator('.tile-pick[data-device="d1"]').click();
+  await expect(wizard.locator('.tile-pick[data-device="d3"]')).toBeEnabled();
+});

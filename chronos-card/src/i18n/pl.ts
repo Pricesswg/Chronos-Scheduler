@@ -879,4 +879,8 @@ export const PL_STRINGS: Record<string, string> = {
   "editor.auto_off.both_hint": "Ustawiono zarówno automatyczne wyłączenie, jak i akcję końcową: pierwsze liczy od włączenia, druga uruchamia się na koniec bloku. Działa to, co nastąpi wcześniej; drugie zastanie urządzenie już wyłączone.",
   "settings.safety.conflicts.title": "Ostrzeżenia o nakładaniu",
   "settings.safety.conflicts.desc": "Sygnalizuje w przeglądzie i edytorze, gdy dwa aktywne harmonogramy sterują tym samym urządzeniem w tych samych godzinach i gdy dwa programy nawadniania mogą podlewać jednocześnie. Harmonogramy w różnych trybach nigdy nie są sygnalizowane. Wyłącz, jeśli nakładanie jest zamierzone.",
+  "wizard.devices.type_lock": "Ten harmonogram będzie sterował urządzeniami typu {type}. Dla innych typów utwórz osobny harmonogram: polecenia różnią się w zależności od typu.",
+  "editor.foreign.title": "Urządzenia, którymi ten harmonogram ({type}) nie może sterować",
+  "editor.foreign.item": "{device} jest typu {type}: otrzymuje polecenia tego harmonogramu i je ignoruje.",
+  "editor.foreign.fix": "Usuń je tutaj koszem i dodaj do harmonogramu jego typu. Wcześniejsze wersje kreatora pozwalały mieszać typy; teraz już nie.",
 };
