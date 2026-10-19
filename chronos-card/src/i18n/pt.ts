@@ -892,4 +892,6 @@ export const PT_STRINGS: Record<string, string> = {
   "settings.modes.in_use": "Usado por {n} agendamentos: remove-o deles antes de o eliminar",
   "settings.modes.duplicate": "Já existe um modo com este nome",
   "settings.modes.hint": "Mudar o nome de um modo não altera os agendamentos que o usam. Até {n} modos. Os três predefinidos sem um nome teu continuam home, away e holiday na entidade select, para que as automatizações existentes continuem a funcionar.",
+  "tz.server_clock": "Hora do servidor Home Assistant ({zone}): os agendamentos seguem este relógio",
+  "tz.server_short": "hora de {zone}",
 };

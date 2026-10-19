@@ -4,7 +4,7 @@ import { chronosStyles, chronosTokens } from "./styles";
 import { icon } from "./icons";
 import { t, setLang, actionDefLabel } from "./i18n";
 import { actionLabel, setColorSettings, setActionsMap } from "./actions";
-import { resolveBlockTime, fmtHour, computeRepeat, setHassRef, pausedUntil, fmtWhen } from "./utils";
+import { resolveBlockTime, fmtHour, computeRepeat, setHassRef, pausedUntil, fmtWhen, serverHour, serverParts } from "./utils";
 import {
   fetchSchedules, fetchDevices, fetchRules, fetchHistory, fetchForecast,
   fetchSettings, fetchActions, type HistoryEntry,
@@ -183,15 +183,15 @@ export class ChronosScheduleCard extends LitElement {
     if (!dr) return true;
     const { start_month: sm, start_day: sd, end_month: em, end_day: ed } = dr;
     if (!(sm && sd && em && ed)) return true;
-    const now = new Date();
-    const cur = (now.getMonth() + 1) * 100 + now.getDate();
+    const now = serverParts();
+    const cur = now.month * 100 + now.day;
     const start = sm * 100 + sd;
     const end = em * 100 + ed;
     return start <= end ? start <= cur && cur <= end : cur >= start || cur <= end;
   }
 
   private _runsToday(s: Schedule): boolean {
-    const weekday = (new Date().getDay() + 6) % 7;
+    const weekday = serverParts().weekday;
     return !!(s.days?.[weekday] ?? 1) && this._inDateRange(s);
   }
 
@@ -271,7 +271,7 @@ export class ChronosScheduleCard extends LitElement {
     if (!s) return this._wrap(false, html`<div class="scard__empty">${t("scard.not_found")}</div>`);
 
     void this._tick; // re-render dependency for the minute clock
-    const nowHour = new Date().getHours() + new Date().getMinutes() / 60;
+    const nowHour = serverHour();
     const runsToday = this._runsToday(s);
     const active = runsToday
       ? s.blocks.find((b) => nowHour >= resolveBlockTime(b, "start") && nowHour < resolveBlockTime(b, "end"))

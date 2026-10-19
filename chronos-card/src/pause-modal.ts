@@ -3,7 +3,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { chronosStyles } from "./styles";
 import { icon } from "./icons";
 import { t } from "./i18n";
-import { fmtWhen, localIso, pausedUntil } from "./utils";
+import { fmtWhen, pausedUntil, serverTomorrowMidnightIso, zoneCity, zoneDiffers } from "./utils";
 import type { ChronosCard } from "./chronos-card";
 
 /** "Pause until": skip today, a few hours, or a date and time. Shared by
@@ -32,8 +32,10 @@ export class ChronosPauseModal extends LitElement {
     const s = this.card._schedules.find((x) => x.id === this.scheduleId);
     if (!s) return nothing;
     const until = pausedUntil(s);
-    const inHours = (n: number) => localIso(new Date(Date.now() + n * 3600e3));
-    const midnight = () => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(0, 0, 0, 0); return localIso(d); };
+    // "In N hours" is an instant, sent with its zone; "skip today" ends at the
+    // server's midnight. A typed date and time is read on the server's clock.
+    const inHours = (n: number) => new Date(Date.now() + n * 3600e3).toISOString();
+    const midnight = () => serverTomorrowMidnightIso();
     return html`
       <div class="modal-overlay" @click=${() => this.card.closePauseModal()}>
         <div class="card" style="width:min(460px,100%)" @click=${(e: Event) => e.stopPropagation()}>
@@ -52,7 +54,7 @@ export class ChronosPauseModal extends LitElement {
                 </button>`)}
             </div>
             <div class="field" style="margin:0">
-              <label class="field__label">${t("pause.custom")}</label>
+              <label class="field__label">${t("pause.custom")}${zoneDiffers() ? html` <span class="text-mute">(${t("tz.server_short", { zone: zoneCity() })})</span>` : nothing}</label>
               <div class="row" style="gap:8px">
                 <input class="input mono" type="datetime-local" style="flex:1" .value=${this._custom}
                   @input=${(e: Event) => { this._custom = (e.target as HTMLInputElement).value; }}/>

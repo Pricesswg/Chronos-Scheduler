@@ -51,7 +51,7 @@ import {
   pauseSchedule as wsPauseSchedule,
   setMode as wsSetMode,
 } from "./ws";
-import { fmtHour, computeRepeat, setSnapMinutes, setHassRef, resolveBlockTime, pausedUntil, fmtWhen } from "./utils";
+import { fmtHour, computeRepeat, setSnapMinutes, setHassRef, resolveBlockTime, pausedUntil, fmtWhen, serverHour, serverTimeZone, zoneCity, zoneDiffers } from "./utils";
 
 import "./screens/overview";
 import "./screens/editor";
@@ -1038,8 +1038,8 @@ export class ChronosCard extends LitElement {
 
     const [titleKey, crumbs] = TITLE_KEYS[this._screen] || TITLE_KEYS.overview;
     const title = t(titleKey);
-    const now = new Date();
-    const nowHour = now.getHours() + now.getMinutes() / 60;
+    // The server's clock: the one the schedules run on (issue #32).
+    const nowHour = serverHour();
 
     const drawerOpen = this._mobile && this._drawerOpen;
     let sidebarMode: "full" | "mini" | "drawer";
@@ -1233,7 +1233,7 @@ export class ChronosCard extends LitElement {
               @error=${(e: Event) => { (e.target as HTMLImageElement).style.display = "none"; (e.target as HTMLElement).parentElement!.textContent = "C"; }}/>
           </span>
           <span class="topnav__name">Chronos</span>
-          <span class="topnav__clock"><span class="time-dot"></span>${fmtHour(nowHour)}</span>
+          <span class="topnav__clock" title="${t("tz.server_clock", { zone: serverTimeZone() || "" })}"><span class="time-dot"></span>${fmtHour(nowHour)}${zoneDiffers() ? html`<span class="topnav__zone">${zoneCity()}</span>` : nothing}</span>
         </div>
         <div class="nav-scroll">
           ${nav.map((n) => item(n))}

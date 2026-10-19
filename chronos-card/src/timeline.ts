@@ -2,7 +2,7 @@ import { LitElement, html, svg, nothing, PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { chronosStyles } from "./styles";
 import { actionColor, actionLabel, getActionDef, getActionsForType } from "./actions";
-import { fmtHour, clamp, snapToGrid, resolveBlockTime, DAY_END_HOUR } from "./utils";
+import { fmtHour, clamp, snapToGrid, resolveBlockTime, DAY_END_HOUR, serverParts } from "./utils";
 import { defaultAction } from "./actions";
 import { actionDefLabel, t } from "./i18n";
 import { icon } from "./icons";
@@ -377,13 +377,15 @@ export class ChronosTimeline extends LitElement {
     // above 08 is not the 08:00 weather. Only today's hours are shown:
     // past hours stay empty, tomorrow's are dropped. Entries without a
     // datetime (minor integrations): sequential fallback from now.
-    const now = new Date();
+    // Forecast hours are instants: place them on the server's clock, the
+    // axis the blocks are drawn on.
+    const now = serverParts();
     const cells: { hour: number; cond: string }[] = [];
     this.forecast.forEach((w, i) => {
       const raw = w?.datetime ? new Date(w.datetime) : null;
-      const valid = raw !== null && !isNaN(raw.getTime());
-      const hour = valid ? raw!.getHours() : now.getHours() + i;
-      const sameDay = valid ? raw!.toDateString() === now.toDateString() : hour <= 23;
+      const at = raw !== null && !isNaN(raw.getTime()) ? serverParts(raw) : null;
+      const hour = at ? at.hour : now.hour + i;
+      const sameDay = at ? at.year === now.year && at.month === now.month && at.day === now.day : hour <= 23;
       if (!sameDay || hour > 23) return;
       cells.push({ hour, cond: String(w.condition || w.state || "") });
     });

@@ -892,4 +892,6 @@ export const PL_STRINGS: Record<string, string> = {
   "settings.modes.in_use": "Używany przez {n} harmonogramy: usuń go z nich przed usunięciem",
   "settings.modes.duplicate": "Tryb o tej nazwie już istnieje",
   "settings.modes.hint": "Zmiana nazwy trybu nie zmienia harmonogramów, które go używają. Do {n} trybów. Trzy wbudowane bez własnej nazwy pozostają w encji select jako home, away i holiday, więc istniejące automatyzacje działają dalej.",
+  "tz.server_clock": "Czas serwera Home Assistant ({zone}): harmonogramy działają według tego zegara",
+  "tz.server_short": "czas {zone}",
 };

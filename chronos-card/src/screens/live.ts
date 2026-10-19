@@ -4,7 +4,7 @@ import { chronosStyles } from "../styles";
 import { icon, deviceIcon, weatherIcon } from "../icons";
 import { getDeviceColor } from "../device-colors";
 import { actionLabel } from "../actions";
-import { resolveBlockTime } from "../utils";
+import { resolveBlockTime, serverParts } from "../utils";
 import { t } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
 import "../timeline";
@@ -116,7 +116,9 @@ function fmtDur(ms: number): string {
 }
 
 function fmtClock(d: Date): string {
-  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  // On the server's clock, like the timeline these times sit next to.
+  const p = serverParts(d);
+  return `${String(p.hour).padStart(2, "0")}:${String(p.minute).padStart(2, "0")}`;
 }
 
 /** Short provider names for the map subtitle; the custom one is labelled by its setting. */
@@ -163,10 +165,10 @@ export class ChronosLive extends LitElement {
     const windUnit = weatherState?.attributes?.wind_speed_unit || "km/h";
     const fx = this._fx(condition, (settings as any)?.live_fx !== false);
 
-    // Backend convention: days[0] = Monday (Python weekday()). JS getDay()
-    // is 0 = Sunday, hence the +6 rotation. A schedule that doesn't run
-    // today (day mask or date_range) must not show an "active" block.
-    const weekday = (new Date().getDay() + 6) % 7;
+    // Backend convention: days[0] = Monday (Python weekday()), which is what
+    // serverParts() returns, on the server's clock. A schedule that doesn't
+    // run today (day mask or date_range) must not show an "active" block.
+    const weekday = serverParts().weekday;
     const liveSchedules = schedules.filter((s) => s.enabled).map((s) => {
       const today = !!(s.days?.[weekday] ?? 1) && this._inDateRange(s);
       const active = today
@@ -559,8 +561,8 @@ export class ChronosLive extends LitElement {
     if (!dr) return true;
     const sm = dr.start_month, sd = dr.start_day, em = dr.end_month, ed = dr.end_day;
     if (!(sm && sd && em && ed)) return true;
-    const now = new Date();
-    const cur = (now.getMonth() + 1) * 100 + now.getDate();
+    const now = serverParts();
+    const cur = now.month * 100 + now.day;
     const start = sm * 100 + sd;
     const end = em * 100 + ed;
     if (start <= end) return start <= cur && cur <= end;

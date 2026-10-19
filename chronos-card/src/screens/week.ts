@@ -3,7 +3,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { chronosStyles } from "../styles";
 import { icon } from "../icons";
 import { KIND_COLORS } from "../actions";
-import { getDays } from "../utils";
+import { getDays, serverParts } from "../utils";
 import { t } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
 import { groupColor, groupInk, knownGroups } from "../grouping";
@@ -29,8 +29,8 @@ export class ChronosWeek extends LitElement {
     const visibleSchedules = filterSet
       ? schedules.filter((s) => filterSet.has(s.id))
       : schedules;
-    const todayIdx = new Date().getDay();
-    const adjustedToday = todayIdx === 0 ? 6 : todayIdx - 1;
+    // Today on the server's clock (0 = Monday), not the device's.
+    const adjustedToday = serverParts().weekday;
     const days = getDays();
     const groups = knownGroups(schedules);
 

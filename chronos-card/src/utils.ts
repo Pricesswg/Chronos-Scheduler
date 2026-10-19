@@ -31,6 +31,80 @@ import type { Block, TimeAnchor } from "./types";
 let _hassRef: any = null;
 export function setHassRef(h: any) { _hassRef = h; }
 
+/** Home Assistant's own time zone. Schedules run on the server's clock: a
+ * block at 09:00 means 09:00 there, whatever the zone of the device showing
+ * the card (issue #32). Undefined before hass is known. */
+export function serverTimeZone(): string | undefined {
+  const tz = _hassRef?.config?.time_zone;
+  return typeof tz === "string" && tz ? tz : undefined;
+}
+
+export interface ClockParts {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+  /** 0 = Monday, the backend's (Python's) convention. */
+  weekday: number;
+}
+
+const _clockFormats = new Map<string, Intl.DateTimeFormat>();
+const _weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+/** Wall-clock parts of an instant on the server's clock. Falls back to the
+ * device's clock when the zone is unknown or the browser cannot handle it. */
+export function serverParts(d: Date = new Date()): ClockParts {
+  const tz = serverTimeZone();
+  if (tz) {
+    try {
+      let fmt = _clockFormats.get(tz);
+      if (!fmt) {
+        fmt = new Intl.DateTimeFormat("en-US", {
+          timeZone: tz, hourCycle: "h23", weekday: "short",
+          year: "numeric", month: "2-digit", day: "2-digit",
+          hour: "2-digit", minute: "2-digit", second: "2-digit",
+        });
+        _clockFormats.set(tz, fmt);
+      }
+      const p: Record<string, string> = {};
+      for (const part of fmt.formatToParts(d)) p[part.type] = part.value;
+      return {
+        year: +p.year, month: +p.month, day: +p.day,
+        hour: +p.hour % 24, minute: +p.minute, second: +p.second,
+        weekday: _weekdays.indexOf(p.weekday),
+      };
+    } catch {
+      // Unknown zone name: fall through to the device's clock.
+    }
+  }
+  return {
+    year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate(),
+    hour: d.getHours(), minute: d.getMinutes(), second: d.getSeconds(),
+    weekday: (d.getDay() + 6) % 7,
+  };
+}
+
+/** Hour of day as a float, on the server's clock. */
+export function serverHour(d: Date = new Date()): number {
+  const p = serverParts(d);
+  return p.hour + p.minute / 60 + p.second / 3600;
+}
+
+/** True when the device's clock reads differently from the server's, which
+ * is when the card says which clock it shows. */
+export function zoneDiffers(now: Date = new Date()): boolean {
+  const p = serverParts(now);
+  return p.hour !== now.getHours() || p.minute !== now.getMinutes() || p.day !== now.getDate();
+}
+
+/** "New York" from "America/New_York", for the short clock label. */
+export function zoneCity(): string {
+  const tz = serverTimeZone() || "";
+  return tz.split("/").pop()!.replace(/_/g, " ");
+}
+
 /** Resolve a block edge ("start" or "end") into an hour-of-day float, applying
  * sunrise/sunset anchor + offset if set. Falls back to the numeric value. */
 export function resolveBlockTime(block: Block, edge: "start" | "end"): number {
@@ -44,7 +118,9 @@ export function resolveBlockTime(block: Block, edge: "start" | "end"): number {
       if (iso) {
         const t = new Date(iso);
         if (!isNaN(t.getTime())) {
-          const base = t.getHours() + t.getMinutes() / 60 + t.getSeconds() / 3600;
+          // Sun times are instants: read them on the server's clock, as the
+          // backend does, not on the device's.
+          const base = serverHour(t);
           return clamp(base + offset / 60, 0, 24);
         }
       }
@@ -101,17 +177,21 @@ export function pausedUntil(s: { paused_until?: string | null }, now: Date = new
   return d;
 }
 
-/** "HH:MM" today, otherwise "DD/MM HH:MM". */
+/** "HH:MM" today, otherwise "DD/MM HH:MM", on the server's clock. */
 export function fmtWhen(d: Date, now: Date = new Date()): string {
   const two = (n: number) => String(n).padStart(2, "0");
-  const time = `${two(d.getHours())}:${two(d.getMinutes())}`;
-  const sameDay = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
-  return sameDay ? time : `${two(d.getDate())}/${two(d.getMonth() + 1)} ${time}`;
+  const a = serverParts(d), b = serverParts(now);
+  const time = `${two(a.hour)}:${two(a.minute)}`;
+  const sameDay = a.year === b.year && a.month === b.month && a.day === b.day;
+  return sameDay ? time : `${two(a.day)}/${two(a.month)} ${time}`;
 }
 
-/** Naive local ISO ("2026-09-08T00:00:00"): what the user means on the
- * wall clock, which the backend reads in Home Assistant's own time zone. */
-export function localIso(d: Date): string {
+/** Naive ISO of the next midnight on the server's clock: the backend reads a
+ * naive value in Home Assistant's own zone, so "skip today" ends when the
+ * server's day ends, not the device's. */
+export function serverTomorrowMidnightIso(now: Date = new Date()): string {
   const two = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}T${two(d.getHours())}:${two(d.getMinutes())}:00`;
+  const p = serverParts(now);
+  const next = new Date(Date.UTC(p.year, p.month - 1, p.day + 1));
+  return `${next.getUTCFullYear()}-${two(next.getUTCMonth() + 1)}-${two(next.getUTCDate())}T00:00:00`;
 }

@@ -7,5 +7,7 @@ export default defineConfig({
   // Never reuse a server already on the port: another project's dev server
   // would be probed instead of this card, silently. Fail fast instead.
   webServer: { command: "node tests/serve.mjs", port: 8917, reuseExistingServer: false },
-  use: { baseURL: "http://localhost:8917" },
+  // The browser and the fake server share a zone by default, so the suite
+  // reads the same on every machine; the issue #32 test sets them apart.
+  use: { baseURL: "http://localhost:8917", timezoneId: "Europe/Rome" },
 });

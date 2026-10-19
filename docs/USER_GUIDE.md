@@ -1085,6 +1085,10 @@ If two schedules share the same name, the service refuses to guess: it logs a wa
 
 ## Troubleshooting
 
+### The card shows a different time than my phone
+
+Schedules run on the Home Assistant server's clock: a block at 09:00 starts at 09:00 in the server's time zone. The card therefore shows every schedule time on that clock, the "now" line, today's day in the week view, sunrise and sunset, and the end of a "Skip today" pause, even when you open it from a phone or a computer set to another zone. When the two clocks differ, the clock at the top of the card adds the server's city (hover it for the full zone name) so it is clear which time you are looking at. A date and time typed in the pause window is read on the server's clock too.
+
 ### My schedule does not run
 
 Check the following:

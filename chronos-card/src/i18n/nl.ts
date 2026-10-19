@@ -892,4 +892,6 @@ export const NL_STRINGS: Record<string, string> = {
   "settings.modes.in_use": "Gebruikt door {n} schema's: haal het daar eerst weg",
   "settings.modes.duplicate": "Er bestaat al een modus met deze naam",
   "settings.modes.hint": "Een modus hernoemen verandert de schema's die hem gebruiken niet. Tot {n} modi. De drie ingebouwde zonder eigen naam blijven home, away en holiday in de select-entiteit, zodat bestaande automatiseringen blijven werken.",
+  "tz.server_clock": "Servertijd van Home Assistant ({zone}): schema's volgen deze klok",
+  "tz.server_short": "tijd {zone}",
 };

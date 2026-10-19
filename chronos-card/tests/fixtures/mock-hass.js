@@ -4,7 +4,7 @@
 const iso = (h) => { const d = new Date(); d.setHours(h, 0, 0, 0); return d.toISOString(); };
 const st = (state, attributes) => ({ state, attributes, last_changed: iso(6), last_updated: iso(6) });
 
-export async function makeHass({ settings: settingsOverride = {} } = {}) {
+export async function makeHass({ settings: settingsOverride = {}, timeZone = "Europe/Rome" } = {}) {
   const fixtures = await (await fetch("/fixtures/backend.json")).json();
   const devices = [
     { id: "d1", entity_id: "switch.valvola_giardino_1", alias: "Valvola giardino 1", name: "Valvola giardino 1", type: "plug", area: "Giardino Est", enabled: true },
@@ -120,7 +120,7 @@ export async function makeHass({ settings: settingsOverride = {} } = {}) {
     states,
     themes: { darkMode: false },
     language: "it",
-    config: { latitude: 45.46, longitude: 9.19, unit_system: { temperature: "°C" } },
+    config: { latitude: 45.46, longitude: 9.19, unit_system: { temperature: "°C" }, time_zone: timeZone },
     localize: () => "",
   };
 }

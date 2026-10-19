@@ -316,3 +316,45 @@ test("modes are user-defined: rename, add, refuse duplicates, guard modes in use
   await page.evaluate(() => (window as any).__card.selectSchedule("s1", "editor"));
   await expect(page.locator('chronos-editor [data-role="modes"] button[data-active="true"]')).toHaveCount(4);
 });
+
+test.describe("server time zone", () => {
+  // The device is in Tokyo, the Home Assistant server in New York.
+  test.use({ timezoneId: "Asia/Tokyo" });
+
+  test("the card follows the Home Assistant clock, not the device's (issue #32)", async ({ page }) => {
+    // 02:00 UTC on Tuesday 20 October: 22:00 on Monday the 19th in New York,
+    // 11:00 on Tuesday the 20th in Tokyo.
+    await page.clock.setFixedTime(new Date("2026-10-20T02:00:00Z"));
+    await page.setViewportSize({ width: 1200, height: 900 });
+    await page.goto("/");
+    await page.waitForFunction(() => typeof (window as any).__mount === "function");
+    const m = await page.evaluate(() => (window as any).__mount({ host: "card", timeZone: "America/New_York" }));
+    expect(m.error).toBe("");
+    await page.evaluate(() => (window as any).__open("overview"));
+
+    const clock = page.locator("chronos-card .topnav__clock");
+    await expect(clock).toContainText("22:00");
+    await expect(clock).toContainText("New York");
+    await expect(clock).toHaveAttribute("title", /America\/New_York/);
+
+    // Today, on the server, is Monday.
+    await page.evaluate(() => (window as any).__open("week"));
+    await expect(page.locator("chronos-week .weekgrid__day").filter({ hasText: "OGGI" })).toContainText("Lun");
+
+    // Skip today ends at the server's midnight (Tuesday the 20th), not at
+    // Tokyo's (Wednesday the 21st).
+    await page.evaluate(() => (window as any).__open("overview"));
+    await card(page, S1).locator('button[data-action="pause"]').click();
+    await page.locator('chronos-pause-modal button[data-preset="skip_today"]').click();
+    const last = await page.evaluate(() => (window as any).__wsLog.filter((m) => m.type === "chronos/schedules/pause").pop());
+    expect(last.until).toBe("2026-10-20T00:00:00");
+  });
+
+  test("with the same zone on both sides nothing extra is shown", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForFunction(() => typeof (window as any).__mount === "function");
+    await page.evaluate(() => (window as any).__mount({ host: "card", timeZone: "Asia/Tokyo" }));
+    await page.evaluate(() => (window as any).__open("overview"));
+    await expect(page.locator("chronos-card .topnav__zone")).toHaveCount(0);
+  });
+});

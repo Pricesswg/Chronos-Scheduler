@@ -892,4 +892,6 @@ export const ES_STRINGS: Record<string, string> = {
   "settings.modes.in_use": "Usado por {n} programaciones: quítalo de ellas antes de eliminarlo",
   "settings.modes.duplicate": "Ya existe un modo con este nombre",
   "settings.modes.hint": "Renombrar un modo no cambia las programaciones que lo usan. Hasta {n} modos. Los tres predefinidos sin un nombre tuyo siguen siendo home, away y holiday en la entidad select, así las automatizaciones existentes siguen funcionando.",
+  "tz.server_clock": "Hora del servidor Home Assistant ({zone}): las programaciones siguen este reloj",
+  "tz.server_short": "hora de {zone}",
 };

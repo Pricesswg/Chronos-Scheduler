@@ -989,4 +989,5 @@ export const chronosStyles = css`
     display: inline-grid; place-items: center; cursor: pointer;
   }
   .group-swatch[data-active="true"] { border-color: var(--text); box-shadow: 0 0 0 2px var(--surface) inset; }
+  .topnav__zone { margin-left: 5px; font-size: 10px; font-weight: 500; color: var(--text-muted); }
 `;
