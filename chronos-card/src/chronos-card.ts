@@ -218,6 +218,7 @@ export class ChronosCard extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
+    if (this.hass) this._watchFinished();
     // Apply hass.language as soon as we're connected, so the very first
     // render goes out in the right language. Without this the first paint
     // is always Italian (the i18n default) and the user sees a flash of
@@ -244,6 +245,8 @@ export class ChronosCard extends LitElement {
 
   disconnectedCallback() {
     super.disconnectedCallback();
+    this._unsubFinished?.then((unsub) => unsub()).catch(() => {});
+    this._unsubFinished = null;
     this._resizeObserver?.disconnect();
     window.removeEventListener("resize", this._windowResizeBound);
     if (this._retryTimer) {
@@ -259,9 +262,26 @@ export class ChronosCard extends LitElement {
     await this._loadAll();
   }
 
+  /** A single-date schedule disables itself in the backend (issue #33): the
+   * event tells the card, so the switch does not stay on until a reload.
+   * Only `enabled` is patched, unsaved edits are kept. */
+  private _unsubFinished: Promise<() => void> | null = null;
+
+  private _watchFinished() {
+    if (this._unsubFinished || !this.hass?.connection?.subscribeEvents) return;
+    this._unsubFinished = this.hass.connection.subscribeEvents((ev: any) => {
+      const id = ev?.data?.schedule_id;
+      if (!id) return;
+      const off = (list: Schedule[]) => list.map((s) => (s.id === id ? { ...s, enabled: false } : s));
+      this._schedules = off(this._schedules);
+      this._savedSchedules = off(this._savedSchedules);
+    }, "chronos_schedule_finished").catch(() => () => {});
+  }
+
   updated(changed: PropertyValues) {
     if (changed.has("hass") && this.hass) {
       setHassRef(this.hass);
+      this._watchFinished();
       // Apply language whenever hass arrives or its language attribute
       // changes. Previously this only ran on _settings change, which meant
       // a card whose settings WS hadn't loaded yet (or returned empty)

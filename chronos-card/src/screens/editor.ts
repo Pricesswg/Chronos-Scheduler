@@ -3,7 +3,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { chronosStyles } from "../styles";
 import { icon, deviceIcon } from "../icons";
 import { getActionsForType, getActionDef, actionLabel, actionColor, KIND_COLORS, defaultAction } from "../actions";
-import { fmtHour, getDays, DEVICE_TYPES, computeRepeat, resolveBlockTime } from "../utils";
+import { fmtHour, getDays, DEVICE_TYPES, computeRepeat, resolveBlockTime, onceWindow, fmtOnce, serverTodayIso } from "../utils";
 import { GROUP_PALETTE, groupColor, groupInk, knownGroups } from "../grouping";
 import { exportSchedule } from "../transfer";
 import { CARD_VERSION } from "../version";
@@ -67,6 +67,54 @@ export class ChronosEditor extends LitElement {
         ${GROUP_PALETTE.map((hex) => html`
           <button class="group-swatch" data-color="${hex}" data-active="${active === hex}" title="${hex}"
             style="background:${hex};color:${groupInk(hex)}" @click=${() => this.card.setGroupColor(group, hex)}>${active === hex ? icon("check", 10) : ""}</button>`)}
+      </div>
+    `;
+  }
+
+  /** Why the schedule cannot be saved with its dates, or "". A last date
+   * already behind us would disable the schedule as soon as it is saved. */
+  private _onceError(schedule: any): string {
+    const w = onceWindow(schedule);
+    return w && w.to < serverTodayIso() ? t("editor.once.past") : "";
+  }
+
+  /** Single-date schedule (issue #33): dates with their year instead of the
+   * weekly repeat; the backend disables it after the last block. */
+  private _renderOnce(schedule: any) {
+    const w = onceWindow(schedule);
+    const today = serverTodayIso();
+    const set = (from: string, to: string) =>
+      this.card.updateScheduleLocal(schedule.id, { once: { from, to: to < from ? from : to } });
+    const err = this._onceError(schedule);
+    return html`
+      <div class="field" style="margin-bottom:12px" data-role="once">
+        <div class="row" style="gap:10px;align-items:center">
+          <label class="switch">
+            <input type="checkbox" .checked=${!!w}
+              @change=${(e: Event) => this.card.updateScheduleLocal(schedule.id, {
+                once: (e.target as HTMLInputElement).checked ? { from: today, to: today } : null,
+              })}/>
+            <span class="switch__track"></span>
+            <span class="switch__thumb"></span>
+          </label>
+          <span class="text-sm fw-600">${t("editor.once.label")}</span>
+        </div>
+        ${w ? html`
+          <div class="row" style="gap:10px;margin-top:10px;flex-wrap:wrap;align-items:flex-end">
+            <div class="field" style="margin:0">
+              <label class="field__label">${t("editor.once.from")}</label>
+              <input class="input mono" type="date" data-role="once-from" min="${today}" .value=${w.from}
+                @change=${(e: Event) => { const v = (e.target as HTMLInputElement).value; if (v) set(v, w.to); }}/>
+            </div>
+            <div class="field" style="margin:0">
+              <label class="field__label">${t("editor.once.to")}</label>
+              <input class="input mono" type="date" data-role="once-to" min="${w.from}" .value=${w.to}
+                @change=${(e: Event) => { const v = (e.target as HTMLInputElement).value; if (v) set(w.from, v); }}/>
+            </div>
+          </div>
+          <span class="field__hint" style="display:block;margin-top:6px">${t("editor.once.hint")}</span>
+          ${err ? html`<span class="field__hint" data-role="once-error" style="display:block;color:var(--danger)">${err}</span>` : nothing}
+        ` : nothing}
       </div>
     `;
   }
@@ -388,6 +436,7 @@ export class ChronosEditor extends LitElement {
     const availableActions = getActionsForType(deviceType);
     const currentActionDef = block?.action ? getActionDef(deviceType, block.action.id) : null;
     const isDirty = this.card.isDirty;
+    const onceErr = this._onceError(schedule);
     // Global rules projected onto this schedule (target block_index inlined).
     const schedRules = this.card.rulesForSchedule(schedule.id);
     // Per-schedule view preference; schedules without one follow the global
@@ -409,7 +458,9 @@ export class ChronosEditor extends LitElement {
             <div class="row" style="margin-top:6px;gap:10px;flex-wrap:wrap">
               <span class="chip ${schedule.enabled ? "chip--on" : ""}"><span class="chip__dot"></span>${schedule.enabled ? t("schedule.active") : t("schedule.disabled")}</span>
               ${schedule.enabled && this.card.isPaused(schedule) ? html`<span class="chip chip--paused">${icon("pause", 11)} ${t("pause.badge", { when: this.card.pausedLabel(schedule) })}</span>` : nothing}
-              <span class="chip">${icon("repeat", 11)} ${computeRepeat(schedule.days)}</span>
+              ${onceWindow(schedule)
+                ? html`<span class="chip chip--once" data-role="once-chip">${icon("calendar", 11)} ${t("schedule.once.chip", { when: fmtOnce(schedule) })}</span>`
+                : html`<span class="chip">${icon("repeat", 11)} ${computeRepeat(schedule.days)}</span>`}
               <span class="chip chip--accent">${deviceIcon(deviceType, 11)} ${deviceTypeLabel(deviceType, typeDef.label)}</span>
               ${!["scene", "automation", "service"].includes(deviceType)
                 ? (devices.length === 0
@@ -445,7 +496,8 @@ export class ChronosEditor extends LitElement {
             <button class="btn" style="color:var(--danger)" @click=${() => { this._confirmDelete = true; }} title="${t("common.delete")}">${icon("trash", 14)}</button>
             <button class="btn"
               style="background:${isDirty ? "var(--warn)" : "var(--ok)"};color:white;border-color:transparent;cursor:${isDirty ? "pointer" : "default"};font-weight:600;white-space:nowrap"
-              @click=${() => { if (isDirty) this.card.saveCurrentSchedule(); }}>
+              title="${onceErr || ""}" data-action="save"
+              @click=${() => { if (isDirty && !onceErr) this.card.saveCurrentSchedule(); }}>
               ${icon("check", 14)} ${isDirty ? t("editor.dirty.unsaved") : t("editor.dirty.saved")}
             </button>
           </div>
@@ -512,9 +564,10 @@ export class ChronosEditor extends LitElement {
             <!-- Days -->
             <div class="card">
               <div class="card__header">
-                <div style="flex:1"><h3 class="card__title">${t("editor.days.repeat")}</h3><p class="card__sub">${t("wizard.days.hint")}</p></div>
+                <div style="flex:1"><h3 class="card__title">${t("editor.days.repeat")}</h3><p class="card__sub">${onceWindow(schedule) ? t("schedule.once.chip", { when: fmtOnce(schedule) }) : t("wizard.days.hint")}</p></div>
               </div>
-              <div class="row" style="gap:16px;flex-wrap:wrap">
+              ${this._renderOnce(schedule)}
+              <div class="row" style="gap:16px;flex-wrap:wrap;${onceWindow(schedule) ? "opacity:0.4;pointer-events:none" : ""}" data-role="weekdays">
                 <div class="row" style="gap:4px">
                   ${getDays().map((d: string, i: number) => {
                     const on = schedule.days[i];
@@ -536,7 +589,7 @@ export class ChronosEditor extends LitElement {
                 </div>
               </div>
               ${this._renderModes(schedule)}
-              ${this._renderDateRange(schedule)}
+              <div style="${onceWindow(schedule) ? "opacity:0.4;pointer-events:none" : ""}">${this._renderDateRange(schedule)}</div>
             </div>
 
             <!-- Weather rules -->

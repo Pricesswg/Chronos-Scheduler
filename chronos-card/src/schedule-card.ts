@@ -4,7 +4,7 @@ import { chronosStyles, chronosTokens } from "./styles";
 import { icon } from "./icons";
 import { t, setLang, actionDefLabel } from "./i18n";
 import { actionLabel, setColorSettings, setActionsMap } from "./actions";
-import { resolveBlockTime, fmtHour, computeRepeat, setHassRef, pausedUntil, fmtWhen, serverHour, serverParts } from "./utils";
+import { resolveBlockTime, fmtHour, computeRepeat, setHassRef, pausedUntil, fmtWhen, serverHour, serverParts, onceCovers, serverTodayIso, onceWindow, fmtOnce } from "./utils";
 import {
   fetchSchedules, fetchDevices, fetchRules, fetchHistory, fetchForecast,
   fetchSettings, fetchActions, type HistoryEntry,
@@ -192,7 +192,7 @@ export class ChronosScheduleCard extends LitElement {
 
   private _runsToday(s: Schedule): boolean {
     const weekday = serverParts().weekday;
-    return !!(s.days?.[weekday] ?? 1) && this._inDateRange(s);
+    return onceCovers(s, serverTodayIso()) ?? (!!(s.days?.[weekday] ?? 1) && this._inDateRange(s));
   }
 
   private _hourToLabel(h: number): string {
@@ -340,7 +340,7 @@ export class ChronosScheduleCard extends LitElement {
       { show: flag(c.show_status_weather), ic: "cloud", k: t("scard.k.weather"),
         v: this._weatherLabel(s) },
       { show: flag(c.show_status_days), ic: "calendar", k: t("scard.k.days"),
-        v: computeRepeat(s.days) || "—" },
+        v: onceWindow(s) ? t("schedule.once.chip", { when: fmtOnce(s) }) : computeRepeat(s.days) || "—" },
       { show: flag(c.show_status_period), ic: "clock", k: t("scard.k.period"),
         v: this._periodLabel(s) },
     ].filter((r) => r.show);

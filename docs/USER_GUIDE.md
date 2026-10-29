@@ -140,6 +140,14 @@ The first two belong to the block and can be combined: the auto-off counts from 
 
 The third one is the safety net for the coffee machine switched on at three in the afternoon and forgotten: it is per schedule, applies to all its devices, and ignores the turn-ons made by Chronos itself (recognised by their context), so a block's own mechanisms stay in charge of what Chronos started. It survives a restart: a device found on at startup is handled from the moment it was switched on, unless a block of the schedule is running, in which case the block owns it. A paused or disabled schedule never fires it.
 
+### Single-date schedules
+
+Under Repeat, **Only on specific dates** turns a schedule into a one-off: pick a start and an end date, year included (the same day twice for a single day). The schedule then runs only on those dates; the weekdays and the yearly range are greyed out and do not apply, while the modes still do. The typical use is coming home from a trip: heat the house the day before you are back, and forget about it.
+
+After the last block of the last date has ended, and after that block's end action has gone out, Chronos disables the schedule on its own, writes a line in History and, if block notifications are on, sends a notification. It is disabled, not deleted: to use it again, pick new dates and enable it. If a switch-off is still waiting for a device that went offline, or a timer such as an auto-off is still running, Chronos waits for it before disabling, so nothing is left on. If Home Assistant was down when the last date ended, the schedule is disabled at the next start.
+
+The editor does not save a schedule whose last date is already behind us, since it would switch itself off at once. A block that crosses midnight is still two blocks on two dates: blocks live inside a day.
+
 ### Pause and Skip today
 
 Each schedule card has a pause button next to its toggle. **Skip today** pauses the schedule until midnight; the other presets pause it for a few hours or until a date and time you pick. While paused the card shows *Paused until …*, the schedule does nothing, and Chronos resumes on its own when the deadline passes, re-applying the block that should be running at that moment. The button turns into **Resume** to end the pause early.

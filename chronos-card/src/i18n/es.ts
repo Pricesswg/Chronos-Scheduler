@@ -894,4 +894,10 @@ export const ES_STRINGS: Record<string, string> = {
   "settings.modes.hint": "Renombrar un modo no cambia las programaciones que lo usan. Hasta {n} modos. Los tres predefinidos sin un nombre tuyo siguen siendo home, away y holiday en la entidad select, así las automatizaciones existentes siguen funcionando.",
   "tz.server_clock": "Hora del servidor Home Assistant ({zone}): las programaciones siguen este reloj",
   "tz.server_short": "hora de {zone}",
+  "editor.once.label": "Solo en fechas concretas",
+  "editor.once.from": "Desde",
+  "editor.once.to": "Hasta",
+  "editor.once.hint": "La programación solo funciona en estas fechas, año incluido, y se desactiva sola tras el último bloque de la última fecha, después de su acción final. Para reutilizarla, elige fechas nuevas y actívala. Mientras esté activo, los días de la semana y el intervalo anual no cuentan; los modos sí.",
+  "editor.once.past": "La última fecha ya ha pasado: elige una a partir de hoy para poder guardar.",
+  "schedule.once.chip": "Solo {when}",
 };

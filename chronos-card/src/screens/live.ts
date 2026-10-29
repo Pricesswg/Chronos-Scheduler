@@ -4,7 +4,7 @@ import { chronosStyles } from "../styles";
 import { icon, deviceIcon, weatherIcon } from "../icons";
 import { getDeviceColor } from "../device-colors";
 import { actionLabel } from "../actions";
-import { resolveBlockTime, serverParts } from "../utils";
+import { resolveBlockTime, serverParts, onceCovers, serverTodayIso } from "../utils";
 import { t } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
 import "../timeline";
@@ -170,7 +170,7 @@ export class ChronosLive extends LitElement {
     // run today (day mask or date_range) must not show an "active" block.
     const weekday = serverParts().weekday;
     const liveSchedules = schedules.filter((s) => s.enabled).map((s) => {
-      const today = !!(s.days?.[weekday] ?? 1) && this._inDateRange(s);
+      const today = onceCovers(s, serverTodayIso()) ?? (!!(s.days?.[weekday] ?? 1) && this._inDateRange(s));
       const active = today
         ? s.blocks.find((b) => {
             const st = resolveBlockTime(b, "start");

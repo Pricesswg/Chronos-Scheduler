@@ -358,3 +358,63 @@ test.describe("server time zone", () => {
     await expect(page.locator("chronos-card .topnav__zone")).toHaveCount(0);
   });
 });
+
+test.describe("single-date schedules (issue #33)", () => {
+  test.beforeEach(async ({ page }) => {
+    // Wednesday 21 October 2026, noon in Rome.
+    await page.clock.setFixedTime(new Date("2026-10-21T10:00:00Z"));
+  });
+
+  test("the editor sets dates with their year and refuses a past one", async ({ page }) => {
+    await mount(page, "editor");
+    const once = page.locator('chronos-editor [data-role="once"]');
+    await once.locator("label.switch").click();
+    expect(await page.evaluate(() => (window as any).__card._schedules.find((s) => s.id === "s1").once))
+      .toEqual({ from: "2026-10-21", to: "2026-10-21" });
+    await expect(page.locator('chronos-editor [data-role="once-chip"]')).toContainText("Solo 21/10");
+    await expect(page.locator('chronos-editor [data-role="weekdays"]')).toHaveCSS("pointer-events", "none");
+
+    // A later end date, then a start after it: the end follows the start.
+    const to = once.locator('[data-role="once-to"]');
+    await to.fill("2026-10-23");
+    await to.dispatchEvent("change");
+    await expect(page.locator('chronos-editor [data-role="once-chip"]')).toContainText("21/10 → 23/10");
+    const from = once.locator('[data-role="once-from"]');
+    await from.fill("2026-10-25");
+    await from.dispatchEvent("change");
+    expect(await page.evaluate(() => (window as any).__card._schedules.find((s) => s.id === "s1").once))
+      .toEqual({ from: "2026-10-25", to: "2026-10-25" });
+
+    // A date already behind us cannot be saved.
+    await page.evaluate(() => (window as any).__card.updateScheduleLocal("s1", { once: { from: "2026-10-01", to: "2026-10-02" } }));
+    await expect(page.locator('chronos-editor [data-role="once-error"]')).toBeVisible();
+    await page.locator('chronos-editor button[data-action="save"]').click();
+    const saves = await page.evaluate(() => (window as any).__wsLog.filter((m) => m.type === "chronos/schedules/save").length);
+    expect(saves).toBe(0);
+  });
+
+  test("the week shows it only on its dates, and the backend event switches it off", async ({ page }) => {
+    await mount(page, "week");
+    // Friday 23 October only: in the week of Wednesday the 21st, day index 4.
+    await page.evaluate(async () => {
+      const c = (window as any).__card;
+      c._schedules = c._schedules.map((s) => (s.id === "s1" ? { ...s, once: { from: "2026-10-23", to: "2026-10-23" } } : s));
+      c._savedSchedules = JSON.parse(JSON.stringify(c._schedules));
+      await c.updateComplete;
+    });
+    const rows = page.locator("chronos-week .weekgrid__row");
+    const dayWith = async (name: string) => {
+      const out: number[] = [];
+      const n = await rows.count();
+      for (let i = 0; i < n; i++) if ((await rows.nth(i).innerText()).includes(name)) out.push(i);
+      return out;
+    };
+    const hits = await dayWith("Irrigazione mattina zona 1");
+    expect(hits.length).toBe(1);
+    await expect(rows.nth(hits[0]).locator(".weekgrid__day")).toContainText("Ven");
+
+    // The backend disables it after its last block: the card follows.
+    await page.evaluate(() => (window as any).__eventSubs["chronos_schedule_finished"]({ data: { schedule_id: "s1", enabled: false } }));
+    expect(await page.evaluate(() => (window as any).__card._schedules.find((s) => s.id === "s1").enabled)).toBe(false);
+  });
+});

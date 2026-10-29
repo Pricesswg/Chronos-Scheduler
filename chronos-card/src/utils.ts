@@ -195,3 +195,50 @@ export function serverTomorrowMidnightIso(now: Date = new Date()): string {
   const next = new Date(Date.UTC(p.year, p.month - 1, p.day + 1));
   return `${next.getUTCFullYear()}-${two(next.getUTCMonth() + 1)}-${two(next.getUTCDate())}T00:00:00`;
 }
+
+function isoOf(y: number, m: number, d: number): string {
+  const two = (n: number) => String(n).padStart(2, "0");
+  return `${y}-${two(m)}-${two(d)}`;
+}
+
+/** Today's date on the server's clock, as "YYYY-MM-DD". */
+export function serverTodayIso(now: Date = new Date()): string {
+  const p = serverParts(now);
+  return isoOf(p.year, p.month, p.day);
+}
+
+/** `iso` moved by `days` (calendar arithmetic, no time zone involved). */
+export function addDaysIso(iso: string, days: number): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d + days));
+  return isoOf(t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate());
+}
+
+/** The dates of a single-date schedule, ordered, or null for a weekly one.
+ * Mirrors gate.once_window in the backend: unreadable values count as unset. */
+export function onceWindow(s: { once?: { from: string; to: string } | null }): { from: string; to: string } | null {
+  const raw = s.once;
+  const ok = (v: unknown) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
+  if (!raw || !ok(raw.from)) return null;
+  const to = ok(raw.to) ? raw.to : raw.from;
+  return raw.from <= to ? { from: raw.from, to } : { from: to, to: raw.from };
+}
+
+/** True/false when the schedule has dates (does `iso` fall inside them?),
+ * null for a weekly schedule, so callers fall back to the weekday mask. */
+export function onceCovers(s: { once?: { from: string; to: string } | null }, iso: string): boolean | null {
+  const w = onceWindow(s);
+  return w ? w.from <= iso && iso <= w.to : null;
+}
+
+/** "14/11", "14/11 → 16/11", with the year when it is not this year's. */
+export function fmtOnce(s: { once?: { from: string; to: string } | null }): string {
+  const w = onceWindow(s);
+  if (!w) return "";
+  const year = serverParts().year;
+  const day = (iso: string) => {
+    const [y, m, d] = iso.split("-");
+    return Number(y) === year ? `${d}/${m}` : `${d}/${m}/${y}`;
+  };
+  return w.from === w.to ? day(w.from) : `${day(w.from)} → ${day(w.to)}`;
+}

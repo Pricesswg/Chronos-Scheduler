@@ -228,6 +228,10 @@ export interface Schedule {
   /** Safety off: minutes after a MANUAL turn-on of one of the devices before
    * Chronos switches it off, at any time of day. Unset/null = off. */
   manual_off_min?: number | null;
+  /** Single-date schedule (issue #33): runs only on these dates, year
+   * included, then disables itself after the last block of the last date.
+   * ISO dates; null or unset = ordinary weekly schedule. */
+  once?: { from: string; to: string } | null;
 }
 
 export interface Settings {

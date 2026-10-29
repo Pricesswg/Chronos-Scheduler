@@ -894,4 +894,10 @@ export const PL_STRINGS: Record<string, string> = {
   "settings.modes.hint": "Zmiana nazwy trybu nie zmienia harmonogramów, które go używają. Do {n} trybów. Trzy wbudowane bez własnej nazwy pozostają w encji select jako home, away i holiday, więc istniejące automatyzacje działają dalej.",
   "tz.server_clock": "Czas serwera Home Assistant ({zone}): harmonogramy działają według tego zegara",
   "tz.server_short": "czas {zone}",
+  "editor.once.label": "Tylko w określone dni",
+  "editor.once.from": "Od",
+  "editor.once.to": "Do",
+  "editor.once.hint": "Harmonogram działa tylko w te dni, łącznie z rokiem, i sam się wyłącza po ostatnim bloku ostatniego dnia, po wykonaniu jego akcji końcowej. Aby użyć go ponownie, wybierz nowe daty i go włącz. Dopóki to jest włączone, dni tygodnia i zakres roczny nie mają znaczenia; tryby tak.",
+  "editor.once.past": "Ostatnia data już minęła: wybierz datę od dziś, aby zapisać.",
+  "schedule.once.chip": "Tylko {when}",
 };

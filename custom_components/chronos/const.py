@@ -450,6 +450,9 @@ OFF_RECALL_MAX_AGE_HOURS = 12
 EVENT_BLOCK_EXECUTED = f"{DOMAIN}_block_executed"
 EVENT_RULE_TRIGGERED = f"{DOMAIN}_rule_triggered"
 EVENT_COMMAND_ERROR = f"{DOMAIN}_command_error"
+# A single-date schedule finished and disabled itself (issue #33); the card
+# listens to it to refresh the switch without a reload.
+EVENT_SCHEDULE_FINISHED = f"{DOMAIN}_schedule_finished"
 
 # Dispatcher signals for the entity platforms (switch / binary_sensor /
 # sensor). SIGNAL_STATE tells existing entities to re-read their state

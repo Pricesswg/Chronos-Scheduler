@@ -4,7 +4,7 @@ import { chronosStyles } from "../styles";
 import { icon, deviceIcon } from "../icons";
 import { getDeviceColor } from "../device-colors";
 import { actionColor } from "../actions";
-import { fmtHour, computeRepeat } from "../utils";
+import { fmtHour, computeRepeat, onceWindow, fmtOnce } from "../utils";
 import { t } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
 import type { ChronosDevice, Schedule } from "../types";
@@ -128,7 +128,7 @@ export class ChronosOverview extends LitElement {
         <div class="sched-card__header">
           <div style="flex:1;min-width:0">
             <h3 class="sched-card__title">${s.name}</h3>
-            <div class="sched-card__sub">${computeRepeat(s.days)} · ${s.blocks.length}</div>
+            <div class="sched-card__sub">${onceWindow(s) ? t("schedule.once.chip", { when: fmtOnce(s) }) : computeRepeat(s.days)} · ${s.blocks.length}</div>
           </div>
           <button class="btn btn--icon btn--ghost btn--sm" data-action="pause" title="${paused ? t("pause.resume") : t("pause.button")}"
             @click=${(e: Event) => { e.stopPropagation(); if (paused) this.card.doPauseSchedule(s.id, null); else this.card.openPauseModal(s.id); }}>

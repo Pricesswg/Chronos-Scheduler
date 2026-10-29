@@ -123,6 +123,7 @@ export function importSchedule(json: string, devices: ChronosDevice[]): ImportRe
       return blk;
     }),
     date_range: raw.date_range ?? null,
+    once: raw.once && typeof raw.once === "object" ? raw.once : null,
     ...(["linear", "radial", "list"].includes(raw.timeline_variant)
       ? { timeline_variant: raw.timeline_variant }
       : {}),

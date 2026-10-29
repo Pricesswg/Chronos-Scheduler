@@ -3,7 +3,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { chronosStyles } from "../styles";
 import { icon } from "../icons";
 import { KIND_COLORS } from "../actions";
-import { getDays, serverParts } from "../utils";
+import { getDays, serverParts, onceCovers, serverTodayIso, addDaysIso } from "../utils";
 import { t } from "../i18n";
 import type { ChronosCard } from "../chronos-card";
 import { groupColor, groupInk, knownGroups } from "../grouping";
@@ -90,7 +90,9 @@ export class ChronosWeek extends LitElement {
               </div>
             </div>
             ${days.map((d: string, dayIdx: number) => {
-              const todays = visibleSchedules.filter((s) => s.days[dayIdx]);
+              // A single-date schedule appears only on its dates of this week.
+              const dateIso = addDaysIso(serverTodayIso(), dayIdx - adjustedToday);
+              const todays = visibleSchedules.filter((s) => onceCovers(s, dateIso) ?? !!s.days[dayIdx]);
               return html`
               <div class="weekgrid__row">
                 <div class="weekgrid__day" style="color:${dayIdx === adjustedToday ? "var(--accent)" : ""}">

@@ -116,7 +116,8 @@ export async function makeHass({ settings: settingsOverride = {}, timeZone = "Eu
       return structuredClone(h(msg));
     },
     callService: async () => {},
-    connection: { subscribeEvents: async () => () => {} },
+    // Subscriptions are kept so a test can fire a backend event at the card.
+    connection: { subscribeEvents: async (cb, type) => { (window.__eventSubs ||= {})[type] = cb; return () => {}; } },
     states,
     themes: { darkMode: false },
     language: "it",

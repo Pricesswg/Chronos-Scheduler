@@ -13,9 +13,17 @@ from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.start import async_at_started
 from homeassistant.util import dt as dt_util
 
-from .const import SIGNAL_STATE
+from .const import EVENT_SCHEDULE_FINISHED, SIGNAL_STATE
 from .modes import resolve_mode
-from .gate import is_in_date_range, is_paused, pause_deadline, schedule_is_live, schedule_runs_in_mode
+from .events import make_history_entry
+from .gate import (
+    is_paused,
+    once_expired,
+    once_window,
+    pause_deadline,
+    runs_on_day,
+    schedule_is_live,
+)
 from .store import ChronosStore
 from .timing import jitter_minutes
 from .rules import RulesMixin
@@ -212,6 +220,41 @@ class ChronosScheduler(
         await self._tick(dt_util.utcnow())
         return {"ok": True, "mode": mode}
 
+    def _once_busy(self, sid: str) -> bool:
+        """Something of this schedule is still under way: a switch-off lost
+        to an offline device and waiting to be retried, or a timer that runs
+        past the block (sequential irrigation, auto-off). Disabling now would
+        drop them, and a heater could stay on."""
+        if any(str(r.get("schedule_id")) == sid for r in self._pending_recalls.values()):
+            return True
+        return any(
+            key.startswith(f"{sid}:") and not task.done()
+            for key, task in self._sequence_tasks.items()
+        )
+
+    async def _finish_once(self, sched: dict) -> None:
+        """Disable a single-date schedule that has run its dates (issue #33).
+        Disabled, not deleted: the schedule is ready for the next trip with a
+        new date, and its History stays readable."""
+        sid = str(sched.get("id", ""))
+        if not sched.get("enabled") or self._once_busy(sid):
+            return
+        await self._store.async_toggle_schedule(sid, False)
+        self._last_executed.pop(sid, None)
+        self._store.append_history(make_history_entry(
+            sched, kind="system", action_id="once_finished", entity_id=None,
+            value="single-date schedule finished: disabled",
+        ))
+        _LOGGER.info("Chronos: single-date schedule %s finished, disabled", sched.get("name"))
+        if self._store.settings.get("notify_block_executed", True):
+            await self._notify(
+                "Single-date schedule finished: it has been disabled. "
+                "Set new dates and enable it to use it again.",
+                title=f"Chronos · {sched.get('name', '')}",
+            )
+        self._hass.bus.async_fire(EVENT_SCHEDULE_FINISHED, {"schedule_id": sid, "enabled": False})
+        async_dispatcher_send(self._hass, SIGNAL_STATE)
+
     async def pause_schedule(self, schedule_id: str, until) -> dict:
         """Pause a schedule until `until` (aware datetime), or resume it
         when `until` is None.
@@ -309,6 +352,11 @@ class ChronosScheduler(
                 # below like a catch-up.
                 await self._store.async_set_pause(sched_id, None)
                 async_dispatcher_send(self._hass, SIGNAL_STATE)
+            if sched.get("enabled") and once_expired(sched, local_now):
+                # Catch-up: the last date went by while Home Assistant was
+                # down, or a lost switch-off was still pending yesterday.
+                await self._finish_once(sched)
+                continue
             if schedule_is_live(sched, local_now, mode=self._mode()):
                 continue
 
@@ -342,6 +390,18 @@ class ChronosScheduler(
             # device state when both act on the same block.
             await self._evaluate_holds(sched, local_now, effective_blocks, current_idx)
             await self._evaluate_presence(sched, local_now, current_block, current_idx)
+            # A single-date schedule switches itself off once its last block
+            # of its last date has ended, after that block's end action above.
+            window = once_window(sched)
+            if (
+                window is not None
+                and local_now.date() == window[1]
+                and current_block is None
+                and current_hour >= max(
+                    (self._resolve_block_time(b, "end") for b in effective_blocks), default=0.0,
+                )
+            ):
+                await self._finish_once(sched)
 
         # Offline-recall safety net: the state listener is the primary
         # trigger, but a missed event (subscription race) must not leave
@@ -377,18 +437,10 @@ class ChronosScheduler(
         sun-anchored, since sun times are resolved against today.
         """
         local_now = dt_util.now()
-        weekday = local_now.weekday()
         current_hour = local_now.hour + local_now.minute / 60
         enabled = bool(sched.get("enabled"))
         paused = is_paused(sched, local_now)
-        days = sched.get("days", [1] * 7)
-        runs_today = (
-            enabled
-            and not paused
-            and schedule_runs_in_mode(sched, self._mode())
-            and (weekday >= len(days) or bool(days[weekday]))
-            and is_in_date_range(sched, local_now)
-        )
+        runs_today = schedule_is_live(sched, local_now, mode=self._mode()) is None
 
         blocks = self._effective_blocks(sched)
         block, idx = self._block_at(blocks, current_hour) if runs_today else (None, -1)
@@ -438,14 +490,8 @@ class ChronosScheduler(
         if running and block is not None:
             return self._hour_to_dt(local_now, self._resolve_block_time(block, "end"))
         blocks = self._effective_blocks(sched)
-        days = sched.get("days", [1] * 7)
         # Remaining starts today (only if the schedule runs today at all).
-        weekday = local_now.weekday()
-        runs_today = (
-            bool(sched.get("enabled"))
-            and (weekday >= len(days) or bool(days[weekday]))
-            and is_in_date_range(sched, local_now)
-        )
+        runs_today = bool(sched.get("enabled")) and runs_on_day(sched, local_now)
         if runs_today:
             starts = sorted(
                 self._resolve_block_time(b, "start") for b in blocks
@@ -456,15 +502,19 @@ class ChronosScheduler(
         # Scan forward for the next day this schedule runs.
         if not sched.get("enabled") or not blocks:
             return None
+        earliest = min(self._resolve_block_time(b, "start") for b in blocks)
+        window = once_window(sched)
+        if window is not None:
+            # A single date can be weeks away: jump straight to it.
+            if window[0] > local_now.date():
+                ahead = (window[0] - local_now.date()).days
+                return self._hour_to_dt(local_now + timedelta(days=ahead), earliest)
+            nxt = local_now + timedelta(days=1)
+            return self._hour_to_dt(nxt, earliest) if nxt.date() <= window[1] else None
         for ahead in range(1, 8):
             day = local_now + timedelta(days=ahead)
-            wd = day.weekday()
-            if wd < len(days) and not days[wd]:
-                continue
-            if not is_in_date_range(sched, day):
-                continue
-            earliest = min(self._resolve_block_time(b, "start") for b in blocks)
-            return self._hour_to_dt(day, earliest)
+            if runs_on_day(sched, day):
+                return self._hour_to_dt(day, earliest)
         return None
 
     def _block_at(self, blocks: list, hour: float) -> tuple[dict | None, int]:

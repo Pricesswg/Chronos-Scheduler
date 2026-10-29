@@ -894,4 +894,10 @@ export const NL_STRINGS: Record<string, string> = {
   "settings.modes.hint": "Een modus hernoemen verandert de schema's die hem gebruiken niet. Tot {n} modi. De drie ingebouwde zonder eigen naam blijven home, away en holiday in de select-entiteit, zodat bestaande automatiseringen blijven werken.",
   "tz.server_clock": "Servertijd van Home Assistant ({zone}): schema's volgen deze klok",
   "tz.server_short": "tijd {zone}",
+  "editor.once.label": "Alleen op bepaalde data",
+  "editor.once.from": "Van",
+  "editor.once.to": "Tot",
+  "editor.once.hint": "Het schema draait alleen op deze data, inclusief jaar, en schakelt zichzelf uit na het laatste blok van de laatste datum, nadat de eindactie is uitgevoerd. Kies nieuwe data en schakel het weer in om het opnieuw te gebruiken. Zolang dit aan staat, tellen de weekdagen en de jaarperiode niet; de modi wel.",
+  "editor.once.past": "De laatste datum is al voorbij: kies er een vanaf vandaag om op te slaan.",
+  "schedule.once.chip": "Alleen {when}",
 };

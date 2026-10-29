@@ -894,4 +894,10 @@ export const PT_STRINGS: Record<string, string> = {
   "settings.modes.hint": "Mudar o nome de um modo não altera os agendamentos que o usam. Até {n} modos. Os três predefinidos sem um nome teu continuam home, away e holiday na entidade select, para que as automatizações existentes continuem a funcionar.",
   "tz.server_clock": "Hora do servidor Home Assistant ({zone}): os agendamentos seguem este relógio",
   "tz.server_short": "hora de {zone}",
+  "editor.once.label": "Só em datas específicas",
+  "editor.once.from": "De",
+  "editor.once.to": "Até",
+  "editor.once.hint": "O agendamento só corre nestas datas, ano incluído, e desativa-se sozinho depois do último bloco da última data, após a sua ação de fim. Para o reutilizar, escolhe novas datas e ativa-o. Enquanto isto estiver ativo, os dias da semana e o intervalo anual não contam; os modos sim.",
+  "editor.once.past": "A última data já passou: escolhe uma a partir de hoje para poder guardar.",
+  "schedule.once.chip": "Só {when}",
 };
