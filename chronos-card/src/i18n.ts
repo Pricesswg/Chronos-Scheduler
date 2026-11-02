@@ -363,6 +363,9 @@ const STRINGS: Record<string, Record<BaseLang, string>> = {
   "settings.colors.boiler.title": { it: "Boiler · gradiente temperatura", en: "Water heater · temperature gradient", fr: "Chauffe-eau · dégradé de température", de: "Boiler · Temperaturverlauf" },
   "settings.colors.boiler.desc": { it: "Stessa logica del termostato, range tipico 30-75°C.", en: "Same logic as the thermostat, typical range 30-75°C.", fr: "Même logique que le thermostat, plage typique 30-75°C.", de: "Gleiche Logik wie Thermostat, typischer Bereich 30-75 °C." },
   "settings.colors.preset.title": { it: "Preset modalità (climate)", en: "Climate preset modes", fr: "Préréglages climate", de: "Climate-Presets" },
+  "settings.colors.fanmode.title": { it: "Modalità ventola (climate)", en: "Climate fan modes", fr: "Modes de ventilation climate", de: "Climate-Lüfterstufen" },
+  "settings.colors.fanmode.desc": { it: "Colore delle modalità ventola auto e quiet", en: "Color of the auto and quiet fan modes", fr: "Couleur des modes de ventilation auto et quiet", de: "Farbe der Lüfterstufen auto und quiet" },
+  "settings.colors.fanmode.note": { it: "I livelli low, medium, high e i valori numerici (1-5) usano il gradiente «Ventilatore» (inizio → fine) configurato più sotto.", en: "Levels low, medium, high and numeric values (1-5) use the Fan start → end gradient configured below.", fr: "Les niveaux low, medium, high et les valeurs numériques (1-5) utilisent le dégradé Ventilateur (début → fin) configuré plus bas.", de: "Die Stufen low, medium, high und numerische Werte (1-5) verwenden den weiter unten konfigurierten Lüfter-Verlauf (Start → Ende)." },
   "settings.colors.preset.desc": { it: "Override del colore quando il termostato è in un preset specifico", en: "Color override when the thermostat is in a specific preset", fr: "Surcharge de couleur quand le thermostat est dans un préréglage spécifique", de: "Farb-Überschreibung, wenn das Thermostat in einem bestimmten Preset ist" },
   "settings.colors.add_stop": { it: "Stop", en: "Stop", fr: "Palier", de: "Stopp" },
   "settings.colors.remove_stop": { it: "Rimuovi", en: "Remove", fr: "Retirer", de: "Entfernen" },
@@ -1032,6 +1035,8 @@ const STRINGS: Record<string, Record<BaseLang, string>> = {
   // doesn't break the UI, it just leaks Italian.
   "action.thermostat.set_temperature": { it: "Imposta temperatura", en: "Set temperature", fr: "Définir la température", de: "Temperatur einstellen" },
   "action.thermostat.set_preset": { it: "Preset", en: "Preset", fr: "Préréglage", de: "Voreinstellung" },
+  "action.thermostat.set_fan_mode": { it: "Modalità ventola", en: "Fan mode", fr: "Mode ventilation", de: "Lüfterstufe" },
+  "action.thermostat.set_fan_mode.value": { it: "Modalità", en: "Mode", fr: "Mode", de: "Modus" },
   "action.thermostat.set_hvac_mode": { it: "Modalità HVAC", en: "HVAC mode", fr: "Mode CVC", de: "HVAC-Modus" },
   "action.thermostat.set_hvac_mode.value": { it: "Modalità", en: "Mode", fr: "Mode", de: "Modus" },
   "action.thermostat.turn_on": { it: "Accendi", en: "Turn on", fr: "Allumer", de: "Einschalten" },

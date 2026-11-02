@@ -709,6 +709,8 @@ class DispatchMixin:
             service_data["temperature"] = float(value)
         elif action_id == "set_preset" and value is not None:
             service_data["preset_mode"] = str(value)
+        elif action_id == "set_fan_mode" and value not in (None, ""):
+            service_data["fan_mode"] = str(value)
         elif action_id == "set_hvac_mode" and value not in (None, ""):
             service_data["hvac_mode"] = str(value)
         elif action_id == "set_operation" and value is not None:

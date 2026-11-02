@@ -81,6 +81,17 @@ ACTIONS_BY_TYPE = {
                 "default": "comfort",
             },
         },
+        {
+            "id": "set_fan_mode",
+            "label": "Fan mode",
+            "kind": "preset",
+            "service": "climate.set_fan_mode",
+            "value": {
+                "type": "enum",
+                "options": ["auto", "quiet", "low", "medium", "high", "1", "2", "3", "4", "5"],
+                "default": "auto",
+            },
+        },
         # set_hvac_mode is the real "power on" for air conditioners: many
         # units ignore turn_on or resume an arbitrary mode; selecting the
         # mode (cool/heat/dry/...) is deterministic across brands. The
@@ -369,6 +380,9 @@ DEFAULT_SETTINGS = {
     },
     # Range device colors (gradient endpoints). Used by getDeviceColor for
     # device types whose color reflects a continuous state value.
+    # Climate fan-mode colors (auto/quiet); numeric and low/medium/high
+    # levels follow the `fan` gradient of color_range.
+    "color_fan_modes": {"auto": "#10b981", "quiet": "#6366f1"},
     "color_range": {
         "blind": {"start": "#3c5078", "end": "#c8b4ff"},
         "fan":   {"start": "#06b6d4", "end": "#3b82f6"},

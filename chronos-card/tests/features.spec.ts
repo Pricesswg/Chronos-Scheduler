@@ -451,3 +451,11 @@ test("a skip rule can resume its block (issue #35)", async ({ page }) => {
   expect(saved.rule.effect).toBe("skip");
   expect(saved.rule.resume).toBe(true);
 });
+
+test("settings expose the climate fan mode colors, defaulting to the eco and sleep colors", async ({ page }) => {
+  await mount(page, "settings");
+  const pickers = page.locator("chronos-settings-screen").locator('div:has(> .grid-2 .mono:text-is("auto")) input[type="color"]');
+  await expect(pickers).toHaveCount(2);
+  await expect(pickers.nth(0)).toHaveValue("#10b981");
+  await expect(pickers.nth(1)).toHaveValue("#6366f1");
+});
