@@ -900,4 +900,7 @@ export const ES_STRINGS: Record<string, string> = {
   "editor.once.hint": "La programación solo funciona en estas fechas, año incluido, y se desactiva sola tras el último bloque de la última fecha, después de su acción final. Para reutilizarla, elige fechas nuevas y actívala. Mientras esté activo, los días de la semana y el intervalo anual no cuentan; los modos sí.",
   "editor.once.past": "La última fecha ya ha pasado: elige una a partir de hoy para poder guardar.",
   "schedule.once.chip": "Solo {when}",
+  "action.extra.hvac_mode": "Modo HVAC",
+  "wr.skip.resume.label": "Ejecutar el bloque si la condición cesa mientras está activo",
+  "wr.skip.resume.hint": "Sin esta opción un bloque saltado sigue saltado hasta el final. Con ella, en cuanto la condición deja de cumplirse y el bloque sigue en curso, Chronos lo ejecuta enseguida, una sola vez. Ejemplo: saltar la calefacción mientras el sensor de presencia está apagado, y calentar en cuanto alguien vuelve. Si varias reglas saltan el mismo bloque, cada una debe permitirlo, y el bloque arranca cuando ya no se cumple ninguna.",
 };

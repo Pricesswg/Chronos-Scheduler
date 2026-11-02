@@ -900,4 +900,7 @@ export const PT_STRINGS: Record<string, string> = {
   "editor.once.hint": "O agendamento só corre nestas datas, ano incluído, e desativa-se sozinho depois do último bloco da última data, após a sua ação de fim. Para o reutilizar, escolhe novas datas e ativa-o. Enquanto isto estiver ativo, os dias da semana e o intervalo anual não contam; os modos sim.",
   "editor.once.past": "A última data já passou: escolhe uma a partir de hoje para poder guardar.",
   "schedule.once.chip": "Só {when}",
+  "action.extra.hvac_mode": "Modo HVAC",
+  "wr.skip.resume.label": "Executar o bloco se a condição deixar de se verificar enquanto está ativo",
+  "wr.skip.resume.hint": "Sem esta opção um bloco saltado fica saltado até ao fim. Com ela, assim que a condição deixa de se verificar e o bloco ainda está a decorrer, o Chronos executa-o de imediato, uma só vez. Exemplo: saltar o aquecimento enquanto o sensor de presença está desligado, e aquecer assim que alguém volta. Se várias regras estão a saltar o mesmo bloco, cada uma tem de o permitir, e o bloco arranca quando nenhuma se verifica.",
 };

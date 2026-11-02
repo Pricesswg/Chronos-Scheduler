@@ -104,6 +104,9 @@ class ChronosScheduler(
         # Safety off after a manual turn-on: entity -> {unsub, schedule_id}.
         # In-memory: the startup catch-up rebuilds it from last_changed.
         self._manual_timers: dict[str, dict] = {}
+        # Blocks skipped by resumable skip rules: schedule id -> block index.
+        # In-memory: after a restart the catch-up re-evaluates the skip.
+        self._skipped: dict[str, int] = {}
         self._unsub_manual = None
         self._manual_watched: tuple = ()
 
@@ -366,6 +369,7 @@ class ChronosScheduler(
             current_block, current_idx = self._block_at(effective_blocks, current_hour)
             prev_key = sched_id
             previous_block = self._last_executed.get(prev_key)
+            await self._check_resume(sched, current_block, current_idx, previous_block)
 
             if current_block != previous_block:
                 self._last_executed[prev_key] = current_block

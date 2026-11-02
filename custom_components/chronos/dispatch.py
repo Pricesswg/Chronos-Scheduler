@@ -23,23 +23,32 @@ class DispatchMixin:
     on the scheduler instance and use its attributes (_hass, _store, the
     per-feature state dicts set up in ChronosScheduler.__init__)."""
 
-    async def _apply_block(self, sched: dict, block: dict, block_idx: int = -1) -> None:
-        """Apply a block transition. Evaluates 'skip' rules targeting this
-        block before dispatching the action."""
-        sched_name = sched.get("name", "")
-        weather_rules = self._rules_for(sched.get("id", ""))
-
-        for rule in weather_rules:
-            if not rule.get("active"):
-                continue
-            if rule.get("effect") != "skip":
+    async def _skip_rules_matching(self, sched: dict, block_idx: int) -> list[dict]:
+        """The active skip rules targeting this block whose condition holds
+        right now. All of them, not only the first: whether a skipped block
+        may resume depends on every rule that is keeping it skipped."""
+        out: list[dict] = []
+        for rule in self._rules_for(sched.get("id", "")):
+            if not rule.get("active") or rule.get("effect") != "skip":
                 continue
             target_idx = rule.get("block_index")
             if isinstance(target_idx, int) and target_idx != block_idx:
                 continue
-            matched = await self._evaluate_rule(rule)
-            if not matched:
-                continue
+            if await self._evaluate_rule(rule):
+                out.append(rule)
+        return out
+
+    async def _apply_block(self, sched: dict, block: dict, block_idx: int = -1) -> None:
+        """Apply a block transition. Evaluates 'skip' rules targeting this
+        block before dispatching the action."""
+        sched_name = sched.get("name", "")
+        matched = await self._skip_rules_matching(sched, block_idx)
+        if matched:
+            rule = matched[0]
+            if all(r.get("resume") for r in matched):
+                # Every rule skipping it allows resuming: the tick re-checks
+                # them and runs the block if they all clear (issue #35).
+                self._skipped[str(sched.get("id", ""))] = block_idx
             # Fire with its own Context so the logbook describer attributes
             # the skipped block to "Chronos · <sched>" rather than to the
             # opaque service that didn't fire.
@@ -65,6 +74,28 @@ class DispatchMixin:
                 )
             return
 
+        await self._dispatch_action(sched, block)
+
+    async def _check_resume(self, sched: dict, block, block_idx: int, previous_block) -> None:
+        """A block skipped by resumable rules runs as soon as none of the skip
+        rules holds any more, while it is still the active block (issue #35:
+        skip while a presence sensor is off, heat as soon as it turns on).
+        A change of block drops the wait: the new block is evaluated afresh."""
+        sid = str(sched.get("id", ""))
+        waiting = self._skipped.get(sid)
+        if waiting is None:
+            return
+        if block is None or block_idx != waiting or block != previous_block:
+            self._skipped.pop(sid, None)
+            return
+        if await self._skip_rules_matching(sched, block_idx):
+            return
+        self._skipped.pop(sid, None)
+        _LOGGER.info("Chronos: RESUMED schedule=%s block=#%d, skip rules cleared", sched.get("name"), block_idx)
+        self._store.append_history(make_history_entry(
+            sched, kind="rule", action_id="resume", entity_id=None,
+            value="skip rules cleared during the block",
+        ))
         await self._dispatch_action(sched, block)
 
 

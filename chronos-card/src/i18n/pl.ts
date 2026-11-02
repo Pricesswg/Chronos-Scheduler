@@ -900,4 +900,7 @@ export const PL_STRINGS: Record<string, string> = {
   "editor.once.hint": "Harmonogram działa tylko w te dni, łącznie z rokiem, i sam się wyłącza po ostatnim bloku ostatniego dnia, po wykonaniu jego akcji końcowej. Aby użyć go ponownie, wybierz nowe daty i go włącz. Dopóki to jest włączone, dni tygodnia i zakres roczny nie mają znaczenia; tryby tak.",
   "editor.once.past": "Ostatnia data już minęła: wybierz datę od dziś, aby zapisać.",
   "schedule.once.chip": "Tylko {when}",
+  "action.extra.hvac_mode": "Tryb HVAC",
+  "wr.skip.resume.label": "Wykonaj blok, jeśli warunek ustanie, gdy jest aktywny",
+  "wr.skip.resume.hint": "Bez tej opcji pominięty blok pozostaje pominięty do końca. Z nią, gdy tylko warunek przestaje obowiązywać, a blok wciąż trwa, Chronos wykonuje go od razu, jeden raz. Przykład: pomijaj ogrzewanie, gdy czujnik obecności jest wyłączony, i grzej, gdy tylko ktoś wróci. Jeśli kilka reguł pomija ten sam blok, każda musi na to pozwalać, a blok rusza, gdy żadna już nie obowiązuje.",
 };

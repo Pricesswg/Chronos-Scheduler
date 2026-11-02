@@ -900,4 +900,7 @@ export const NL_STRINGS: Record<string, string> = {
   "editor.once.hint": "Het schema draait alleen op deze data, inclusief jaar, en schakelt zichzelf uit na het laatste blok van de laatste datum, nadat de eindactie is uitgevoerd. Kies nieuwe data en schakel het weer in om het opnieuw te gebruiken. Zolang dit aan staat, tellen de weekdagen en de jaarperiode niet; de modi wel.",
   "editor.once.past": "De laatste datum is al voorbij: kies er een vanaf vandaag om op te slaan.",
   "schedule.once.chip": "Alleen {when}",
+  "action.extra.hvac_mode": "HVAC-modus",
+  "wr.skip.resume.label": "Het blok uitvoeren als de voorwaarde wegvalt terwijl het actief is",
+  "wr.skip.resume.hint": "Zonder deze optie blijft een overgeslagen blok overgeslagen tot het einde. Met de optie voert Chronos het meteen en één keer uit zodra de voorwaarde niet meer geldt en het blok nog loopt. Voorbeeld: verwarming overslaan zolang de aanwezigheidssensor uit is, en verwarmen zodra iemand thuiskomt. Als meerdere regels hetzelfde blok overslaan, moet elk het toestaan, en het blok start wanneer geen enkele meer geldt.",
 };

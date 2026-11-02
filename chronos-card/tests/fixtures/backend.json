@@ -14,7 +14,22 @@
      "max": 35,
      "step": 0.5,
      "default": 21
-    }
+    },
+    "extras": [
+     {
+      "key": "hvac_mode",
+      "type": "enum",
+      "label": "HVAC mode",
+      "options": [
+       "heat",
+       "cool",
+       "heat_cool",
+       "auto",
+       "dry",
+       "fan_only"
+      ]
+     }
+    ]
    },
    {
     "id": "set_preset",

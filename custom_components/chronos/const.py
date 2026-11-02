@@ -59,6 +59,16 @@ ACTIONS_BY_TYPE = {
             "kind": "set",
             "service": "climate.set_temperature",
             "value": {"type": "number", "unit": "°C", "min": 5, "max": 35, "step": 0.5, "default": 21},
+            # Sent in the same call as the temperature (issue #34): thermostats
+            # that keep one setpoint per mode would otherwise store it on the
+            # mode they happen to be in. Home Assistant hands it to the
+            # integration's set_temperature, which applies it.
+            "extras": [
+                {
+                    "key": "hvac_mode", "type": "enum", "label": "HVAC mode",
+                    "options": ["heat", "cool", "heat_cool", "auto", "dry", "fan_only"],
+                },
+            ],
         },
         {
             "id": "set_preset",

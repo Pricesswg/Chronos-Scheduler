@@ -418,3 +418,36 @@ test.describe("single-date schedules (issue #33)", () => {
     expect(await page.evaluate(() => (window as any).__card._schedules.find((s) => s.id === "s1").enabled)).toBe(false);
   });
 });
+
+test("a thermostat block can send the HVAC mode with the temperature (issue #34)", async ({ page }) => {
+  await mount(page, "editor");
+  await page.evaluate(() => {
+    const c = (window as any).__card;
+    c.selectSchedule("s3", "editor");
+  });
+  // Select the first block of the thermostat schedule.
+  await page.evaluate(() => {
+    const ed = (window as any).__card.shadowRoot.querySelector("chronos-editor");
+    ed._selectedBlockIdx = 0;
+    ed.requestUpdate();
+  });
+  const sel = page.locator('chronos-editor select[data-extra="hvac_mode"]');
+  await expect(sel).toHaveCount(1);
+  await sel.selectOption("heat");
+  expect(await page.evaluate(() => (window as any).__card._schedules.find((s) => s.id === "s3").blocks[0].action.extras))
+    .toEqual({ hvac_mode: "heat" });
+  await sel.selectOption("");
+  expect(await page.evaluate(() => (window as any).__card._schedules.find((s) => s.id === "s3").blocks[0].action.extras))
+    .toBeUndefined();
+});
+
+test("a skip rule can resume its block (issue #35)", async ({ page }) => {
+  await mount(page, "weatherRule");
+  const resume = page.locator('chronos-weather-rule [data-role="resume"]');
+  await expect(resume.locator("input")).not.toBeChecked();
+  await resume.locator("label.switch").click();
+  await page.locator("chronos-weather-rule .builder-actions .btn--primary").click();
+  const saved = await page.evaluate(() => (window as any).__wsLog.filter((m) => m.type === "chronos/rules/save").pop());
+  expect(saved.rule.effect).toBe("skip");
+  expect(saved.rule.resume).toBe(true);
+});

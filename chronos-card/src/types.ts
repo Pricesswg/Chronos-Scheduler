@@ -188,6 +188,9 @@ export interface WeatherRule {
   hold_action_value?: number | string;
   hold_release_action_id?: string;
   hold_release_action_value?: number | string;
+  /** Skip rules only (issue #35): when every skip rule holding the block
+   * clears while it is still active, the block runs at once. */
+  resume?: boolean;
 }
 
 export interface DateRange {

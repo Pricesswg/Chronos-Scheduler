@@ -76,6 +76,7 @@ export class ChronosWeatherRule extends LitElement {
   // Force action
   @state() private _actionId = "";
   @state() private _actionValue: number | string | null = null;
+  @state() private _resume = false;
   @state() private _fireMode: "every" | "once_per_day" | "once_per_daytime" | "once_per_nighttime" = "once_per_daytime";
 
   // Hold on threshold (twilight switch). The two thresholds carry both the
@@ -553,7 +554,20 @@ export class ChronosWeatherRule extends LitElement {
   private _renderEffectParams(typeActions: any[]) {
     const e = this._effect;
     if (e === "skip") {
-      return html`<p class="text-sm text-mute" style="margin:0">${t("wr.effect.skip.desc")}</p>`;
+      return html`
+        <div class="field" style="margin:0" data-role="resume">
+          <div class="row" style="gap:10px;align-items:center">
+            <label class="switch">
+              <input type="checkbox" .checked=${this._resume}
+                @change=${(ev: Event) => { this._resume = (ev.target as HTMLInputElement).checked; }}/>
+              <span class="switch__track"></span>
+              <span class="switch__thumb"></span>
+            </label>
+            <span class="text-sm fw-600">${t("wr.skip.resume.label")}</span>
+          </div>
+          <span class="field__hint" style="display:block;margin-top:4px">${t("wr.skip.resume.hint")}</span>
+        </div>
+      `;
     }
     if (e === "shift") {
       return html`
@@ -878,6 +892,7 @@ export class ChronosWeatherRule extends LitElement {
         block_index: tg.block_index ?? null,
       })),
     };
+    if (this._effect === "skip" && this._resume) rule.resume = true;
     if (this._effect === "shift" || this._effect === "extend" || this._effect === "shrink") {
       rule.delta_minutes = Math.abs(this._deltaMin);
       rule.direction = this._direction;
@@ -938,6 +953,7 @@ export class ChronosWeatherRule extends LitElement {
       this._actionId = "";
       this._actionValue = null;
       this._fireMode = "once_per_daytime";
+      this._resume = false;
       this._scaleVar = "temperature";
       this._scaleVarMin = 25;
       this._scaleVarMax = 35;
@@ -974,6 +990,7 @@ export class ChronosWeatherRule extends LitElement {
     if (r.action_id) this._actionId = r.action_id;
     this._actionValue = r.action_value !== undefined ? r.action_value : null;
     if (r.fire_mode) this._fireMode = r.fire_mode;
+    this._resume = !!r.resume;
     if (r.scale_var) this._scaleVar = r.scale_var;
     if (r.scale_var_min !== undefined) this._scaleVarMin = r.scale_var_min;
     if (r.scale_var_max !== undefined) this._scaleVarMax = r.scale_var_max;

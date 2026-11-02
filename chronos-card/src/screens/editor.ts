@@ -1296,7 +1296,16 @@ export class ChronosEditor extends LitElement {
                     }}
                     placeholder="—"
                     style="flex:1;min-width:100px"/>
-                ` : spec.type === "string" ? html`
+                ` : spec.type === "enum" ? html`
+                  <select class="select mono" data-extra="${spec.key}" style="flex:1;min-width:100px"
+                    @change=${(e: Event) => {
+                      const v = (e.target as HTMLSelectElement).value;
+                      this._setBlockExtra(schedId, spec.key, v === "" ? undefined : v);
+                    }}>
+                    <option value="" ?selected=${cur === undefined || cur === null || cur === ""}>—</option>
+                    ${(spec.options || []).map((o: string) => html`<option value="${o}" ?selected=${cur === o}>${o}</option>`)}
+                  </select>
+` : spec.type === "string" ? html`
                   <input type="${spec.secret ? "password" : "text"}" class="input mono"
                     autocomplete="off"
                     .value=${cur !== undefined && cur !== null ? String(cur) : ""}

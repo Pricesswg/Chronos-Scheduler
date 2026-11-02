@@ -140,6 +140,10 @@ The first two belong to the block and can be combined: the auto-off counts from 
 
 The third one is the safety net for the coffee machine switched on at three in the afternoon and forgotten: it is per schedule, applies to all its devices, and ignores the turn-ons made by Chronos itself (recognised by their context), so a block's own mechanisms stay in charge of what Chronos started. It survives a restart: a device found on at startup is handled from the moment it was switched on, unless a block of the schedule is running, in which case the block owns it. A paused or disabled schedule never fires it.
 
+### HVAC mode with the temperature
+
+On a thermostat, the **Set temperature** action has an advanced parameter, **HVAC mode**. When set, it travels in the same `climate.set_temperature` call as the temperature. Some thermostats keep a separate setpoint for each mode, so setting only the temperature stores it on whatever mode the device happens to be in; sending the mode with it puts the setpoint where you meant it. Home Assistant passes the mode to the thermostat's integration, which applies it; leave it empty to send the temperature alone, as before.
+
 ### Single-date schedules
 
 Under Repeat, **Only on specific dates** turns a schedule into a one-off: pick a start and an end date, year included (the same day twice for a single day). The schedule then runs only on those dates; the weekdays and the yearly range are greyed out and do not apply, while the modes still do. The typical use is coming home from a trip: heat the house the day before you are back, and forget about it.
@@ -467,6 +471,14 @@ In the block panel, **Act at the end of the block too** changes that. When the b
 - `Settings → Time blocks` sets what **newly created** blocks do, so if you always want both edges you set it once. Existing blocks are never touched by that setting.
 - If another block starts exactly when this one ends, the end action is skipped: the next block's own action already defines the state, and sending an off in between would only make the device blink.
 - An offline device gets the same treatment as the auto-off timer: the switch-off is retried when it comes back, with the truth recorded in History.
+
+### Skip rules that resume the block
+
+By default a skip rule is checked when the block starts, and a skipped block stays skipped until it ends, even if the condition stops holding halfway through: right for "do not water if it rains at six".
+
+**Run the block if the condition clears while it is active**, in the skip rule's parameters, changes that: Chronos keeps checking the rule while the block is running, and as soon as the condition no longer holds it runs the block, once. The typical case is presence: skip the heating while the presence sensor is off, and heat as soon as someone comes home, without waiting for the next block. History shows a *resume* line when it happens.
+
+If several skip rules are holding the same block, each of them must have the option, and the block starts only when none of them holds any more. A block that has already ended is not run late.
 
 ### Workdays, calendars and people
 
