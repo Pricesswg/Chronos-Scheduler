@@ -31,6 +31,12 @@ export const DEFAULT_PRESET_COLORS: Record<string, string> = {
   none: "#9ca3af",
 };
 
+/** Default colors for climate fan modes: auto/quiet mirror eco/sleep. */
+export const DEFAULT_FAN_MODE_COLORS: Record<string, string> = {
+  auto: DEFAULT_PRESET_COLORS.eco,
+  quiet: DEFAULT_PRESET_COLORS.sleep,
+};
+
 /** Default colors for action kinds (timeline blocks). Customizable per
  * setting `color_kind`. The CSS vars `--mode-*` are still defined in
  * styles.ts as a backstop for the very first render before settings load. */
@@ -115,6 +121,27 @@ export function getPresetColors(s: Settings | null): Record<string, string> {
   return { ...DEFAULT_PRESET_COLORS, ...(fromSettings || {}) };
 }
 
+export function getFanModeColors(s: Settings | null): Record<string, string> {
+  const fromSettings = (s as any)?.color_fan_modes as Record<string, string> | undefined;
+  return { ...DEFAULT_FAN_MODE_COLORS, ...(fromSettings || {}) };
+}
+
+const FAN_LEVELS: Record<string, number> = { low: 0, medium: 0.5, high: 1 };
+
+/** Color of a climate fan mode: auto/quiet have their own setting, every
+ * other mode (low/medium/high or 1-5) lands on the fan start-end gradient. */
+export function fanModeColor(mode: string, s: Settings | null): string | undefined {
+  const key = String(mode || "").toLowerCase();
+  if (!key) return undefined;
+  const named = getFanModeColors(s)[key];
+  if (named) return named;
+  let pos: number | undefined = FAN_LEVELS[key];
+  if (pos === undefined && /^\d+(\.\d+)?$/.test(key)) pos = (parseFloat(key) - 1) / 4;
+  if (pos === undefined) return undefined;
+  const range = getRangeColors("fan", s);
+  return mixAnyColor(range.start, range.end, pos);
+}
+
 export function lightUseState(s: Settings | null): boolean {
   const v = (s as any)?.color_light_use_state;
   return v === undefined ? true : !!v;
@@ -173,6 +200,10 @@ export function getDeviceColor(
     if (preset && presetColors[preset] && stateStr !== "off") {
       const c = presetColors[preset];
       return { accent: c, soft: hexToSoft(c), live: true };
+    }
+    if (device.type === "thermostat" && attrs.fan_mode && stateStr !== "off") {
+      const fc = fanModeColor(String(attrs.fan_mode), settings);
+      if (fc) return { accent: fc, soft: hexToSoft(fc), live: true };
     }
     const temp = numericTemp(attrs);
     if (typeof temp === "number") {

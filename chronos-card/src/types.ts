@@ -251,6 +251,8 @@ export interface Settings {
   color_stops_climate?: { max: number; color: string }[];
   color_stops_boiler?: { max: number; color: string }[];
   color_presets?: Record<string, string>;
+  /** HEX colors for climate fan modes (auto, quiet). */
+  color_fan_modes?: Record<string, string>;
   /** Per-action-kind HEX colors for timeline blocks. Keys: on/off/set/preset/cmd. */
   color_kind?: Record<string, string>;
   /** Per-device-type {active, inactive} HEX colors for state-driven coloring

@@ -143,7 +143,7 @@ export function getDays(): string[] {
 }
 
 export const DEVICE_TYPES: Record<string, { label: string; domain: string; capabilities: string[] }> = {
-  thermostat: { label: "Thermostat", domain: "climate", capabilities: ["set_temperature", "hvac_mode", "preset_mode"] },
+  thermostat: { label: "Thermostat", domain: "climate", capabilities: ["set_temperature", "hvac_mode", "preset_mode", "fan_mode"] },
   light: { label: "Light", domain: "light", capabilities: ["turn_on", "turn_off", "brightness", "color_temp"] },
   blind: { label: "Blind", domain: "cover", capabilities: ["open", "close", "set_position", "stop"] },
   irrigation: { label: "Irrigation", domain: "valve", capabilities: ["turn_on", "turn_off", "duration"] },
