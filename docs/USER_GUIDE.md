@@ -74,7 +74,7 @@ Available actions depend on the Home Assistant domain of the selected device.
 
 | Device type | Example actions |
 |---|---|
-| Thermostat | Set temperature, set preset, turn off |
+| Thermostat | Set temperature, set preset, set fan mode, turn off |
 | Water heater | Set temperature, operation mode, turn off |
 | Light | Turn on, turn off, brightness, RGB color, color temperature, transition |
 | Switch (plug) | Turn on, turn off |
@@ -704,6 +704,7 @@ Example for a thermostat:
 climate.set_temperature
 climate.set_hvac_mode
 climate.set_preset_mode
+climate.set_fan_mode
 ```
 
 Use this section when an action is missing or when you want to understand which services are available for a device.
@@ -909,6 +910,8 @@ Example:
 | Comfort temperature | Green |
 | High temperature | Yellow |
 | Very high temperature | Red |
+
+Climate presets and fan modes have their own color pickers in **Climate preset modes** and **Climate fan modes**. The `auto` and `quiet` fan modes default to the colors of the `eco` and `sleep` presets; `low`, `medium`, `high` and numeric levels (1-5) use the **Fan** start → end gradient.
 
 You can customize thresholds and colors to match your preferences.
 

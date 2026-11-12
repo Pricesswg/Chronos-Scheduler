@@ -1,5 +1,5 @@
 import type { ActionDef, BlockAction, DeviceType, Settings } from "./types";
-import { getStops, getPresetColors, getKindColor } from "./device-colors";
+import { getStops, getPresetColors, getKindColor, fanModeColor } from "./device-colors";
 import { actionDefLabel } from "./i18n";
 
 /** Mutable map of action-kind colors. Kept as a plain object so consumers
@@ -42,6 +42,7 @@ const FALLBACK_ACTIONS: Record<string, ActionDef[]> = {
   thermostat: [
     { id: "set_temperature", label: "Set temperature", kind: "set", service: "climate.set_temperature", value: { type: "number", unit: "°C", min: 5, max: 35, step: 0.5, default: 21 } },
     { id: "set_preset", label: "Preset", kind: "preset", service: "climate.set_preset_mode", value: { type: "enum", options: ["none", "eco", "comfort", "sleep", "away", "boost", "home"], default: "comfort" } },
+    { id: "set_fan_mode", label: "Fan mode", kind: "preset", service: "climate.set_fan_mode", value: { type: "enum", options: ["auto", "quiet", "low", "medium", "high", "1", "2", "3", "4", "5"], default: "auto" } },
     { id: "set_hvac_mode", label: "HVAC mode", kind: "preset", service: "climate.set_hvac_mode", value: { type: "enum", options: ["heat", "cool", "heat_cool", "dry", "fan_only", "auto", "off"], default: "heat" } },
     { id: "turn_on", label: "Turn on", kind: "on", service: "climate.turn_on" },
     { id: "turn_off", label: "Turn off", kind: "off", service: "climate.turn_off" },
@@ -210,6 +211,10 @@ export function actionColor(type: DeviceType, action?: BlockAction): string {
       const presets = getPresetColors(_currentSettings);
       const key = String(action.value ?? "");
       if (key && presets[key]) return presets[key];
+    }
+    if (action.id === "set_fan_mode" && type === "thermostat") {
+      const c = fanModeColor(String(action.value ?? ""), _currentSettings);
+      if (c) return c;
     }
     if (action.id === "set_temperature") {
       const v = typeof action.value === "number" ? action.value : parseFloat(String(action.value));

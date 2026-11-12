@@ -9,11 +9,13 @@ import {
   DEFAULT_TEMP_STOPS_CLIMATE,
   DEFAULT_TEMP_STOPS_BOILER,
   DEFAULT_PRESET_COLORS,
+  DEFAULT_FAN_MODE_COLORS,
   DEFAULT_KIND_COLORS,
   DEFAULT_SIMPLE_COLORS,
   DEFAULT_RANGE_COLORS,
   getStops,
   getPresetColors,
+  getFanModeColors,
   getSimpleColors,
   getRangeColors,
   getKindColor,
@@ -343,6 +345,7 @@ export class ChronosSettingsScreen extends LitElement {
     const climateStops = getStops(s, "thermostat");
     const boilerStops = getStops(s, "boiler");
     const presets = getPresetColors(s);
+    const fanModes = getFanModeColors(s);
     const useState = lightUseState(s);
 
     return html`
@@ -400,6 +403,30 @@ export class ChronosSettingsScreen extends LitElement {
                 </div>
               `)}
             </div>
+          </div>
+
+          <div>
+            <div class="row" style="justify-content:space-between;align-items:flex-end;margin-bottom:8px;flex-wrap:wrap;row-gap:8px">
+              <div>
+                <div class="fw-600" style="font-size:13.5px">${t("settings.colors.fanmode.title")}</div>
+                <div class="text-xs text-mute">${t("settings.colors.fanmode.desc")}</div>
+              </div>
+              <button class="btn btn--sm" @click=${() => this._updateSetting("color_fan_modes", { ...DEFAULT_FAN_MODE_COLORS })}>
+                ${icon("repeat", 12)} ${t("common.default")}
+              </button>
+            </div>
+            <div class="grid-2" style="gap:8px">
+              ${Object.entries(fanModes).map(([name, color]) => html`
+                <div class="row" style="gap:10px;padding:8px 10px;background:var(--bg-sunken);border-radius:var(--r-md);align-items:center">
+                  <div style="width:14px;height:14px;border-radius:50%;background:${color};border:1px solid var(--border)"></div>
+                  <span class="mono text-sm" style="flex:1">${name}</span>
+                  <input type="color" .value=${color}
+                    @change=${(e: Event) => this._updateFanModeColor(name, (e.target as HTMLInputElement).value)}
+                    style="width:36px;height:28px;padding:0;border:1px solid var(--border-soft);border-radius:6px;background:transparent;cursor:pointer"/>
+                </div>
+              `)}
+            </div>
+            <div class="text-xs text-mute" style="margin-top:6px">${t("settings.colors.fanmode.note")}</div>
           </div>
         </div>
       </div>
@@ -553,6 +580,7 @@ export class ChronosSettingsScreen extends LitElement {
       color_stops_climate: DEFAULT_TEMP_STOPS_CLIMATE.map((s) => ({ ...s })),
       color_stops_boiler: DEFAULT_TEMP_STOPS_BOILER.map((s) => ({ ...s })),
       color_presets: { ...DEFAULT_PRESET_COLORS },
+      color_fan_modes: { ...DEFAULT_FAN_MODE_COLORS },
       color_kind: { ...DEFAULT_KIND_COLORS },
       color_simple: JSON.parse(JSON.stringify(DEFAULT_SIMPLE_COLORS)),
       color_range: JSON.parse(JSON.stringify(DEFAULT_RANGE_COLORS)),
@@ -662,6 +690,11 @@ export class ChronosSettingsScreen extends LitElement {
   private _updatePresetColor(name: string, color: string) {
     const cur = getPresetColors(this.card._settings);
     this._updateSetting("color_presets", { ...cur, [name]: color });
+  }
+
+  private _updateFanModeColor(name: string, color: string) {
+    const cur = getFanModeColors(this.card._settings);
+    this._updateSetting("color_fan_modes", { ...cur, [name]: color });
   }
 
   private _renderSensorOverrides() {

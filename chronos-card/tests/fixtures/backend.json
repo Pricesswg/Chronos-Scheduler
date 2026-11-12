@@ -51,6 +51,28 @@
     }
    },
    {
+    "id": "set_fan_mode",
+    "label": "Fan mode",
+    "kind": "preset",
+    "service": "climate.set_fan_mode",
+    "value": {
+     "type": "enum",
+     "options": [
+      "auto",
+      "quiet",
+      "low",
+      "medium",
+      "high",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5"
+     ],
+     "default": "auto"
+    }
+   },
+   {
     "id": "set_hvac_mode",
     "label": "HVAC mode",
     "kind": "preset",
@@ -755,6 +777,10 @@
     "active": "#10b981",
     "inactive": "#9ca3af"
    }
+  },
+  "color_fan_modes": {
+   "auto": "#10b981",
+   "quiet": "#6366f1"
   },
   "color_range": {
    "blind": {
