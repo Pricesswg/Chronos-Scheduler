@@ -921,6 +921,7 @@ def _register_websocket_commands(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_schedules_save)
     websocket_api.async_register_command(hass, ws_schedules_remove)
     websocket_api.async_register_command(hass, ws_schedules_toggle)
+    websocket_api.async_register_command(hass, ws_schedules_pause)
     websocket_api.async_register_command(hass, ws_rules_list)
     websocket_api.async_register_command(hass, ws_rules_save)
     websocket_api.async_register_command(hass, ws_rules_remove)
